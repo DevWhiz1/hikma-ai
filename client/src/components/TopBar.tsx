@@ -21,7 +21,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMo
           Islamic Scholar AI
         </h1>
       </div>
-      {/* <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4">
         <button
           onClick={toggleDarkMode}
           className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
@@ -32,7 +32,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMo
             <MoonIcon className="h-5 w-5 text-gray-600" />
           )}
         </button>
-      </div> */}
+      </div>
     </div>
   );
 };
