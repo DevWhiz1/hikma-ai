@@ -18,7 +18,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMo
           <Bars3Icon className="h-6 w-6" />
         </button>
         <h1 className="ml-4 text-xl font-bold text-emerald-600 dark:text-emerald-400">
-          Islamic Scholar AI
+          Hikmah AI
         </h1>
       </div>
       <div className="flex items-center space-x-4">

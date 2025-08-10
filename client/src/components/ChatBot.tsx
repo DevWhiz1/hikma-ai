@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PaperAirplaneIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useChat } from '../hooks/useChat';
+import ReactMarkdown from 'react-markdown';
 
 const ChatBot = () => {
   const [message, setMessage] = useState('');
@@ -92,11 +93,26 @@ const ChatBot = () => {
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
                 }`}
               >
-                {msg.content.split('\n').map((line, i) => (
-                  <p key={i} className={i > 0 ? 'mt-2' : ''}>
-                    {line}
-                  </p>
-                ))}
+                {msg.role === 'user' ? (
+                  <p>{msg.content}</p>
+                ) : (
+                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                    <ReactMarkdown 
+                      components={{
+                        h1: ({children}) => <h1 className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mb-3">{children}</h1>,
+                        h2: ({children}) => <h2 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-2 mt-4">{children}</h2>,
+                        h3: ({children}) => <h3 className="text-base font-bold text-emerald-600 dark:text-emerald-400 mb-2 mt-3">{children}</h3>,
+                        strong: ({children}) => <strong className="font-bold text-emerald-700 dark:text-emerald-300">{children}</strong>,
+                        ul: ({children}) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                        ol: ({children}) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                        p: ({children}) => <p className="mb-2 leading-relaxed">{children}</p>,
+                        blockquote: ({children}) => <blockquote className="border-l-4 border-emerald-500 pl-3 italic my-2">{children}</blockquote>,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
               </div>
             </div>
           ))
