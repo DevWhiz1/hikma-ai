@@ -7,21 +7,16 @@ import ChatBot from './components/ChatBot';
 import QiblaFinder from './components/QiblaFinder';
 import AppContent from './components/AppContent';
 import PrayerTimesPage from './components/PrayerTimes';
+import TasbihCounter from './components/TasbihCounter';
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('home');
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Toggle dark mode and save to localStorage
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     localStorage.setItem('darkMode', JSON.stringify(!isDarkMode));
-  };
-
-  // Toggle sidebar
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
   };
 
   // Load dark mode preference from localStorage
@@ -45,30 +40,53 @@ function App() {
     }
   }, [isDarkMode]);
 
+  // Handle resize to show sidebar on large screens automatically
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(true); // keep open on desktop
+      } else {
+        setSidebarOpen(false); // closed by default on mobile
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <Router>
+      {/* mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       <div className={`App min-h-screen ${isDarkMode ? 'dark' : ''}`}>
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
           <TopBar
-            toggleSidebar={toggleSidebar}
+            toggleSidebar={() => setSidebarOpen(prev => !prev)}
             isDarkMode={isDarkMode}
             toggleDarkMode={toggleDarkMode}
           />
-          
-          <AppContent setActiveTab={setActiveTab}>
+          <AppContent setActiveTab={() => {}}>
             <div className="flex flex-1 overflow-hidden">
               <Sidebar
                 isOpen={sidebarOpen}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
+                setActiveTab={() => {}}
+                onNavigate={() => {
+                  if (window.innerWidth < 1024) setSidebarOpen(false);
+                }}
               />
-              
-              <main className="flex-1 overflow-y-auto">
+              <main className="flex-1 overflow-y-auto focus:outline-none" tabIndex={-1}>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/chat" element={<ChatBot />} />
                   <Route path="/qibla" element={<QiblaFinder />} />
                   <Route path="/prayer-times" element={<PrayerTimesPage />} />
+                  <Route path="/tasbih" element={<TasbihCounter />} />
                   <Route path="/resources" element={
                     <div className="p-6">
                       <h1 className="text-2xl font-bold mb-4">Islamic Resources</h1>

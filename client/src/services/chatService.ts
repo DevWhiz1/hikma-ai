@@ -18,7 +18,7 @@ export const chatService = {
       };
 
       // Make the API call using Axios
-      const response = await axios.post(API_URL, payload, {
+      const response = await axios.post(`${API_URL}/scholar-ai`, payload, {
         headers: {
           'Content-Type': 'application/json',
         },
