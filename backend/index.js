@@ -14,7 +14,7 @@ const DirectMessage = require('./models/DirectMessage');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Ensure correct model name (adjust if needed)
-const modelName = 'gemini-1.5-flash'; // was gemini-2.5-flash (verify availability)
+const modelName = 'gemini-2.5-flash'; // was gemini-2.5-flash (verify availability)
 
 // Read API key AFTER dotenv.config
 const apiKey = process.env.GEMINI_API_KEY;
