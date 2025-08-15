@@ -3,9 +3,9 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const fetch = global.fetch || require('node-fetch');
-const { connectDB } = require('./config/db');
+const connectDB = require('./config/db'); // updated import (default export)
 const { auth } = require('./middleware/auth');
-const ChatSession = require('./models/ChatSession');
+const ChatSession = require('./models/ChatSession'); // kept for other chat routes that may still use it
 const DirectMessage = require('./models/DirectMessage');
 
 dotenv.config();
@@ -57,43 +57,13 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/hadith', require('./routes/hadithRoutes'));
 
-// AI Chat endpoint (stores history if authenticated)
+// AI Chat endpoint (stateless – no session persistence)
 app.post('/api/scholar-ai', auth, async (req, res) => {
   const userPrompt = req.body.message || req.body.prompt;
-  const conversation = Array.isArray(req.body.conversation) ? req.body.conversation : [];
-  const sessionId = req.body.sessionId;
-  
+  const conversation = Array.isArray(req.body.conversation) ? req.body.conversation.slice(-10) : [];
   if (!userPrompt) return res.status(400).json({ error: "Missing 'message' or 'prompt'." });
 
   try {
-    let chatSession;
-    
-    // Find or create chat session
-    if (sessionId) {
-      chatSession = await ChatSession.findOne({
-        _id: sessionId,
-        user: req.user._id,
-        isActive: true
-      });
-      if (!chatSession) {
-        return res.status(404).json({ error: 'Chat session not found' });
-      }
-    } else {
-      // Create new session
-      chatSession = new ChatSession({
-        user: req.user._id,
-        title: 'New Chat',
-        messages: []
-      });
-    }
-
-    // Add user message to session
-    chatSession.messages.push({
-      role: 'user',
-      content: userPrompt,
-      timestamp: new Date()
-    });
-
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -106,7 +76,7 @@ app.post('/api/scholar-ai', auth, async (req, res) => {
         model: OPENROUTER_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
-          ...conversation.slice(-10), // optional limited history (already user/assistant objects)
+          ...conversation,
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
@@ -121,27 +91,7 @@ app.post('/api/scholar-ai', auth, async (req, res) => {
 
     const data = await response.json();
     const content = data?.choices?.[0]?.message?.content || 'No response generated.';
-
-    // Add assistant message to session
-    chatSession.messages.push({
-      role: 'assistant',
-      content,
-      timestamp: new Date()
-    });
-
-    // Generate title if this is the first exchange
-    if (!sessionId && chatSession.messages.filter(m => m.role === 'user').length === 1) {
-      chatSession.generateTitle();
-    }
-
-    await chatSession.save();
-
-    return res.status(200).json({ 
-      generated_text: content, 
-      model: OPENROUTER_MODEL,
-      sessionId: chatSession._id,
-      title: chatSession.title
-    });
+    return res.status(200).json({ generated_text: content, model: OPENROUTER_MODEL });
   } catch (err) {
     console.error('Error calling OpenRouter:', err);
     return res.status(500).json({ error: 'Failed to generate content via OpenRouter.' });
@@ -153,64 +103,20 @@ app.get('/', (_req, res) => {
   res.send('Hikmah AI (OpenRouter) API running with auth & chat');
 });
 
-// Start HTTP + Socket.io
+// Start server AFTER DB connection using new connectDB implementation
 const port = process.env.PORT || 5000;
-const httpServer = app.listen(port, async () => {
-  await connectDB(process.env.MONGO_URI);
-  console.log(`Server running http://localhost:${port}`);
-});
-
-// WebSocket (Socket.io) for direct user<>scholar messaging
-const { Server } = require('socket.io');
-const { verifyToken } = require('./utils/jwt');
-const io = new Server(httpServer, {
-  cors: { origin: process.env.ALLOWED_ORIGINS?.split(',') || '*', credentials: true }
-});
-
-io.use((socket, next) => {
-  const token = socket.handshake.auth?.token;
-  if (!token) return next(new Error('No token'));
+(async () => {
   try {
-    const payload = verifyToken(token);
-    socket.user = { id: payload.sub, role: payload.role };
-    next();
-  } catch {
-    next(new Error('Invalid token'));
+    await connectDB();
+    app.listen(port, () => {
+      console.log(`Express server running http://localhost:${port}`);
+    });
+  } catch (err) {
+    console.error('Failed to start server due to DB error:', err.message);
+    process.exit(1);
   }
-});
+})();
 
-io.on('connection', (socket) => {
-  socket.join(socket.user.id);
-
-  socket.on('direct:message', async ({ to, content }) => {
-    if (!to || !content) return;
-    const msg = await DirectMessage.create({
-      from: socket.user.id,
-      to,
-      content
-    });
-    io.to(to).emit('direct:message', {
-      _id: msg._id,
-      from: msg.from,
-      to: msg.to,
-      content: msg.content,
-      createdAt: msg.createdAt
-    });
-    socket.emit('direct:sent', msg._id);
-  });
-
-  socket.on('direct:history', async ({ withUser, limit = 50 }) => {
-    if (!withUser) return;
-    const msgs = await DirectMessage.find({
-      $or: [
-        { from: socket.user.id, to: withUser },
-        { from: withUser, to: socket.user.id }
-      ]
-    })
-      .sort({ createdAt: -1 })
-      .limit(Math.min(limit, 200))
-      .lean();
-    socket.emit('direct:history', msgs.reverse());
-  });
-});
+// Removed Socket.io realtime messaging setup to keep server simple.
+// If needed later, reintroduce after ensuring persistence layer stable.
 
