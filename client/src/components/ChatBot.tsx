@@ -13,7 +13,8 @@ const ChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-  const [showHistory, setShowHistory] = useState(true);
+  const [showHistory, setShowHistory] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 768) ? false : true);
+  const isMobile = useRef(false);
   const skipNextLoad = useRef(false);
   const DEFAULT_TITLE = 'New Chat';
   const provisionalTitlesRef = useRef<Record<string,string>>({});
@@ -37,6 +38,22 @@ const ChatBot = () => {
       setCurrentSession(null);
     }
   }, [sessionId]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      isMobile.current = mobile;
+      if (mobile) {
+        // Do not auto-open on mobile
+        setShowHistory(false);
+      } else {
+        // Ensure sidebar visible when leaving mobile
+        setShowHistory(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const loadSessions = async () => {
     try {
@@ -189,9 +206,22 @@ const ChatBot = () => {
   };
 
   return (
-    <div className="flex h-full w-full">
+    <div className="relative flex h-full w-full">
       {showHistory && (
-        <div className="flex-shrink-0 h-full border-r border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 overflow-y-auto" style={{ width: 256 }}>
+        isMobile.current ? (
+          <div className="fixed inset-0 z-40 flex">
+            <div className="w-64 h-full bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 shadow-xl flex flex-col">
+              <ChatHistory
+                sessions={sessions}
+                currentSessionId={sessionId}
+                onSelectSession={(id) => { setShowHistory(false); handleSelectSession(id); }}
+                onNewChat={() => { setShowHistory(false); handleNewChat(); }}
+                onDeleteSession={handleDeleteSession}
+              />
+            </div>
+            <div className="flex-1 bg-black/40" onClick={() => setShowHistory(false)} />
+          </div>
+        ) : (
           <ChatHistory
             sessions={sessions}
             currentSessionId={sessionId}
@@ -199,10 +229,11 @@ const ChatBot = () => {
             onNewChat={handleNewChat}
             onDeleteSession={handleDeleteSession}
           />
-        </div>
+        )
       )}
-      <div className="flex flex-col flex-1 min-w-0">
-        <div className="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+      <div className="flex flex-col flex-1 max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -217,7 +248,7 @@ const ChatBot = () => {
                 onClick={() => setShowHistory(s => !s)}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm"
               >
-                {showHistory ? 'Hide History' : 'Show History'}
+                {showHistory ? (isMobile.current ? 'Close' : 'Hide History') : 'History'}
               </button>
               <button
                 onClick={handleNewChat}
@@ -229,7 +260,9 @@ const ChatBot = () => {
             </div>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4" id="chat-scroll-container">
+
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
               <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-4">
@@ -320,7 +353,9 @@ const ChatBot = () => {
             </div>
           )}
         </div>
-        <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+
+        {/* Input Form */}
+        <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
           <form onSubmit={handleSubmit} className="flex space-x-2">
             <input
               type="text"

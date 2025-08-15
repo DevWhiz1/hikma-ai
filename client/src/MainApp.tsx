@@ -17,7 +17,7 @@ interface MainAppProps {
 
 function MainApp({ setIsAuthenticated }: MainAppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false); // default light
   const location = useLocation();
   const isChatRoute = location.pathname.startsWith('/chat');
 
@@ -29,24 +29,15 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
 
   // Load dark mode preference from localStorage
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode !== null) {
-      setIsDarkMode(JSON.parse(savedDarkMode));
-    } else {
-      // Check user's system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setIsDarkMode(prefersDark);
-    }
-  }, []);
-
-  // Apply dark mode to document
-  useEffect(() => {
-    if (isDarkMode) {
+    const saved = localStorage.getItem('darkMode');
+    if (saved === 'true') {
+      setIsDarkMode(true);
       document.documentElement.classList.add('dark');
     } else {
+      setIsDarkMode(false);
       document.documentElement.classList.remove('dark');
     }
-  }, [isDarkMode]);
+  }, []);
 
   // Handle resize to show sidebar on large screens automatically
   useEffect(() => {

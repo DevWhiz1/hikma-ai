@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { chatService, ChatSession, ChatMessage } from '../services/chatService';
 import { PlusIcon, TrashIcon, ClockIcon } from '@heroicons/react/24/outline';
-import { ChatSession } from '../services/chatService';
 
 const ChatHistory: React.FC<{
   sessions: ChatSession[];
@@ -10,8 +11,8 @@ const ChatHistory: React.FC<{
   onDeleteSession: (sessionId: string) => void;
 }> = ({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession }) => {
   return (
-    <div className="w-64 h-full bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 flex flex-col">
-      <div className="p-4 border-b border-gray-300 dark:border-gray-700 flex-shrink-0">
+    <div className="w-64 bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 flex flex-col">
+      <div className="p-4 border-b border-gray-300 dark:border-gray-700">
         <button
           onClick={onNewChat}
           className="w-full flex items-center justify-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
