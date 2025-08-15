@@ -13,7 +13,7 @@ const navigationItems = [
   { name: 'Chat with Scholar', icon: ChatBubbleLeftRightIcon, id: 'chat', path: '/chat' },
   { name: 'Find Qibla', icon: GlobeAltIcon, id: 'qibla', path: '/qibla' },
   { name: 'Prayer Times', icon: GlobeAltIcon, id: 'prayer-times', path: '/prayer-times' },
-  { name: 'Islamic Resources', icon: BookOpenIcon, id: 'resources', path: '/resources' },
+  { name: 'Hadith Explorer', icon: BookOpenIcon, id: 'resources', path: '/hadith' },
   {name: 'Tasbih Counter', icon: GlobeAltIcon, id: 'tasbih', path: '/tasbih' },
 ];
 

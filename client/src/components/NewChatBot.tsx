@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PaperAirplaneIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { chatService, ChatSession, ChatMessage } from '../services/chatService';
@@ -13,10 +13,6 @@ const ChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-  const [showHistory, setShowHistory] = useState(true);
-  const skipNextLoad = useRef(false);
-  const DEFAULT_TITLE = 'New Chat';
-  const provisionalTitlesRef = useRef<Record<string,string>>({});
 
   // Load sessions on mount
   useEffect(() => {
@@ -26,11 +22,6 @@ const ChatBot = () => {
   // Load specific session when sessionId changes
   useEffect(() => {
     if (sessionId) {
-      if (skipNextLoad.current) {
-        // Skip automatic load because we already have local optimistic messages
-        skipNextLoad.current = false;
-        return;
-      }
       loadSession(sessionId);
     } else {
       setMessages([]);
@@ -41,34 +32,7 @@ const ChatBot = () => {
   const loadSessions = async () => {
     try {
       const { sessions } = await chatService.getSessions();
-      // Apply provisional titles where server still has default
-      const patched = sessions.map(s => {
-        const prov = provisionalTitlesRef.current[s._id];
-        if (prov && (s.title === DEFAULT_TITLE || !s.title)) {
-          return { ...s, title: prov };
-        }
-        // If server now has a real title, drop provisional
-        if (prov && s.title && s.title !== DEFAULT_TITLE && s.title !== prov) {
-          delete provisionalTitlesRef.current[s._id];
-        }
-        return s;
-      });
-      setSessions(patched);
-      // Update currentSession if needed
-      setCurrentSession(prev => {
-        if (!prev) return prev;
-        const updated = patched.find(p => p._id === prev._id);
-        if (!updated) return prev;
-        // Keep provisional if server still default
-        const prov = provisionalTitlesRef.current[prev._id];
-        if (prov && (updated.title === DEFAULT_TITLE || !updated.title)) {
-          return { ...updated, title: prov };
-        }
-        if (prov && updated.title && updated.title !== DEFAULT_TITLE && updated.title !== prov) {
-          delete provisionalTitlesRef.current[prev._id];
-        }
-        return updated;
-      });
+      setSessions(sessions);
     } catch (error) {
       console.error('Failed to load sessions:', error);
     }
@@ -77,15 +41,8 @@ const ChatBot = () => {
   const loadSession = async (id: string) => {
     try {
       const { session } = await chatService.getSession(id);
-      const prov = provisionalTitlesRef.current[id];
-      let effective = session;
-      if (prov && (session.title === DEFAULT_TITLE || !session.title)) {
-        effective = { ...session, title: prov };
-      } else if (prov && session.title && session.title !== DEFAULT_TITLE && session.title !== prov) {
-        delete provisionalTitlesRef.current[id];
-      }
-      setCurrentSession(effective);
-      setMessages(effective.messages);
+      setCurrentSession(session);
+      setMessages(session.messages);
     } catch (error) {
       console.error('Failed to load session:', error);
       navigate('/chat');
@@ -118,62 +75,48 @@ const ChatBot = () => {
     }
   };
 
-  const deriveTitle = (text: string) => {
-    const words = text.trim().split(/\s+/).slice(0, 6).join(' ');
-    if (!words) return DEFAULT_TITLE;
-    return words.charAt(0).toUpperCase() + words.slice(1);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
 
-    const userMessage = message.trim();
+    const userMessage = message;
     setMessage('');
     setIsLoading(true);
 
     try {
+      // If no current session, create one
       let activeSessionId = sessionId;
-      let createdSession: ChatSession | null = null;
       if (!activeSessionId) {
         const { session } = await chatService.createSession();
         activeSessionId = session._id;
-        createdSession = session;
-        skipNextLoad.current = true; // prevent overwriting optimistic first message
         navigate(`/chat/${activeSessionId}`);
-        setCurrentSession(session); // optimistic
         await loadSessions();
       }
 
+      // Add user message to UI immediately
       const newUserMessage: ChatMessage = { role: 'user', content: userMessage };
       setMessages(prev => [...prev, newUserMessage]);
 
-      // Provisional title update if still default
-      const needsTitle = createdSession || (currentSession && (!currentSession.title || currentSession.title === DEFAULT_TITLE));
-      if (needsTitle) {
-        const provisionalTitle = deriveTitle(userMessage);
-        provisionalTitlesRef.current[activeSessionId!] = provisionalTitle;
-        setCurrentSession(prev => prev ? { ...prev, title: provisionalTitle } : prev);
-        setSessions(prev => prev.map(s => s._id === activeSessionId ? { ...s, title: provisionalTitle } : s));
-      }
-
-      const conversationToSend = [...messages, newUserMessage];
+      // Send to API
       const response = await chatService.sendMessage({
         message: userMessage,
-        conversation: conversationToSend,
-        sessionId: activeSessionId!
+        conversation: messages,
+        sessionId: activeSessionId
       });
 
-      const assistantMessage: ChatMessage = { role: 'assistant', content: response.generated_text };
+      // Add assistant response
+      const assistantMessage: ChatMessage = { 
+        role: 'assistant', 
+        content: response.generated_text 
+      };
       setMessages(prev => [...prev, assistantMessage]);
 
-      await loadSessions(); // update titles
-      if (createdSession) {
-        // After first round-trip, ensure server state synced (optional reload)
-        // loadSession(activeSessionId); // could reload if needed
-      }
+      // Reload sessions to update titles/timestamps
+      await loadSessions();
+
     } catch (error) {
       console.error('Failed to send message:', error);
+      // Remove the user message if there was an error
       setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
@@ -189,20 +132,18 @@ const ChatBot = () => {
   };
 
   return (
-    <div className="flex h-full w-full">
-      {showHistory && (
-        <div className="flex-shrink-0 h-full border-r border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 overflow-y-auto" style={{ width: 256 }}>
-          <ChatHistory
-            sessions={sessions}
-            currentSessionId={sessionId}
-            onSelectSession={handleSelectSession}
-            onNewChat={handleNewChat}
-            onDeleteSession={handleDeleteSession}
-          />
-        </div>
-      )}
-      <div className="flex flex-col flex-1 min-w-0">
-        <div className="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+    <div className="flex h-full">
+      <ChatHistory
+        sessions={sessions}
+        currentSessionId={sessionId}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+        onDeleteSession={handleDeleteSession}
+      />
+      
+      <div className="flex flex-col flex-1 max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -212,24 +153,18 @@ const ChatBot = () => {
                 Ask questions about Islam and get accurate answers based on authentic sources
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowHistory(s => !s)}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm"
-              >
-                {showHistory ? 'Hide History' : 'Show History'}
-              </button>
-              <button
-                onClick={handleNewChat}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center gap-1"
-              >
-                <ArrowPathIcon className="h-5 w-5" />
-                <span className="text-sm">New Chat</span>
-              </button>
-            </div>
+            <button
+              onClick={handleNewChat}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center gap-1"
+            >
+              <ArrowPathIcon className="h-5 w-5" />
+              <span className="text-sm">New Chat</span>
+            </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4" id="chat-scroll-container">
+
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
               <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-4">
@@ -320,7 +255,9 @@ const ChatBot = () => {
             </div>
           )}
         </div>
-        <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+
+        {/* Input Form */}
+        <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
           <form onSubmit={handleSubmit} className="flex space-x-2">
             <input
               type="text"

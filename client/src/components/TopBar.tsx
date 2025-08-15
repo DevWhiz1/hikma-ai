@@ -1,13 +1,17 @@
 import React from 'react';
-import { Bars3Icon, MoonIcon, SunIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, MoonIcon, SunIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { authService } from '../services/authService';
 
 interface TopBarProps {
   toggleSidebar: () => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  onLogout: () => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMode }) => {
+const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMode, onLogout }) => {
+  const user = authService.getUser();
+  
   return (
     <div className="sticky top-0 z-30 flex items-center justify-between bg-white dark:bg-gray-900 shadow-md px-4 py-2">
       <div className="flex items-center">
@@ -22,7 +26,12 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMo
         </h1>
       </div>
       <div className="flex items-center space-x-4">
-        <button
+        {user && (
+          <span className="text-sm text-gray-600 dark:text-gray-300">
+            Welcome, {user.name}
+          </span>
+        )}
+        {/* <button
           onClick={toggleDarkMode}
           className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
         >
@@ -31,6 +40,13 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMo
           ) : (
             <MoonIcon className="h-5 w-5 text-gray-600" />
           )}
+        </button> */}
+        <button
+          onClick={onLogout}
+          className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
+          title="Logout"
+        >
+          <ArrowRightOnRectangleIcon className="h-5 w-5" />
         </button>
       </div>
     </div>
