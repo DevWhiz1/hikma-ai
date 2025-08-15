@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthLayout from './AuthLayout';
 import { authService } from '../services/authService';
+import hikmahLogo from '../hikmah.png';
 
 const roles = [
   { value: 'user', label: 'User' },

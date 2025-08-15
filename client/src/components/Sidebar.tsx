@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { HomeIcon, ChatBubbleLeftRightIcon, GlobeAltIcon, BookOpenIcon } from '@heroicons/react/24/outline';
-
+import hikmahLogo from '../../assets/logo.png';
 interface SidebarProps {
   isOpen: boolean;
   setActiveTab: (tab: string) => void;
@@ -10,7 +10,7 @@ interface SidebarProps {
 
 const navigationItems = [
   { name: 'Home', icon: HomeIcon, id: 'home', path: '/' },
-  { name: 'Chat with Scholar', icon: ChatBubbleLeftRightIcon, id: 'chat', path: '/chat' },
+  { name: 'Hikmah Chat', icon: ChatBubbleLeftRightIcon, id: 'chat', path: '/chat' },
   { name: 'Find Qibla', icon: GlobeAltIcon, id: 'qibla', path: '/qibla' },
   { name: 'Prayer Times', icon: GlobeAltIcon, id: 'prayer-times', path: '/prayer-times' },
   { name: 'Hadith Explorer', icon: BookOpenIcon, id: 'resources', path: '/hadith' },
@@ -32,8 +32,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
     >
       <div className="flex flex-col h-full">
         <div className="p-4 overflow-y-auto">
-          <div className="flex items-center justify-center p-2 mb-6 select-none">
-            <img src="/assets/logo.png" alt="Islamic Scholar Logo" className="h-10 w-10 mr-2" />
+          <div className="flex items-center p-2 mb-6 select-none">
+            <img src={`${hikmahLogo}`} alt="Islamic Scholar Logo" className="h-16 w-16" />
             <h2 className="text-xl font-bold text-emerald-600 dark:text-emerald-400">Hikmah</h2>
           </div>
           <nav className="space-y-1">

@@ -2,27 +2,31 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const fetch = global.fetch || require('node-fetch');
-const connectDB = require('./config/db'); // updated import (default export)
-const { auth } = require('./middleware/auth');
-const ChatSession = require('./models/ChatSession'); // kept for other chat routes that may still use it
-const DirectMessage = require('./models/DirectMessage');
 
+// Load env BEFORE reading variables
 dotenv.config();
+
+const fetch = global.fetch || require('node-fetch');
+const connectDB = require('./config/db');
+const { auth } = require('./middleware/auth');
+const ChatSession = require('./models/ChatSession');
+const DirectMessage = require('./models/DirectMessage');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// Ensure correct model name (adjust if needed)
+const modelName = 'gemini-1.5-flash'; // was gemini-2.5-flash (verify availability)
+
+// Read API key AFTER dotenv.config
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  console.error('GEMINI_API_KEY is missing in environment variables');
+}
+
 const app = express();
-// app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*', credentials: true }));
 app.use(cors());
 app.use(express.json());
 
-// OpenRouter configuration
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat-v3-0324:free';
-const OPENROUTER_SITE_URL = process.env.OPENROUTER_SITE_URL || 'http://localhost:5173';
-const OPENROUTER_SITE_NAME = process.env.OPENROUTER_SITE_NAME || 'Hikmah AI';
-if (!OPENROUTER_API_KEY) {
-  console.error('OPENROUTER_API_KEY environment variable not set.');
-  process.exit(1);
-}
+const genAI = new GoogleGenerativeAI(apiKey || '');
 
 // System prompt (shortened here for brevity - keep your full version)
 const systemPrompt = `You are a Spiritual Guide and Islamic Counselor.
@@ -57,50 +61,52 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/hadith', require('./routes/hadithRoutes'));
 
-// AI Chat endpoint (stateless – no session persistence)
-app.post('/api/scholar-ai', auth, async (req, res) => {
-  const userPrompt = req.body.message || req.body.prompt;
-  const conversation = Array.isArray(req.body.conversation) ? req.body.conversation.slice(-10) : [];
-  if (!userPrompt) return res.status(400).json({ error: "Missing 'message' or 'prompt'." });
-
+app.post('/api/scholar-ai', async (req, res) => {
+  const userPrompt = (req.body && (req.body.message || req.body.prompt)) || '';
+  const conversation = Array.isArray(req.body?.conversation) ? req.body.conversation : [];
+  if (!userPrompt.trim()) {
+    return res.status(400).json({ error: "Missing 'message' (or 'prompt') in request body." });
+  }
+  if (!apiKey) return res.status(500).json({ error: 'Gemini API key not configured.' });
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': OPENROUTER_SITE_URL,
-        'X-Title': OPENROUTER_SITE_NAME,
-      },
-      body: JSON.stringify({
-        model: OPENROUTER_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...conversation,
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-      }),
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      systemInstruction: systemPrompt,
+      generationConfig: { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 1024 }
     });
 
-    if (!response.ok) {
-      const errTxt = await response.text().catch(() => '');
-      console.error('OpenRouter API error:', response.status, errTxt);
-      return res.status(502).json({ error: 'Upstream model error', status: response.status });
+    // Build history (exclude latest user message to avoid duplication)
+    const history = conversation
+      .slice(0, -1) // assume last element is current userPrompt if provided
+      .filter(m => m && m.content && (m.role === 'user' || m.role === 'assistant'))
+      .map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+
+    let text;
+    if (history.length) {
+      const chat = model.startChat({ history });
+      const result = await chat.sendMessage(userPrompt);
+      text = result?.response?.text();
+    } else {
+      // Simple single-turn call
+      const result = await model.generateContent(userPrompt);
+      text = result?.response?.text();
     }
 
-    const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content || 'No response generated.';
-    return res.status(200).json({ generated_text: content, model: OPENROUTER_MODEL });
-  } catch (err) {
-    console.error('Error calling OpenRouter:', err);
-    return res.status(500).json({ error: 'Failed to generate content via OpenRouter.' });
+    if (!text) return res.status(502).json({ error: 'Empty response from Gemini model.' });
+    res.status(200).json({ text, generated_text: text });
+  } catch (error) {
+    const errData = error?.response?.data || error?.message || error;
+    console.error('Error calling Gemini API:', errData);
+    res.status(500).json({ error: 'Failed to generate content from Gemini API.' });
   }
 });
 
 // Health check
 app.get('/', (_req, res) => {
-  res.send('Hikmah AI (OpenRouter) API running with auth & chat');
+  res.send('Hikmah AI API running with auth & chat');
 });
 
 // Start server AFTER DB connection using new connectDB implementation
@@ -116,7 +122,4 @@ const port = process.env.PORT || 5000;
     process.exit(1);
   }
 })();
-
-// Removed Socket.io realtime messaging setup to keep server simple.
-// If needed later, reintroduce after ensuring persistence layer stable.
 

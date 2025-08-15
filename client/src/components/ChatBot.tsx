@@ -18,6 +18,7 @@ const ChatBot = () => {
   const skipNextLoad = useRef(false);
   const DEFAULT_TITLE = 'New Chat';
   const provisionalTitlesRef = useRef<Record<string,string>>({});
+  const LS_PREFIX = 'hik_chat_msgs_';
 
   // Load sessions on mount
   useEffect(() => {
@@ -54,6 +55,14 @@ const ChatBot = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const saveLocal = (id: string, msgs: ChatMessage[]) => {
+    try { localStorage.setItem(LS_PREFIX + id, JSON.stringify(msgs)); } catch {}
+  };
+  const loadLocal = (id: string): ChatMessage[] => {
+    try { const v = localStorage.getItem(LS_PREFIX + id); return v ? JSON.parse(v) : []; } catch { return []; }
+  };
+  const removeLocal = (id: string) => { try { localStorage.removeItem(LS_PREFIX + id); } catch {} };
 
   const loadSessions = async () => {
     try {
@@ -96,13 +105,20 @@ const ChatBot = () => {
       const { session } = await chatService.getSession(id);
       const prov = provisionalTitlesRef.current[id];
       let effective = session;
+      const localMsgs = loadLocal(id);
       if (prov && (session.title === DEFAULT_TITLE || !session.title)) {
         effective = { ...session, title: prov };
       } else if (prov && session.title && session.title !== DEFAULT_TITLE && session.title !== prov) {
         delete provisionalTitlesRef.current[id];
       }
+      const serverMsgs = effective.messages || [];
+      const merged = localMsgs.length > serverMsgs.length ? localMsgs : serverMsgs;
       setCurrentSession(effective);
-      setMessages(effective.messages);
+      setMessages(merged);
+      if (merged !== serverMsgs) {
+        // keep local copy authoritative
+        saveLocal(id, merged);
+      }
     } catch (error) {
       console.error('Failed to load session:', error);
       navigate('/chat');
@@ -126,6 +142,7 @@ const ChatBot = () => {
   const handleDeleteSession = async (id: string) => {
     try {
       await chatService.deleteSession(id);
+      removeLocal(id);
       await loadSessions();
       if (sessionId === id) {
         navigate('/chat');
@@ -141,69 +158,70 @@ const ChatBot = () => {
     return words.charAt(0).toUpperCase() + words.slice(1);
   };
 
+  const quickSend = (text: string) => {
+    setMessage(text);
+    setTimeout(() => {
+      const form = document.querySelector('form');
+      if (form) (form as HTMLFormElement).requestSubmit();
+    }, 80);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
-
     const userMessage = message.trim();
     setMessage('');
     setIsLoading(true);
-
+    let activeSessionId = sessionId as string | undefined;
     try {
-      let activeSessionId = sessionId;
       let createdSession: ChatSession | null = null;
       if (!activeSessionId) {
         const { session } = await chatService.createSession();
         activeSessionId = session._id;
         createdSession = session;
-        skipNextLoad.current = true; // prevent overwriting optimistic first message
+        skipNextLoad.current = true;
         navigate(`/chat/${activeSessionId}`);
-        setCurrentSession(session); // optimistic
+        setCurrentSession(session);
         await loadSessions();
       }
-
       const newUserMessage: ChatMessage = { role: 'user', content: userMessage };
-      setMessages(prev => [...prev, newUserMessage]);
-
-      // Provisional title update if still default
+      setMessages(prev => {
+        const next = [...prev, newUserMessage];
+        if (activeSessionId) saveLocal(activeSessionId, next);
+        return next;
+      });
       const needsTitle = createdSession || (currentSession && (!currentSession.title || currentSession.title === DEFAULT_TITLE));
-      if (needsTitle) {
+      if (needsTitle && activeSessionId) {
         const provisionalTitle = deriveTitle(userMessage);
-        provisionalTitlesRef.current[activeSessionId!] = provisionalTitle;
+        provisionalTitlesRef.current[activeSessionId] = provisionalTitle;
         setCurrentSession(prev => prev ? { ...prev, title: provisionalTitle } : prev);
         setSessions(prev => prev.map(s => s._id === activeSessionId ? { ...s, title: provisionalTitle } : s));
       }
-
       const conversationToSend = [...messages, newUserMessage];
-      const response = await chatService.sendMessage({
-        message: userMessage,
-        conversation: conversationToSend,
-        sessionId: activeSessionId!
-      });
-
+      const response = await chatService.sendMessage({ message: userMessage, conversation: conversationToSend, sessionId: activeSessionId! });
       const assistantMessage: ChatMessage = { role: 'assistant', content: response.generated_text };
-      setMessages(prev => [...prev, assistantMessage]);
-
-      await loadSessions(); // update titles
-      if (createdSession) {
-        // After first round-trip, ensure server state synced (optional reload)
-        // loadSession(activeSessionId); // could reload if needed
+      setMessages(prev => {
+        const next = [...prev, assistantMessage];
+        if (activeSessionId) saveLocal(activeSessionId, next);
+        return next;
+      });
+      if (activeSessionId) {
+        setSessions(prev => prev.map(s => s._id === activeSessionId ? { ...s, lastActivity: new Date().toISOString() } : s));
       }
     } catch (error) {
       console.error('Failed to send message:', error);
       setMessages(prev => prev.slice(0, -1));
+      const currentId = activeSessionId || sessionId;
+      if (currentId) saveLocal(currentId, messages.slice(0, -1));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const quickSend = (text: string) => {
-    setMessage(text);
-    setTimeout(() => {
-      const form = document.querySelector('form');
-      if (form) form.requestSubmit();
-    }, 100);
-  };
+  // persist whenever messages change (safety)
+  useEffect(() => {
+    if (sessionId && messages.length) saveLocal(sessionId, messages);
+  }, [messages, sessionId]);
 
   return (
     <div className="relative flex h-full w-full">
