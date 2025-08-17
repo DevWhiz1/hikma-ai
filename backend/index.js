@@ -13,8 +13,7 @@ const ChatSession = require('./models/ChatSession');
 const DirectMessage = require('./models/DirectMessage');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Ensure correct model name (adjust if needed)
-const modelName = 'gemini-2.5-flash'; // was gemini-2.5-flash (verify availability)
+const modelName = 'gemini-2.5-flash'; 
 
 // Read API key AFTER dotenv.config
 const apiKey = process.env.GEMINI_API_KEY;
@@ -69,12 +68,17 @@ app.post('/api/scholar-ai', auth, async (req, res) => {
     return res.status(400).json({ error: "Missing 'message' (or 'prompt') in request body." });
   }
   if (!apiKey) return res.status(500).json({ error: 'Gemini API key not configured.' });
-  try {
+    try {
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: systemPrompt,
-      generationConfig: { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 1024 }
     });
+  // try {
+  //   const model = genAI.getGenerativeModel({
+  //     model: modelName,
+  //     systemInstruction: systemPrompt,
+  //     generationConfig: { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 1024 }
+  //   });
 
     const history = conversation
       .filter(m => m && m.content && (m.role === 'user' || m.role === 'assistant'))
