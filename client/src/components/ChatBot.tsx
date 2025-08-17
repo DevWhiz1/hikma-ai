@@ -16,9 +16,6 @@ const ChatBot = () => {
   const [showHistory, setShowHistory] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 768) ? false : true);
   const isMobile = useRef(false);
   const skipNextLoad = useRef(false);
-  const DEFAULT_TITLE = 'New Chat';
-  const provisionalTitlesRef = useRef<Record<string,string>>({});
-  const LS_PREFIX = 'hik_chat_msgs_';
 
   // Load sessions on mount
   useEffect(() => {
@@ -56,83 +53,33 @@ const ChatBot = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const saveLocal = (id: string, msgs: ChatMessage[]) => {
-    try { localStorage.setItem(LS_PREFIX + id, JSON.stringify(msgs)); } catch {}
-  };
-  const loadLocal = (id: string): ChatMessage[] => {
-    try { const v = localStorage.getItem(LS_PREFIX + id); return v ? JSON.parse(v) : []; } catch { return []; }
-  };
-  const removeLocal = (id: string) => { try { localStorage.removeItem(LS_PREFIX + id); } catch {} };
-
+  // Simplified loadSessions (no provisional titles)
   const loadSessions = async () => {
     try {
       const { sessions } = await chatService.getSessions();
-      // Apply provisional titles where server still has default
-      const patched = sessions.map(s => {
-        const prov = provisionalTitlesRef.current[s._id];
-        if (prov && (s.title === DEFAULT_TITLE || !s.title)) {
-          return { ...s, title: prov };
-        }
-        // If server now has a real title, drop provisional
-        if (prov && s.title && s.title !== DEFAULT_TITLE && s.title !== prov) {
-          delete provisionalTitlesRef.current[s._id];
-        }
-        return s;
-      });
-      setSessions(patched);
-      // Update currentSession if needed
-      setCurrentSession(prev => {
-        if (!prev) return prev;
-        const updated = patched.find(p => p._id === prev._id);
-        if (!updated) return prev;
-        // Keep provisional if server still default
-        const prov = provisionalTitlesRef.current[prev._id];
-        if (prov && (updated.title === DEFAULT_TITLE || !updated.title)) {
-          return { ...updated, title: prov };
-        }
-        if (prov && updated.title && updated.title !== DEFAULT_TITLE && updated.title !== prov) {
-          delete provisionalTitlesRef.current[prev._id];
-        }
-        return updated;
-      });
-    } catch (error) {
-      console.error('Failed to load sessions:', error);
-    }
+      setSessions(sessions);
+      setCurrentSession(prev => prev ? sessions.find(s => s._id === prev._id) || prev : prev);
+    } catch (e) { console.error('Failed to load sessions:', e); }
   };
 
   const loadSession = async (id: string) => {
     try {
       const { session } = await chatService.getSession(id);
-      const prov = provisionalTitlesRef.current[id];
-      let effective = session;
-      const localMsgs = loadLocal(id);
-      if (prov && (session.title === DEFAULT_TITLE || !session.title)) {
-        effective = { ...session, title: prov };
-      } else if (prov && session.title && session.title !== DEFAULT_TITLE && session.title !== prov) {
-        delete provisionalTitlesRef.current[id];
-      }
-      const serverMsgs = effective.messages || [];
-      const merged = localMsgs.length > serverMsgs.length ? localMsgs : serverMsgs;
-      setCurrentSession(effective);
-      setMessages(merged);
-      if (merged !== serverMsgs) {
-        // keep local copy authoritative
-        saveLocal(id, merged);
-      }
-    } catch (error) {
-      console.error('Failed to load session:', error);
-      navigate('/chat');
+      setCurrentSession(session);
+      setMessages(session.messages || []);
+    } catch (e) {
+      console.error('Failed to load session:', e); navigate('/chat');
     }
   };
 
   const handleNewChat = async () => {
     try {
       const { session } = await chatService.createSession();
+      setMessages([]); // ensure blank
+      setCurrentSession(session);
       navigate(`/chat/${session._id}`);
       await loadSessions();
-    } catch (error) {
-      console.error('Failed to create session:', error);
-    }
+    } catch (e) { console.error('Failed to create session:', e); }
   };
 
   const handleSelectSession = (id: string) => {
@@ -142,7 +89,6 @@ const ChatBot = () => {
   const handleDeleteSession = async (id: string) => {
     try {
       await chatService.deleteSession(id);
-      removeLocal(id);
       await loadSessions();
       if (sessionId === id) {
         navigate('/chat');
@@ -150,20 +96,6 @@ const ChatBot = () => {
     } catch (error) {
       console.error('Failed to delete session:', error);
     }
-  };
-
-  const deriveTitle = (text: string) => {
-    const words = text.trim().split(/\s+/).slice(0, 6).join(' ');
-    if (!words) return DEFAULT_TITLE;
-    return words.charAt(0).toUpperCase() + words.slice(1);
-  };
-
-  const quickSend = (text: string) => {
-    setMessage(text);
-    setTimeout(() => {
-      const form = document.querySelector('form');
-      if (form) (form as HTMLFormElement).requestSubmit();
-    }, 80);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,54 +106,51 @@ const ChatBot = () => {
     setIsLoading(true);
     let activeSessionId = sessionId as string | undefined;
     try {
-      let createdSession: ChatSession | null = null;
+      // If user started typing on /chat root, create a session now
       if (!activeSessionId) {
         const { session } = await chatService.createSession();
         activeSessionId = session._id;
-        createdSession = session;
         skipNextLoad.current = true;
-        navigate(`/chat/${activeSessionId}`);
         setCurrentSession(session);
+        setMessages([]);
+        navigate(`/chat/${activeSessionId}`);
         await loadSessions();
       }
-      const newUserMessage: ChatMessage = { role: 'user', content: userMessage };
-      setMessages(prev => {
-        const next = [...prev, newUserMessage];
-        if (activeSessionId) saveLocal(activeSessionId, next);
-        return next;
-      });
-      const needsTitle = createdSession || (currentSession && (!currentSession.title || currentSession.title === DEFAULT_TITLE));
-      if (needsTitle && activeSessionId) {
-        const provisionalTitle = deriveTitle(userMessage);
-        provisionalTitlesRef.current[activeSessionId] = provisionalTitle;
-        setCurrentSession(prev => prev ? { ...prev, title: provisionalTitle } : prev);
-        setSessions(prev => prev.map(s => s._id === activeSessionId ? { ...s, title: provisionalTitle } : s));
-      }
-      const conversationToSend = [...messages, newUserMessage];
-      const response = await chatService.sendMessage({ message: userMessage, conversation: conversationToSend, sessionId: activeSessionId! });
+      // Append user message locally
+      const nextUserMessage: ChatMessage = { role: 'user', content: userMessage };
+      const nextMessages = [...messages, nextUserMessage];
+      setMessages(nextMessages);
+
+      // Build conversation context (use nextMessages)
+      const response = await chatService.sendMessage({ message: userMessage, conversation: nextMessages, sessionId: activeSessionId! });
       const assistantMessage: ChatMessage = { role: 'assistant', content: response.generated_text };
-      setMessages(prev => {
-        const next = [...prev, assistantMessage];
-        if (activeSessionId) saveLocal(activeSessionId, next);
-        return next;
-      });
-      if (activeSessionId) {
+      setMessages(prev => [...prev, assistantMessage]);
+
+      // Merge updated session info (title / lastActivity)
+      if (response.session) {
+        setSessions(prev => {
+          const exists = prev.some(s => s._id === response.session._id);
+          return exists ? prev.map(s => s._id === response.session._id ? { ...s, ...response.session } : s) : [response.session, ...prev];
+        });
+        setCurrentSession(prev => prev && prev._id === response.session._id ? { ...prev, ...response.session } : prev);
+      } else if (activeSessionId) {
+        // At least bump lastActivity locally
         setSessions(prev => prev.map(s => s._id === activeSessionId ? { ...s, lastActivity: new Date().toISOString() } : s));
       }
-    } catch (error) {
-      console.error('Failed to send message:', error);
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      // Remove optimistic user message
       setMessages(prev => prev.slice(0, -1));
-      const currentId = activeSessionId || sessionId;
-      if (currentId) saveLocal(currentId, messages.slice(0, -1));
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   };
 
-  // persist whenever messages change (safety)
-  useEffect(() => {
-    if (sessionId && messages.length) saveLocal(sessionId, messages);
-  }, [messages, sessionId]);
+  const quickSend = (text: string) => {
+    setMessage(text);
+    setTimeout(() => {
+      const form = document.querySelector('form');
+      if (form) (form as HTMLFormElement).requestSubmit();
+    }, 50);
+  };
 
   return (
     <div className="relative flex h-full w-full">

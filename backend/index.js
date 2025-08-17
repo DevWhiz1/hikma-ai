@@ -61,9 +61,10 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/hadith', require('./routes/hadithRoutes'));
 
-app.post('/api/scholar-ai', async (req, res) => {
+app.post('/api/scholar-ai', auth, async (req, res) => {
   const userPrompt = (req.body && (req.body.message || req.body.prompt)) || '';
   const conversation = Array.isArray(req.body?.conversation) ? req.body.conversation : [];
+  const sessionId = req.body.sessionId;
   if (!userPrompt.trim()) {
     return res.status(400).json({ error: "Missing 'message' (or 'prompt') in request body." });
   }
@@ -75,14 +76,10 @@ app.post('/api/scholar-ai', async (req, res) => {
       generationConfig: { temperature: 0.7, topP: 0.9, topK: 40, maxOutputTokens: 1024 }
     });
 
-    // Build history (exclude latest user message to avoid duplication)
     const history = conversation
-      .slice(0, -1) // assume last element is current userPrompt if provided
       .filter(m => m && m.content && (m.role === 'user' || m.role === 'assistant'))
-      .map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
+      .slice(0, -1) // exclude current user prompt (last element)
+      .map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));
 
     let text;
     if (history.length) {
@@ -90,13 +87,42 @@ app.post('/api/scholar-ai', async (req, res) => {
       const result = await chat.sendMessage(userPrompt);
       text = result?.response?.text();
     } else {
-      // Simple single-turn call
       const result = await model.generateContent(userPrompt);
       text = result?.response?.text();
     }
 
     if (!text) return res.status(502).json({ error: 'Empty response from Gemini model.' });
-    res.status(200).json({ text, generated_text: text });
+
+    let updatedSessionSummary = null;
+    if (sessionId) {
+      try {
+        const session = await ChatSession.findOne({ _id: sessionId, user: req.user._id, isActive: true });
+        if (session) {
+          // Append latest user + assistant messages
+            session.messages.push({ role: 'user', content: userPrompt });
+            session.messages.push({ role: 'assistant', content: text });
+          // Auto title if still default
+          if (session.title === 'New Chat' && session.messages.length >= 1) {
+            const firstUser = session.messages.find(m => m.role === 'user');
+            if (firstUser) {
+              let t = firstUser.content.trim().slice(0, 50);
+              if (firstUser.content.length > 50) t += '...';
+              session.title = t || 'New Chat';
+            }
+          }
+          // Limit stored messages (optional - keep last 40)
+          if (session.messages.length > 80) {
+            session.messages = session.messages.slice(-80);
+          }
+          await session.save();
+          updatedSessionSummary = { _id: session._id, title: session.title, lastActivity: session.lastActivity, createdAt: session.createdAt };
+        }
+      } catch (sessErr) {
+        console.error('Session persistence error:', sessErr.message);
+      }
+    }
+
+    res.status(200).json({ text, generated_text: text, session: updatedSessionSummary });
   } catch (error) {
     const errData = error?.response?.data || error?.message || error;
     console.error('Error calling Gemini API:', errData);

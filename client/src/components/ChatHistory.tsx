@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { chatService, ChatSession, ChatMessage } from '../services/chatService';
+import React from 'react';
+import { ChatSession } from '../services/chatService';
 import { PlusIcon, TrashIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 const ChatHistory: React.FC<{
@@ -10,6 +9,7 @@ const ChatHistory: React.FC<{
   onNewChat: () => void;
   onDeleteSession: (sessionId: string) => void;
 }> = ({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession }) => {
+  const sorted = [...sessions].sort((a, b) => new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime());
   return (
     <div className="w-64 bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 flex flex-col">
       <div className="p-4 border-b border-gray-300 dark:border-gray-700">
@@ -22,7 +22,7 @@ const ChatHistory: React.FC<{
         </button>
       </div>
       <div className="flex-1 overflow-y-auto p-2">
-        {sessions.map((session) => (
+        {sorted.map((session) => (
           <div
             key={session._id}
             className={`group flex items-center justify-between p-3 mb-2 rounded-lg cursor-pointer transition ${
@@ -34,11 +34,11 @@ const ChatHistory: React.FC<{
           >
             <div className="flex-1 min-w-0">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                {session.title}
+                {session.title || 'New Chat'}
               </h3>
               <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
                 <ClockIcon className="h-3 w-3 mr-1" />
-                {new Date(session.lastActivity).toLocaleDateString()}
+                {session.lastActivity ? new Date(session.lastActivity).toLocaleDateString() : ''}
               </div>
             </div>
             <button
