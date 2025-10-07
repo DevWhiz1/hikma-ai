@@ -46,6 +46,59 @@ router.get('/sensitive-logs', auth, requireRole('admin'), async (req, res) => {
   res.json(logs);
 });
 
+// Danger: purge all direct chats and enrollments (one-time cleanup)
+router.post('/purge-direct-chats', auth, requireRole('admin'), async (_req, res) => {
+  try {
+    const Enrollment = require('../models/Enrollment');
+    const ChatSession = require('../models/ChatSession');
+    // Collect all direct sessions from enrollments
+    const enrollments = await Enrollment.find({}).select('studentSession scholarSession');
+    const sessionIds = [];
+    enrollments.forEach(e => {
+      if (e.studentSession) sessionIds.push(e.studentSession);
+      if (e.scholarSession) sessionIds.push(e.scholarSession);
+    });
+    if (sessionIds.length) {
+      await ChatSession.deleteMany({ _id: { $in: sessionIds } });
+    }
+    await Enrollment.deleteMany({});
+    res.json({ success: true, removedSessions: sessionIds.length, removedEnrollments: enrollments.length });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to purge direct chats' });
+  }
+});
+
+// Danger: purge ALL chats (AI + direct) and related meeting data
+router.post('/purge-all-chats', auth, requireRole('admin'), async (_req, res) => {
+  try {
+    const Enrollment = require('../models/Enrollment');
+    const ChatSession = require('../models/ChatSession');
+    let removedEnrollments = 0;
+    let removedSessions = 0;
+
+    try {
+      const enrollments = await Enrollment.find({}).select('_id');
+      removedEnrollments = enrollments.length;
+      await Enrollment.deleteMany({});
+    } catch {}
+
+    try {
+      const sessCount = await ChatSession.countDocuments({});
+      removedSessions = sessCount;
+      await ChatSession.deleteMany({});
+    } catch {}
+
+    // Also clear new Chat/Message/Meeting models used by meeting system, if present
+    try { const Chat = require('../models/Chat'); await Chat.deleteMany({}); } catch {}
+    try { const Message = require('../models/Message'); await Message.deleteMany({}); } catch {}
+    try { const Meeting = require('../models/Meeting'); await Meeting.deleteMany({}); } catch {}
+
+    res.json({ success: true, removedSessions, removedEnrollments });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to purge all chats' });
+  }
+});
+
 module.exports = router;
 
 // TEMP: promote a user to admin using a secret; remove after first use

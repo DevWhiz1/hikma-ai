@@ -59,7 +59,7 @@ export default function ScholarApplyForm() {
           {f.photoUrl && <img src={f.photoUrl} alt="preview" className="h-10 w-10 rounded-full object-cover border" />}
         </div>
       </div>
-      <button disabled={loading || !isValid} className="bg-green-600 disabled:bg-green-400 text-white px-4 py-2 rounded">{loading ? 'Submitting...' : 'Submit'}</button>
+      <button disabled={loading || !isValid} className="bg-[#264653] disabled:bg-gray-400 dark:text-gray-300 px-4 py-2 rounded no-underline" style={{color: '#14b8a6', textDecoration: 'none'}}>{loading ? 'Submitting...' : 'Submit'}</button>
     </form>
   );
 }

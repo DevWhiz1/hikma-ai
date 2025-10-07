@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getScholars, enrollScholar, leaveFeedback, getCachedScholars, unenroll, getMyEnrollments, startDirectChat } from '../services/scholarService';
 import { authService } from '../services/authService';
+import { meetingService } from '../services/meetingService';
 import { Link, useNavigate } from 'react-router-dom';
+import MeetingChat from './MeetingChat';
 
 interface Scholar {
   _id: string;
@@ -21,6 +23,7 @@ export default function ScholarsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const user = authService.getUser();
   const navigate = useNavigate();
 
@@ -105,6 +108,34 @@ export default function ScholarsPage() {
     }
   };
 
+  const onScheduleMeeting = async (scholarProfileId: string) => {
+    try {
+      // Find the scholar to get their user ID
+      const scholar = scholars.find(s => s._id === scholarProfileId);
+      if (!scholar) {
+        alert('Scholar not found');
+        return;
+      }
+
+      const reason = prompt('Reason for meeting (optional):') || '';
+      // Request meeting
+      const response = await meetingService.requestMeeting(scholar.user._id, reason.trim() || undefined);
+      // Navigate to the existing Hikma chat instead of opening meeting modal
+      try {
+        // Find or create direct chat session and navigate
+        const res = await startDirectChat(scholarProfileId);
+        const sid = res?.studentSessionId;
+        if (sid) navigate(`/chat/${sid}`);
+      } catch {
+        // Fallback: keep behavior
+        setActiveChatId(response.chatId);
+      }
+    } catch (error) {
+      console.error('Error requesting meeting:', error);
+      alert('Failed to request meeting. Please try again.');
+    }
+  };
+
   // Join Meet removed
 
   return (
@@ -112,7 +143,7 @@ export default function ScholarsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Scholars</h1>
         {user?.role !== 'scholar' && (
-          <Link to="/scholars/apply" target="_blank" rel="noopener noreferrer" className="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Apply as Scholar</Link>
+          <Link to="/scholars/apply" target="_blank" rel="noopener noreferrer" className="bg-[#264653] dark:text-gray-300 px-4 py-2 rounded hover:bg-[#2A9D8F] no-underline" style={{color: '#14b8a6', textDecoration: 'none'}}>Apply as Scholar</Link>
         )}
       </div>
       {/* Meeting topic removed */}
@@ -139,7 +170,7 @@ export default function ScholarsPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">{s.user?.name || 'Scholar'}</h3>
                       {typeof s.experienceYears === 'number' && (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">{s.experienceYears} yrs</span>
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-white dark:bg-indigo-900 dark:text-white border border-indigo-100 dark:border-indigo-800" style={{color: 'white'}}>{s.experienceYears} yrs</span>
                       )}
                     </div>
                     {s.bio && (
@@ -153,10 +184,10 @@ export default function ScholarsPage() {
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mt-3 text-[11px]">
                   {s.specializations?.slice(0, 4).map(sp => (
-                    <span key={sp} className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-800">{sp}</span>
+                    <span key={sp} className="px-2 py-1 rounded-full bg-emerald-50 text-gray-600 dark:bg-emerald-900 dark:text-gray-300 border border-emerald-100 dark:border-emerald-800" style={{color: '#6b7280'}}>{sp}</span>
                   ))}
                   {s.languages?.slice(0, 4).map(l => (
-                    <span key={l} className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600">{l}</span>
+                    <span key={l} className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600" style={{color: '#6b7280'}}>{l}</span>
                   ))}
                 </div>
 
@@ -178,13 +209,22 @@ export default function ScholarsPage() {
                     Leave Feedback
                   </button>
                   {enrolledIds.has(s._id) && (
-                    <button
-                      title="Open direct chat with this scholar"
-                      onClick={() => onChatWithScholar(s._id)}
-                      className="px-2.5 py-1.5 text-sm rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                    >
-                      Chat with Scholar
-                    </button>
+                    <>
+                      <button
+                        title="Open direct chat with this scholar"
+                        onClick={() => onChatWithScholar(s._id)}
+                        className="px-2.5 py-1.5 text-sm rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                      >
+                        Chat with Scholar
+                      </button>
+                      <button
+                        title="Schedule a meeting with this scholar"
+                        onClick={() => onScheduleMeeting(s._id)}
+                        className="px-2.5 py-1.5 text-sm rounded-md bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
+                      >
+                        Schedule Meeting
+                      </button>
+                    </>
                   )}
                   {s.demoVideoUrl && (
                     <a
@@ -192,7 +232,8 @@ export default function ScholarsPage() {
                       href={s.demoVideoUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-2.5 py-1.5 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white shadow-sm"
+                      className="px-2.5 py-1.5 text-sm rounded-md bg-orange-600 hover:bg-orange-700 text-white shadow-sm no-underline"
+                      style={{color: 'white', textDecoration: 'none'}}
                     >
                       Demo Video
                     </a>
@@ -209,6 +250,18 @@ export default function ScholarsPage() {
         </div>
       )}
       <div className="text-sm opacity-60">Payments: Coming Soon</div>
+
+      {/* Meeting Chat Modal */}
+      {activeChatId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl h-[80vh] m-4">
+            <MeetingChat
+              chatId={activeChatId}
+              onClose={() => setActiveChatId(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

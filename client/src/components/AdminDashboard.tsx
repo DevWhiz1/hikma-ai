@@ -4,6 +4,7 @@ import { getUsers, blockUser, unblockUser, getReviews, getSensitiveLogs, getScho
 
 type TabKey = 'users' | 'reviews' | 'logs' | 'applications';
 
+
 export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -27,10 +28,10 @@ export default function AdminDashboard() {
     <div className={`w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4`}> 
       <h2 className="text-lg font-semibold mb-4">Admin</h2>
       <nav className="space-y-2">
-        <button onClick={()=>setTab('users')} className={`w-full text-left px-3 py-2 rounded ${tab==='users'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Users</button>
-        <button onClick={()=>setTab('reviews')} className={`w-full text-left px-3 py-2 rounded ${tab==='reviews'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Reviews Analytics</button>
-        <button onClick={()=>setTab('logs')} className={`w-full text-left px-3 py-2 rounded ${tab==='logs'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Sensitive Logs</button>
-        <button onClick={()=>setTab('applications')} className={`w-full text-left px-3 py-2 rounded ${tab==='applications'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Scholar Review</button>
+        <button onClick={()=>setTab('users')} className={`w-full text-left px-3 py-2 rounded ${tab==='users'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 hover:text-white dark:hover:bg-gray-700'}`}>Users</button>
+        <button onClick={()=>setTab('reviews')} className={`w-full text-left px-3 py-2 rounded ${tab==='reviews'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 hover:text-white dark:hover:bg-gray-700'}`}>Reviews Analytics</button>
+        <button onClick={()=>setTab('logs')} className={`w-full text-left px-3 py-2 rounded ${tab==='logs'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 hover:text-white dark:hover:bg-gray-700'}`}>Sensitive Logs</button>
+        <button onClick={()=>setTab('applications')} className={`w-full text-left px-3 py-2 rounded ${tab==='applications'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 hover:text-white dark:hover:bg-gray-700'}`}>Scholar Review</button>
       </nav>
     </div>
   );
@@ -43,7 +44,7 @@ export default function AdminDashboard() {
       <div className="flex-1 p-6 space-y-8">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <Link to="/" className="px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white">Return to Main</Link>
+          <Link to="/" className="px-3 py-2 rounded bg-[#264653] hover:bg-[#2A9D8F] dark:text-gray-300 no-underline" style={{color: '#14b8a6', textDecoration: 'none'}}>Return to Main</Link>
         </div>
 
         {tab === 'users' && (
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
                       <td className="p-2">{u.warningCount || 0}</td>
                       <td className="p-2">{u.lockUntil ? new Date(u.lockUntil).toLocaleString() : '-'}</td>
                       <td className="p-2 space-x-2">
-                        <button onClick={() => toggleBlock(u)} className={`px-3 py-1 rounded ${u.lockUntil ? 'bg-green-600' : 'bg-red-600'} text-white`}>{u.lockUntil ? 'Unblock' : 'Block'}</button>
+                        <button onClick={() => toggleBlock(u)} className={`px-3 py-1 rounded ${u.lockUntil ? 'bg-green-600' : 'bg-orange-600'} text-white`}>{u.lockUntil ? 'Unblock' : 'Block'}</button>
                         {u.role === 'scholar' && (
                           <button onClick={async()=>{ await removeScholarByUser(u._id); const freshApps = await getScholarApplications(); setApps(freshApps); const freshUsers = await getUsers(); setUsers(freshUsers); }} className="px-3 py-1 rounded bg-gray-700 text-white">Remove Scholar</button>
                         )}
@@ -97,7 +98,7 @@ export default function AdminDashboard() {
                       <td className="p-2">{a.experienceYears || 0}</td>
                       <td className="p-2 space-x-2">
                         <button onClick={async()=>{ await approveScholarApplication(a._id); const fresh = await getScholarApplications(); setApps(fresh); }} className="px-3 py-1 rounded bg-green-600 text-white">Approve</button>
-                        <button onClick={async()=>{ await rejectScholarApplication(a._id); const fresh = await getScholarApplications(); setApps(fresh); }} className="px-3 py-1 rounded bg-red-600 text-white">Reject</button>
+                        <button onClick={async()=>{ await rejectScholarApplication(a._id); const fresh = await getScholarApplications(); setApps(fresh); }} className="px-3 py-1 rounded bg-orange-600 text-white">Reject</button>
                       </td>
                     </tr>
                   ))}

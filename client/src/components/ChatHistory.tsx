@@ -52,29 +52,40 @@ const ChatHistory: React.FC<{
             key={session._id}
             className={`group flex items-center justify-between p-3 mb-2 rounded-lg cursor-pointer transition ${
               currentSessionId === session._id
-                ? 'bg-emerald-100 dark:bg-emerald-900 border border-emerald-300 dark:border-emerald-700'
+                ? 'bg-[#264653] dark:bg-[#264653] border border-[#2A9D8F] dark:border-[#2A9D8F]'
                 : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
             }`}
             onClick={() => onSelectSession(session._id)}
           >
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              <h3 className={`text-sm font-medium truncate ${
+                currentSessionId === session._id
+                  ? 'text-gray-300'
+                  : 'text-gray-900 dark:text-white'
+              }`}>
                 {session.title || 'New Chat'}
               </h3>
-              <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <div className={`flex items-center text-xs mt-1 ${
+                currentSessionId === session._id
+                  ? 'text-gray-300'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`}>
                 <ClockIcon className="h-3 w-3 mr-1" />
                 {session.lastActivity ? new Date(session.lastActivity).toLocaleDateString() : ''}
               </div>
             </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteSession(session._id);
-              }}
-              className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-700 transition"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
+            {/* Hide delete button for direct chats (scholar chats) */}
+            {session.kind !== 'direct' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteSession(session._id);
+                }}
+                className="opacity-0 group-hover:opacity-100 p-1 text-orange-500 hover:text-orange-700 transition"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            )}
           </div>
         ))}
       </div>

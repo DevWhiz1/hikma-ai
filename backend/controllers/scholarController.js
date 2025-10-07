@@ -62,8 +62,35 @@ async function listScholars(_req, res) {
 async function enrollScholar(req, res) {
   try {
     const { scholarId } = req.body;
-    const exists = await Enrollment.findOne({ student: req.user._id, scholar: scholarId });
-    if (exists) return res.status(400).json({ message: 'Already enrolled' });
+    // Reuse existing inactive enrollment if present; otherwise create new
+    let existing = await Enrollment.findOne({ student: req.user._id, scholar: scholarId });
+    if (existing) {
+      if (!existing.isActive) {
+        existing.isActive = true;
+        // Ensure sessions exist; if missing, create them
+        if (!existing.studentSession || !existing.scholarSession) {
+          const scholar = await Scholar.findById(scholarId).populate('user', 'name');
+          if (!scholar) return res.status(404).json({ message: 'Scholar not found' });
+          const studentSession = await ChatSession.create({
+            user: req.user._id,
+            title: `Chat with ${scholar.user.name || 'Scholar'} (Scholar)`,
+            messages: [],
+            kind: 'direct'
+          });
+          const scholarSession = await ChatSession.create({
+            user: scholar.user._id,
+            title: `Chat with ${req.user.name || 'Student'} (Student)`,
+            messages: [],
+            kind: 'direct'
+          });
+          existing.studentSession = studentSession._id;
+          existing.scholarSession = scholarSession._id;
+        }
+        await existing.save();
+        return res.json({ success: true, enrollment: existing, studentSessionId: existing.studentSession, scholarSessionId: existing.scholarSession });
+      }
+      return res.status(400).json({ message: 'Already enrolled' });
+    }
 
     const scholar = await Scholar.findById(scholarId).populate('user', 'name');
     if (!scholar) return res.status(404).json({ message: 'Scholar not found' });
@@ -150,8 +177,10 @@ async function myEnrollments(req, res) {
 async function unenroll(req, res) {
   try {
     const { scholarId } = req.body;
-    const enr = await Enrollment.findOneAndDelete({ student: req.user._id, scholar: scholarId });
+    const enr = await Enrollment.findOne({ student: req.user._id, scholar: scholarId });
     if (!enr) return res.status(404).json({ message: 'Not enrolled' });
+    enr.isActive = false; // soft-unenroll; retain sessions
+    await enr.save();
     res.json({ success: true });
   } catch (e) { res.status(500).json({ message: e.message }); }
 }
@@ -232,15 +261,13 @@ async function startDirectChat(req, res) {
         });
       } catch {}
     } else {
-      // Always start a fresh chat by creating new mirrored sessions and updating enrollment to point to them
-      const newStudentSession = await ChatSession.create({ user: req.user._id, title: `Chat with ${scholarDoc.user?.name || 'Scholar'} (Scholar)`, messages: [], kind: 'direct' });
-      const newScholarSession = await ChatSession.create({ user: scholarDoc.user._id, title: `Chat with ${req.user.name || 'Student'} (Student)`, messages: [], kind: 'direct' });
-      enrollment.studentSession = newStudentSession._id;
-      enrollment.scholarSession = newScholarSession._id;
-      await enrollment.save();
+      // Reuse existing chat sessions - don't create new ones
+      // Just update last activity to show it's been accessed
       try {
-        await ChatSession.findByIdAndUpdate(newScholarSession._id, {
-          $push: { messages: { role: 'assistant', content: 'Student started a new chat with you.' } },
+        await ChatSession.findByIdAndUpdate(enrollment.studentSession, {
+          $set: { lastActivity: new Date() }
+        });
+        await ChatSession.findByIdAndUpdate(enrollment.scholarSession, {
           $set: { lastActivity: new Date() }
         });
       } catch {}

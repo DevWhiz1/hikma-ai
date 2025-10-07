@@ -65,6 +65,13 @@ const ChatBot = () => {
 
   const handleDeleteSession = async (id: string) => {
     try {
+      // Check if this is a direct chat (scholar chat) - prevent deletion
+      const session = sessions.find(s => s._id === id);
+      if (session?.kind === 'direct') {
+        alert('Direct chats with scholars cannot be deleted');
+        return;
+      }
+      
       await chatService.deleteSession(id);
       await loadSessions();
       if (sessionId === id) {
@@ -72,6 +79,9 @@ const ChatBot = () => {
       }
     } catch (error) {
       console.error('Failed to delete session:', error);
+      if (error?.response?.status === 403) {
+        alert('This chat cannot be deleted');
+      }
     }
   };
 
@@ -237,6 +247,28 @@ const ChatBot = () => {
                       >
                         {msg.content}
                       </ReactMarkdown>
+                      {(() => {
+                        try {
+                          const urlMatch = (msg.content || '').match(/https?:\/\/[^\s]+/);
+                          if (urlMatch) {
+                            const href = urlMatch[0];
+                            return (
+                              <div className="mt-2">
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block bg-emerald-600 text-black px-3 py-1 rounded text-sm hover:bg-emerald-700"
+                                  style={{color: 'black', textDecoration: 'none'}}
+                                >
+                                  Open Link
+                                </a>
+                              </div>
+                            );
+                          }
+                        } catch {}
+                        return null;
+                      })()}
                     </div>
                   )}
                 </div>

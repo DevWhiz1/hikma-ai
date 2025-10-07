@@ -7,17 +7,50 @@ An authenticated Islamic guidance platform providing:
 - Tasbih (Dhikr) Counter
 - Secure user authentication (JWT) & session management
 
-## Recent Updates (Scholar Workflow)
+## Recent Updates (Scholar Workflow & UI/UX Improvements)
 
+### Scholar Workflow
 - Scholar application form: all fields required, YouTube demo link + photo; backend validates blanks and YouTube URLs.
-- Scholar listing cards redesigned (photo, bio, pills, compact actions); “Chat with Scholar” appears after enrollment and opens a mirrored direct chat (student ↔ scholar), always creating a fresh chat if requested.
+- Scholar listing cards redesigned (photo, bio, pills, compact actions); "Chat with Scholar" appears after enrollment and opens a mirrored direct chat (student ↔ scholar), always creating a fresh chat if requested.
 - Approved scholars can edit their profile at `/scholars/profile/edit`.
-- Enroll flow now denormalizes into `user.enrolledScholars` for instant rendering in “New Scholar Chat” sidebar; endpoint `GET /api/scholars/my-enrollments` returns names (and backfills if needed).
-- Meeting link generation removed; scheduling is done via direct chat, with guidance messages.
+- Enroll flow now denormalizes into `user.enrolledScholars` for instant rendering in "New Scholar Chat" sidebar; endpoint `GET /api/scholars/my-enrollments` returns names (and backfills if needed).
+- Meeting system implemented with direct chat-based scheduling and guidance messages.
 
-Admin
+### Admin Features
 - Approving a scholar updates the `User.role` to `scholar`.
 - Admin message endpoint opens a direct chat on both the user and admin ends.
+
+### Meeting Framework
+- **Direct Chat-Based Scheduling**: Students and scholars can schedule meetings through direct chat conversations
+- **Meeting Request System**: Students can request meetings with enrolled scholars through the chat interface
+- **Scholar Dashboard**: Scholars can view and manage meeting requests, schedule meetings, and send meeting links
+- **Meeting Chat Component**: Dedicated chat interface for meeting-related conversations with:
+  - Meeting request handling
+  - Meeting link generation and sharing
+  - Meeting scheduling with date/time selection
+  - Meeting status tracking (requested, scheduled, completed)
+- **Admin Dashboard**: Administrators can monitor meeting activities and scholar interactions
+- **Meeting Link Management**: Secure meeting link generation and sharing between students and scholars
+- **Real-time Chat**: WebSocket-based real-time messaging for instant communication during meetings
+
+### UI/UX Theme Improvements
+- **Warm Modern Earth Color Palette**: Implemented natural, calming color scheme with terracotta (#E76F51), sage green (#2A9D8F), and sand beige (#F4A261) accents
+- **Enhanced Chat Interface**: 
+  - Selected chat items now have deep olive background (#264653) with pale white text for better visibility
+  - Chat links and buttons updated with solid black text for improved readability
+  - Meeting link buttons styled with emerald backgrounds and white text
+- **Sidebar Improvements**: 
+  - Static sidebar with independent content scrolling
+  - Enhanced hover effects with white text on dashboard pages
+  - Improved z-index management for top bar and sidebar layering
+- **Button Styling**: 
+  - "Apply as Scholar" and "Return to Main" buttons styled with sidebar colors
+  - Red buttons converted to orange theme for consistency
+  - Demo video and action buttons updated with white text and no transparency
+- **Responsive Design**: 
+  - Smooth transitions for sidebar open/close animations
+  - Improved mobile hamburger menu functionality
+  - Better spacing and positioning for all screen sizes
 
 ## Tech Stack
 ### Frontend

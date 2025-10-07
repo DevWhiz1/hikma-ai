@@ -118,6 +118,13 @@ const ChatBot = () => {
 
   const handleDeleteSession = async (id: string) => {
     try {
+      // Check if this is a direct chat (scholar chat) - prevent deletion
+      const session = sessions.find(s => s._id === id);
+      if (session?.kind === 'direct') {
+        alert('Direct chats with scholars cannot be deleted');
+        return;
+      }
+      
       await chatService.deleteSession(id);
       await loadSessions();
       if (sessionId === id) {
@@ -125,6 +132,9 @@ const ChatBot = () => {
       }
     } catch (error) {
       console.error('Failed to delete session:', error);
+      if (error?.response?.status === 403) {
+        alert('This chat cannot be deleted');
+      }
     }
   };
 
@@ -300,13 +310,13 @@ const ChatBot = () => {
                   className={`max-w-[80%] rounded-lg p-4 ${
                     msg.role === 'user'
                       ? 'bg-emerald-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      : 'bg-white border border-gray-300 dark:bg-gray-700 text-black dark:text-white'
                   }`}
                 >
                   {msg.role === 'user' ? (
                     <p>{msg.content}</p>
                   ) : (
-                    <div className="prose prose-sm max-w-none dark:prose-invert">
+                      <div className="prose prose-sm max-w-none dark:prose-invert [&_a]:text-black [&_a]:dark:text-emerald-400">
                       <ReactMarkdown 
                         components={{
                           h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
@@ -318,10 +328,33 @@ const ChatBot = () => {
                           ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
                           li: ({ children }) => <li className="mb-1">{children}</li>,
                           p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+                          a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-black dark:text-emerald-400 hover:text-emerald-200 dark:hover:text-emerald-300 underline" style={{color: 'black', textDecoration: 'none'}}>{children}</a>,
                         }}
                       >
                         {msg.content}
                       </ReactMarkdown>
+                      {(() => {
+                        try {
+                          const urlMatch = (msg.content || '').match(/https?:\/\/[^\s]+/);
+                          if (urlMatch) {
+                            const href = urlMatch[0];
+                            return (
+                              <div className="mt-2">
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block bg-emerald-600 text-black px-3 py-1 rounded text-sm hover:bg-emerald-700"
+                                  style={{color: 'black', textDecoration: 'none'}}
+                                >
+                                  Open Link
+                                </a>
+                              </div>
+                            );
+                          }
+                        } catch {}
+                        return null;
+                      })()}
                     </div>
                   )}
                 </div>
@@ -330,8 +363,8 @@ const ChatBot = () => {
           )}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="max-w-[80%] rounded-lg p-4 bg-gray-100 dark:bg-gray-700">
-                <div className="flex space-x-2">
+              <div className="max-w-[80%] rounded-lg p-4 bg-white border border-gray-300 dark:bg-gray-700">
+                <div className="flex space-x-2 text-black dark:text-white">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
