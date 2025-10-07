@@ -24,6 +24,7 @@ export interface ChatSession {
   messages: ChatMessage[];
   lastActivity: string;
   createdAt: string;
+  kind?: 'ai' | 'direct';
 }
 
 export const chatService = {
@@ -44,6 +45,11 @@ export const chatService = {
 
   async getSession(sessionId: string): Promise<{ session: ChatSession }> {
     const response = await axios.get(`${API_URL}/chat/sessions/${sessionId}`);
+    return response.data;
+  },
+
+  async sendDirectMessage(sessionId: string, content: string): Promise<{ success: boolean }> {
+    const response = await axios.post(`${API_URL}/chat/sessions/${sessionId}/messages`, { content });
     return response.data;
   },
 

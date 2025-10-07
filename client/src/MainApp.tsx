@@ -9,6 +9,10 @@ import AppContent from './components/AppContent';
 import PrayerTimesPage from './components/PrayerTimes';
 import TasbihCounter from './components/TasbihCounter';
 import HadithExplorer from './components/HadithExplorer';
+import ScholarApplyForm from './components/ScholarApplyForm';
+import ScholarsPage from './components/ScholarsPage';
+import ScholarProfileEditor from './components/ScholarProfileEditor';
+import AdminDashboard from './components/AdminDashboard';
 import { authService } from './services/authService';
 
 interface MainAppProps {
@@ -91,6 +95,10 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
                   <Route path="/chat" element={<ChatBot />} />
                   <Route path="/chat/:sessionId" element={<ChatBot />} />
                   <Route path="/hadith" element={<HadithExplorer />} />
+                  <Route path="/scholars" element={<ScholarsPage />} />
+                  <Route path="/scholars/apply" element={<ScholarApplyForm />} />
+                  <Route path="/scholars/profile/edit" element={<ScholarProfileEditor />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/qibla" element={<QiblaFinder />} />
                   <Route path="/prayer-times" element={<PrayerTimesPage />} />
                   <Route path="/tasbih" element={<TasbihCounter />} />

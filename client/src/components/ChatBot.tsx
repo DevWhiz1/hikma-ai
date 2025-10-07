@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { PaperAirplaneIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { chatService, ChatSession, ChatMessage } from '../services/chatService';
 import ChatHistory from './ChatHistory';
+import { startDirectChat, getMyEnrollments, getScholars } from '../services/scholarService';
 import ReactMarkdown from 'react-markdown';
 
 const ChatBot = () => {
@@ -14,6 +15,8 @@ const ChatBot = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [showHistory, setShowHistory] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 768) ? false : true);
+  const [showScholarPicker, setShowScholarPicker] = useState(false);
+  const [scholarOptions, setScholarOptions] = useState<{ id: string; name: string }[]>([]);
   const isMobile = useRef(false);
   const skipNextLoad = useRef(false);
 
@@ -72,14 +75,41 @@ const ChatBot = () => {
     }
   };
 
-  const handleNewChat = async () => {
+  const handleNewChat = async (mode?: 'ai' | 'direct') => {
     try {
+      if (mode === 'direct') {
+        let enrs = await getMyEnrollments().catch(() => []);
+        let options = Array.isArray(enrs) ? enrs.map((e:any) => ({ id: e?.scholar?._id, name: e?.scholar?.user?.name || 'Scholar' })).filter(o => o.id) : [];
+        // Fallback: use locally stored enrolled ids against current scholars list
+        if (!options.length) {
+          try {
+            const idsRaw = localStorage.getItem('enrolled_scholar_ids');
+            const ids = idsRaw ? new Set<string>(JSON.parse(idsRaw)) : new Set<string>();
+            if (ids.size) {
+              const sch = await getScholars();
+              options = sch.filter((s:any) => ids.has(s._id)).map((s:any) => ({ id: s._id, name: s?.user?.name || 'Scholar' }));
+            }
+          } catch {}
+        }
+        setScholarOptions(options);
+        setShowScholarPicker(true);
+        return; 
+      }
       const { session } = await chatService.createSession();
-      setMessages([]); // ensure blank
+      setMessages([]);
       setCurrentSession(session);
       navigate(`/chat/${session._id}`);
       await loadSessions();
     } catch (e) { console.error('Failed to create session:', e); }
+  };
+
+  const pickScholar = async (id: string) => {
+    try {
+      setShowScholarPicker(false);
+      const res = await startDirectChat(id);
+      const sid = res?.studentSessionId;
+      if (sid) navigate(`/chat/${sid}`);
+    } catch (e) { console.error('Failed to start scholar chat:', e); }
   };
 
   const handleSelectSession = (id: string) => {
@@ -120,22 +150,24 @@ const ChatBot = () => {
       const nextUserMessage: ChatMessage = { role: 'user', content: userMessage };
       const nextMessages = [...messages, nextUserMessage];
       setMessages(nextMessages);
-
-      // Build conversation context (use nextMessages)
-      const response = await chatService.sendMessage({ message: userMessage, conversation: nextMessages, sessionId: activeSessionId! });
-      const assistantMessage: ChatMessage = { role: 'assistant', content: response.generated_text };
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Merge updated session info (title / lastActivity)
-      if (response.session) {
-        setSessions(prev => {
-          const exists = prev.some(s => s._id === response.session._id);
-          return exists ? prev.map(s => s._id === response.session._id ? { ...s, ...response.session } : s) : [response.session, ...prev];
-        });
-        setCurrentSession(prev => prev && prev._id === response.session._id ? { ...prev, ...response.session } : prev);
-      } else if (activeSessionId) {
-        // At least bump lastActivity locally
+      if (currentSession?.kind === 'direct') {
+        await chatService.sendDirectMessage(activeSessionId!, userMessage);
+        // No assistant response for direct chats
         setSessions(prev => prev.map(s => s._id === activeSessionId ? { ...s, lastActivity: new Date().toISOString() } : s));
+      } else {
+        // Build conversation context (use nextMessages) for AI
+        const response = await chatService.sendMessage({ message: userMessage, conversation: nextMessages, sessionId: activeSessionId! });
+        const assistantMessage: ChatMessage = { role: 'assistant', content: response.generated_text };
+        setMessages(prev => [...prev, assistantMessage]);
+        if (response.session) {
+          setSessions(prev => {
+            const exists = prev.some(s => s._id === response.session._id);
+            return exists ? prev.map(s => s._id === response.session._id ? { ...s, ...response.session } : s) : [response.session, ...prev];
+          });
+          setCurrentSession(prev => prev && prev._id === response.session._id ? { ...prev, ...response.session } : prev);
+        } else if (activeSessionId) {
+          setSessions(prev => prev.map(s => s._id === activeSessionId ? { ...s, lastActivity: new Date().toISOString() } : s));
+        }
       }
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -162,8 +194,12 @@ const ChatBot = () => {
                 sessions={sessions}
                 currentSessionId={sessionId}
                 onSelectSession={(id) => { setShowHistory(false); handleSelectSession(id); }}
-                onNewChat={() => { setShowHistory(false); handleNewChat(); }}
+                onNewChat={(mode) => { setShowHistory(false); handleNewChat(mode); }}
                 onDeleteSession={handleDeleteSession}
+                showScholarPicker={showScholarPicker}
+                scholarOptions={scholarOptions}
+                onPickScholar={(id) => pickScholar(id)}
+                onToggleScholarPicker={() => setShowScholarPicker(s => !s)}
               />
             </div>
             <div className="flex-1 bg-black/40" onClick={() => setShowHistory(false)} />
@@ -175,6 +211,10 @@ const ChatBot = () => {
             onSelectSession={handleSelectSession}
             onNewChat={handleNewChat}
             onDeleteSession={handleDeleteSession}
+            showScholarPicker={showScholarPicker}
+            scholarOptions={scholarOptions}
+            onPickScholar={(id) => pickScholar(id)}
+            onToggleScholarPicker={() => setShowScholarPicker(s => !s)}
           />
         )
       )}
@@ -198,11 +238,11 @@ const ChatBot = () => {
                 {showHistory ? (isMobile.current ? 'Close' : 'Hide History') : 'History'}
               </button>
               <button
-                onClick={handleNewChat}
+                onClick={() => handleNewChat('ai')}
                 className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center gap-1"
               >
                 <ArrowPathIcon className="h-5 w-5" />
-                <span className="text-sm">New Chat</span>
+                <span className="text-sm">New AI Chat</span>
               </button>
             </div>
           </div>

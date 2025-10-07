@@ -2,6 +2,9 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 
 // Load env BEFORE reading variables
 dotenv.config();
@@ -24,6 +27,22 @@ if (!apiKey) {
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Static uploads serving
+const uploadsDir = path.join(__dirname, 'uploads');
+try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir); } catch {}
+app.use('/uploads', express.static(uploadsDir));
+
+// Multer storage for images
+const storage = multer.diskStorage({
+  destination: function (_req, _file, cb) { cb(null, uploadsDir); },
+  filename: function (_req, file, cb) {
+    const safe = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname || '') || '.jpg';
+    cb(null, `${safe}${ext}`);
+  }
+});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 
 const genAI = new GoogleGenerativeAI(apiKey || '');
 
@@ -58,16 +77,54 @@ Stay on mission as an Islamic guide in every response.`;
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+// Mount new scholar & meet routes
+app.use('/api/scholars', require('./routes/scholarRoutes'));
+app.use('/api/meet', require('./routes/meetRoutes'));
 app.use('/api/hadith', require('./routes/hadithRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+
+// Upload endpoint (auth required)
+app.post('/api/upload/photo', auth, upload.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const base = process.env.BASE_URL || `http://localhost:${port}`;
+  const url = `${base}/uploads/${req.file.filename}`;
+  res.json({ url });
+});
 
 app.post('/api/scholar-ai', auth, async (req, res) => {
-  const userPrompt = (req.body && (req.body.message || req.body.prompt)) || '';
+  let userPrompt = (req.body && (req.body.message || req.body.prompt)) || '';
   const conversation = Array.isArray(req.body?.conversation) ? req.body.conversation : [];
   const sessionId = req.body.sessionId;
   if (!userPrompt.trim()) {
     return res.status(400).json({ error: "Missing 'message' (or 'prompt') in request body." });
   }
   if (!apiKey) return res.status(500).json({ error: 'Gemini API key not configured.' });
+  // Sensitive data filter & temporary lockout
+  try {
+    const User = require('./models/User');
+    const { filterSensitive } = require('./middleware/messageFilter');
+    const SensitiveLog = require('./models/SensitiveLog');
+    // Check lock
+    if (req.user.lockUntil && new Date(req.user.lockUntil) > new Date()) {
+      const ms = new Date(req.user.lockUntil).getTime() - Date.now();
+      const hours = Math.ceil(ms / (60 * 60 * 1000));
+      return res.status(429).json({ error: `Messaging temporarily locked. Try again in ~${hours}h.` });
+    }
+    const { filtered, warn } = filterSensitive(userPrompt);
+    userPrompt = filtered;
+    if (warn) {
+      const user = await User.findById(req.user._id);
+      user.warningCount = (user.warningCount || 0) + 1;
+      if (user.warningCount >= 3) {
+        user.lockUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
+        user.warningCount = 0; // reset after lock
+      }
+      await user.save();
+      try { await SensitiveLog.create({ user: req.user._id, textSample: (req.body?.message||'').slice(0,200), redactedText: userPrompt.slice(0,200), endpoint: '/api/scholar-ai' }); } catch {}
+    }
+  } catch (filterErr) {
+    console.warn('Filter/lock failed:', filterErr?.message);
+  }
     try {
     const model = genAI.getGenerativeModel({
       model: modelName,
@@ -102,9 +159,13 @@ app.post('/api/scholar-ai', auth, async (req, res) => {
       try {
         const session = await ChatSession.findOne({ _id: sessionId, user: req.user._id, isActive: true });
         if (session) {
+          // Only persist AI messages to AI sessions
+          if (session.kind && session.kind !== 'ai') {
+            return res.status(200).json({ text, generated_text: text, session: { _id: session._id, title: session.title, lastActivity: session.lastActivity, createdAt: session.createdAt } });
+          }
           // Append latest user + assistant messages
-            session.messages.push({ role: 'user', content: userPrompt });
-            session.messages.push({ role: 'assistant', content: text });
+          session.messages.push({ role: 'user', content: userPrompt });
+          session.messages.push({ role: 'assistant', content: text });
           // Auto title if still default
           if (session.title === 'New Chat' && session.messages.length >= 1) {
             const firstUser = session.messages.find(m => m.role === 'user');
@@ -137,6 +198,20 @@ app.post('/api/scholar-ai', auth, async (req, res) => {
 // Health check
 app.get('/', (_req, res) => {
   res.send('Hikmah AI API running with auth & chat');
+});
+
+// Decrypt and redirect to Meet link safely (no auth so new tab can open)
+app.get('/api/meet/open', (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).send('Missing token');
+    const { decryptLink } = require('./utils/encryption');
+    const link = decryptLink(String(token));
+    // Use 302 redirect to open meet link
+    res.redirect(link);
+  } catch (e) {
+    res.status(400).send('Invalid or expired link');
+  }
 });
 
 // Start server AFTER DB connection using new connectDB implementation

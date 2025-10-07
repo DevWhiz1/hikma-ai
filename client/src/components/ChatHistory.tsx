@@ -6,20 +6,45 @@ const ChatHistory: React.FC<{
   sessions: ChatSession[];
   currentSessionId?: string;
   onSelectSession: (sessionId: string) => void;
-  onNewChat: () => void;
+  onNewChat: (mode?: 'ai' | 'direct', scholarId?: string) => void;
   onDeleteSession: (sessionId: string) => void;
-}> = ({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession }) => {
+  showScholarPicker?: boolean;
+  scholarOptions?: { id: string; name: string }[];
+  onPickScholar?: (id: string) => void;
+  onToggleScholarPicker?: () => void;
+}> = ({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession, showScholarPicker, scholarOptions = [], onPickScholar, onToggleScholarPicker }) => {
   const sorted = [...sessions].sort((a, b) => new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime());
   return (
     <div className="w-64 bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 flex flex-col">
-      <div className="p-4 border-b border-gray-300 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-300 dark:border-gray-700 space-y-2">
         <button
-          onClick={onNewChat}
+          onClick={() => onNewChat('ai')}
           className="w-full flex items-center justify-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
         >
           <PlusIcon className="h-4 w-4 mr-2" />
-          New Chat
+          New AI Chat
         </button>
+        <button
+          onClick={() => { onToggleScholarPicker ? onToggleScholarPicker() : onNewChat('direct'); }}
+          className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+        >
+          <PlusIcon className="h-4 w-4 mr-2" />
+          New Scholar Chat
+        </button>
+        {showScholarPicker && (
+          <div className="mt-2 space-y-1">
+            <div className="text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">Enrolled Scholars</div>
+            {scholarOptions.length === 0 ? (
+              <div className="text-xs text-gray-500">No enrollments yet.</div>
+            ) : (
+              scholarOptions.map(opt => (
+                <button key={opt.id} onClick={() => onPickScholar && onPickScholar(opt.id)} className="w-full text-left px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded">
+                  {opt.name}
+                </button>
+              ))
+            )}
+          </div>
+        )}
       </div>
       <div className="flex-1 overflow-y-auto p-2">
         {sorted.map((session) => (

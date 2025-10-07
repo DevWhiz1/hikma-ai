@@ -68,12 +68,19 @@ const Dashboard = () => {
     //   color: 'orange'
     // },
     {
-      icon: ChartBarIcon,
-      title: 'Analytics',
-      description: 'View your teaching statistics',
-      link: '/scholar/analytics',
-      color: 'green'
-    }
+      icon: Cog6ToothIcon,
+      title: 'Edit Scholar Profile',
+      description: 'Update your approved profile details',
+      link: '/scholars/profile/edit',
+      color: 'emerald'
+    },
+    // {
+    //   icon: ChartBarIcon,
+    //   title: 'Analytics',
+    //   description: 'View your teaching statistics',
+    //   link: '/scholar/analytics',
+    //   color: 'green'
+    // }
   ];
 
   const adminFeatures = [

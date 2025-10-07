@@ -7,6 +7,18 @@ An authenticated Islamic guidance platform providing:
 - Tasbih (Dhikr) Counter
 - Secure user authentication (JWT) & session management
 
+## Recent Updates (Scholar Workflow)
+
+- Scholar application form: all fields required, YouTube demo link + photo; backend validates blanks and YouTube URLs.
+- Scholar listing cards redesigned (photo, bio, pills, compact actions); “Chat with Scholar” appears after enrollment and opens a mirrored direct chat (student ↔ scholar), always creating a fresh chat if requested.
+- Approved scholars can edit their profile at `/scholars/profile/edit`.
+- Enroll flow now denormalizes into `user.enrolledScholars` for instant rendering in “New Scholar Chat” sidebar; endpoint `GET /api/scholars/my-enrollments` returns names (and backfills if needed).
+- Meeting link generation removed; scheduling is done via direct chat, with guidance messages.
+
+Admin
+- Approving a scholar updates the `User.role` to `scholar`.
+- Admin message endpoint opens a direct chat on both the user and admin ends.
+
 ## Tech Stack
 ### Frontend
 - React 18 + TypeScript + Vite
@@ -96,6 +108,7 @@ JWT_SECRET=<strong secret>
 GEMINI_API_KEY=<google gemini api key>
 HADITH_API_KEY=<hadithapi key>
 ALLOWED_ORIGINS=https://your-frontend-domain.com, http://localhost:5173
+MEET_ENCRYPT_SECRET=yourstrongsecret
 ```
 
 Frontend `.env` (at `client/.env`):

@@ -1,5 +1,7 @@
 const AIChatMessage = require('../models/ChatMessage');
 const ChatSession = require('../models/ChatSession');
+const User = require('../models/User');
+const { filterSensitive } = require('../middleware/messageFilter');
 
 async function getSessions(req, res) {
   try {
