@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getUsers, blockUser, unblockUser, getReviews, getSensitiveLogs, getScholarApplications, approveScholarApplication, rejectScholarApplication, removeScholarByUser, adminMessageUser } from '../services/adminService';
+import AdminFeedbackManagement from './AdminFeedbackManagement';
 
-type TabKey = 'users' | 'reviews' | 'logs' | 'applications';
+type TabKey = 'users' | 'reviews' | 'logs' | 'applications' | 'feedback';
 
 
 export default function AdminDashboard() {
@@ -32,6 +33,7 @@ export default function AdminDashboard() {
         <button onClick={()=>setTab('reviews')} className={`w-full text-left px-3 py-2 rounded ${tab==='reviews'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 hover:text-white dark:hover:bg-gray-700'}`}>Reviews Analytics</button>
         <button onClick={()=>setTab('logs')} className={`w-full text-left px-3 py-2 rounded ${tab==='logs'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 hover:text-white dark:hover:bg-gray-700'}`}>Sensitive Logs</button>
         <button onClick={()=>setTab('applications')} className={`w-full text-left px-3 py-2 rounded ${tab==='applications'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 hover:text-white dark:hover:bg-gray-700'}`}>Scholar Review</button>
+        <button onClick={()=>setTab('feedback')} className={`w-full text-left px-3 py-2 rounded ${tab==='feedback'?'bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300':'hover:bg-gray-100 hover:text-white dark:hover:bg-gray-700'}`}>Feedback Management</button>
       </nav>
     </div>
   );
@@ -106,6 +108,10 @@ export default function AdminDashboard() {
               </table>
             </div>
           </section>
+        )}
+
+        {tab === 'feedback' && (
+          <AdminFeedbackManagement />
         )}
 
         {tab === 'reviews' && (
