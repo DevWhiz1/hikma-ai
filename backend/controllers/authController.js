@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Scholar = require('../models/Scholar');
 const { signToken } = require('../utils/jwt');
 
 async function signup(req, res) {
@@ -18,18 +19,39 @@ async function signup(req, res) {
     const exists = await User.findOne({ email });
     if (exists) return res.status(400).json({ error: 'Email already used' });
 
+    const requestedScholar = role === 'scholar';
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase(),
       password,
-      role: role || 'user',
-      scholarProfile: role === 'scholar' ? scholarProfile : undefined
+      // Always enroll as regular user; scholar goes to review flow
+      role: 'user',
+      scholarProfile: requestedScholar ? scholarProfile : undefined
     });
+
+    // If user requested scholar at signup, create a pending Scholar application
+    if (requestedScholar) {
+      try {
+        const Scholar = require('../models/Scholar');
+        await Scholar.create({
+          user: user._id,
+          bio: scholarProfile?.bio,
+          specializations: scholarProfile?.expertise || [],
+          languages: scholarProfile?.languages || [],
+          experienceYears: undefined,
+          qualifications: scholarProfile?.credentials,
+          approved: false
+        });
+      } catch (e) {
+        console.warn('SCHOLAR_CREATE_AT_SIGNUP_FAILED', e?.message);
+      }
+    }
 
     const token = signToken(user);
     res.status(201).json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      scholar_application: requestedScholar ? 'pending' : undefined
     });
   } catch (e) {
     // Detailed logging (will show in Vercel function logs)
@@ -71,3 +93,49 @@ async function login(req, res) {
 }
 
 module.exports = { signup, login };
+
+// Secure seed endpoint: requires SEED_SECRET match
+async function seedScholar(req, res) {
+  try {
+    const secret = req.query.secret || req.body?.secret;
+    if (!secret || secret !== process.env.SEED_SECRET) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const email = 'scholar@hikmah.local';
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        name: 'Default Scholar',
+        email,
+        password: 'ChangeMe123!',
+        role: 'scholar',
+        scholarProfile: {
+          bio: 'Experienced Islamic scholar providing guidance in Fiqh and Hadith.',
+          expertise: ['Fiqh', 'Hadith'],
+          credentials: 'Ijazah in Hadith, Alim course',
+          availability: 'Weekdays 5-8 PM',
+          languages: ['English', 'Arabic'],
+          verified: true
+        }
+      });
+    }
+    let s = await Scholar.findOne({ user: user._id });
+    if (!s) {
+      s = await Scholar.create({
+        user: user._id,
+        bio: user.scholarProfile?.bio || 'Scholar bio',
+        specializations: user.scholarProfile?.expertise || ['Fiqh'],
+        languages: user.scholarProfile?.languages || ['English'],
+        experienceYears: 10,
+        qualifications: user.scholarProfile?.credentials || 'Certified Scholar',
+        approved: true
+      });
+    }
+    return res.json({ success: true, userId: user._id, scholarId: s._id, email, password: 'ChangeMe123!' });
+  } catch (e) {
+    console.error('SEED_SCHOLAR_ERROR', e);
+    return res.status(500).json({ error: 'Failed to seed scholar' });
+  }
+}
+
+module.exports.seedScholar = seedScholar;

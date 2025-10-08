@@ -13,37 +13,45 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMo
   const user = authService.getUser();
   
   return (
-    <div className="sticky top-0 z-30 flex items-center justify-between bg-white dark:bg-gray-900 shadow-md px-4 py-2">
+    <div className="sticky top-0 z-50 flex items-center justify-between bg-blue-600 dark:bg-gray-900 shadow-md px-4 py-2">
       <div className="flex items-center">
         <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-md text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white focus:outline-none"
+          onClick={() => {
+            console.log('Hamburger clicked');
+            toggleSidebar();
+          }}
+          className="p-2 rounded-md text-[#FFFDF9] hover:text-amber-400 dark:text-gray-300 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+          aria-label="Toggle sidebar"
+          type="button"
         >
           <Bars3Icon className="h-6 w-6" />
         </button>
-        <h1 className="ml-4 text-xl font-bold text-emerald-600 dark:text-emerald-400">
+        <h1 className="ml-4 text-xl font-bold text-[#FFFDF9] dark:text-emerald-400">
           Hikmah AI
         </h1>
       </div>
       <div className="flex items-center space-x-4">
         {user && (
-          <span className="text-sm text-gray-600 dark:text-gray-300">
+          <span className="text-sm text-[#FFFDF9] dark:text-gray-300">
             Welcome, {user.name}
           </span>
         )}
-        {/* <button
+        <button
           onClick={toggleDarkMode}
-          className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
+          title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          className="relative p-2 rounded-full bg-[#FFFDF9] dark:bg-gray-800 text-blue-800 dark:text-gray-300 hover:bg-amber-200 dark:hover:bg-gray-700 focus:outline-none transition"
         >
-          {isDarkMode ? (
-            <SunIcon className="h-5 w-5 text-yellow-500" />
-          ) : (
-            <MoonIcon className="h-5 w-5 text-gray-600" />
-          )}
-        </button> */}
+          <span className={`block transform transition-transform duration-500 ${isDarkMode ? 'rotate-180' : 'rotate-0'}`}>
+            {isDarkMode ? (
+              <SunIcon className="h-5 w-5 text-amber-400" />
+            ) : (
+              <MoonIcon className="h-5 w-5 text-blue-600" />
+            )}
+          </span>
+        </button>
         <button
           onClick={onLogout}
-          className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
+          className="p-2 rounded-full bg-[#FFFDF9] dark:bg-gray-800 text-blue-800 dark:text-gray-300 hover:bg-amber-200 dark:hover:bg-gray-700 focus:outline-none"
           title="Logout"
         >
           <ArrowRightOnRectangleIcon className="h-5 w-5" />

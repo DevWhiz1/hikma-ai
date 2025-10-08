@@ -7,6 +7,51 @@ An authenticated Islamic guidance platform providing:
 - Tasbih (Dhikr) Counter
 - Secure user authentication (JWT) & session management
 
+## Recent Updates (Scholar Workflow & UI/UX Improvements)
+
+### Scholar Workflow
+- Scholar application form: all fields required, YouTube demo link + photo; backend validates blanks and YouTube URLs.
+- Scholar listing cards redesigned (photo, bio, pills, compact actions); "Chat with Scholar" appears after enrollment and opens a mirrored direct chat (student ↔ scholar), always creating a fresh chat if requested.
+- Approved scholars can edit their profile at `/scholars/profile/edit`.
+- Enroll flow now denormalizes into `user.enrolledScholars` for instant rendering in "New Scholar Chat" sidebar; endpoint `GET /api/scholars/my-enrollments` returns names (and backfills if needed).
+- Meeting system implemented with direct chat-based scheduling and guidance messages.
+
+### Admin Features
+- Approving a scholar updates the `User.role` to `scholar`.
+- Admin message endpoint opens a direct chat on both the user and admin ends.
+
+### Meeting Framework
+- **Direct Chat-Based Scheduling**: Students and scholars can schedule meetings through direct chat conversations
+- **Meeting Request System**: Students can request meetings with enrolled scholars through the chat interface
+- **Scholar Dashboard**: Scholars can view and manage meeting requests, schedule meetings, and send meeting links
+- **Meeting Chat Component**: Dedicated chat interface for meeting-related conversations with:
+  - Meeting request handling
+  - Meeting link generation and sharing
+  - Meeting scheduling with date/time selection
+  - Meeting status tracking (requested, scheduled, completed)
+- **Admin Dashboard**: Administrators can monitor meeting activities and scholar interactions
+- **Meeting Link Management**: Secure meeting link generation and sharing between students and scholars
+- **Real-time Chat**: WebSocket-based real-time messaging for instant communication during meetings
+
+### UI/UX Theme Improvements
+- **Warm Modern Earth Color Palette**: Implemented natural, calming color scheme with terracotta (#E76F51), sage green (#2A9D8F), and sand beige (#F4A261) accents
+- **Enhanced Chat Interface**: 
+  - Selected chat items now have deep olive background (#264653) with pale white text for better visibility
+  - Chat links and buttons updated with solid black text for improved readability
+  - Meeting link buttons styled with emerald backgrounds and white text
+- **Sidebar Improvements**: 
+  - Static sidebar with independent content scrolling
+  - Enhanced hover effects with white text on dashboard pages
+  - Improved z-index management for top bar and sidebar layering
+- **Button Styling**: 
+  - "Apply as Scholar" and "Return to Main" buttons styled with sidebar colors
+  - Red buttons converted to orange theme for consistency
+  - Demo video and action buttons updated with white text and no transparency
+- **Responsive Design**: 
+  - Smooth transitions for sidebar open/close animations
+  - Improved mobile hamburger menu functionality
+  - Better spacing and positioning for all screen sizes
+
 ## Tech Stack
 ### Frontend
 - React 18 + TypeScript + Vite
@@ -96,6 +141,15 @@ JWT_SECRET=<strong secret>
 GEMINI_API_KEY=<google gemini api key>
 HADITH_API_KEY=<hadithapi key>
 ALLOWED_ORIGINS=https://your-frontend-domain.com, http://localhost:5173
+MEET_ENCRYPT_SECRET=yourstrongsecret
+
+# Email notifications (Gmail SMTP)
+GMAIL_USER=yourgmail@gmail.com
+GMAIL_PASS=your_gmail_app_password
+APP_BASE_URL=https://hikmah.ai
+
+# Optional: debounce duplicate emails (ms). 120000 = 2 min, 0 disables
+NOTIFY_DEBOUNCE_MS=120000
 ```
 
 Frontend `.env` (at `client/.env`):
@@ -179,6 +233,26 @@ Visit: http://localhost:5173
 - Message history trimmed (keep last ~80 messages) to reduce token context size
 - Hadith requests time out after 20s to avoid hanging API calls
 - Fuzzy/NLP kept lightweight (optional dependency on `natural`)
+
+## Notification Agent (Gmail)
+- Sends email notifications for human messages and meetings:
+  - Student → Scholar (chat): Scholar receives email
+  - Scholar → Student (chat): Student receives email
+  - Student requests meeting: Scholar receives email
+  - Scholar schedules/reschedules meeting: Both receive confirmation
+  - Meeting link sent (auto): Both receive link
+- AI messages are ignored.
+- Debounce prevents duplicate emails within `NOTIFY_DEBOUNCE_MS` per recipient/session/type.
+- Critical events (meeting requests/schedules/link) bypass debounce.
+
+Backend mailer files:
+- `backend/utils/mailer.js` — Nodemailer (Gmail SMTP)
+- `backend/agents/notificationAgent.js` — formats and sends notifications
+- Integrated in:
+  - `backend/routes/chatRoutes.js`
+  - `backend/routes/adminRoutes.js`
+  - `backend/controllers/meetingController.js`
+  - `backend/index.js` (cron link sender)
 
 ## Future Improvements
 - Stream AI responses (Server-Sent Events)

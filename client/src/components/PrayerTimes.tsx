@@ -261,7 +261,7 @@ export default function PrayerTimesPage() {
   }, [nextPrev, now]);
 
   const progress = useMemo(() => {
-    if (!nextPrev) return 0;
+    if (!nextPrev || !nextPrev.prev) return 0;
     const start = nextPrev.prev.time.getTime();
     const end = nextPrev.next.time.getTime();
     const p = (now.getTime() - start) / (end - start);
@@ -278,7 +278,7 @@ export default function PrayerTimesPage() {
   }, [tick]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50/60 via-white to-white p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="mx-auto max-w-5xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold text-slate-900">Prayer Times</h1>
@@ -420,7 +420,7 @@ export default function PrayerTimesPage() {
                   {nextPrev && (
                     <div>
                       <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                        <span>{nextPrev.prev.label}</span>
+                        <span>{nextPrev?.prev?.label ?? ''}</span>
                         <span>{nextPrev.next.label}</span>
                       </div>
                       <div className="h-2 w-full rounded-full bg-slate-200 overflow-hidden">

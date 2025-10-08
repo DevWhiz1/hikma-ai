@@ -2,6 +2,12 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+const http = require('http');
+const socketIo = require('socket.io');
+const cron = require('node-cron');
 
 // Load env BEFORE reading variables
 dotenv.config();
@@ -22,8 +28,32 @@ if (!apiKey) {
 }
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ["http://localhost:5173"],
+    methods: ["GET", "POST"]
+  }
+});
+
 app.use(cors());
 app.use(express.json());
+
+// Static uploads serving
+const uploadsDir = path.join(__dirname, 'uploads');
+try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir); } catch {}
+app.use('/uploads', express.static(uploadsDir));
+
+// Multer storage for images
+const storage = multer.diskStorage({
+  destination: function (_req, _file, cb) { cb(null, uploadsDir); },
+  filename: function (_req, file, cb) {
+    const safe = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname || '') || '.jpg';
+    cb(null, `${safe}${ext}`);
+  }
+});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB
 
 const genAI = new GoogleGenerativeAI(apiKey || '');
 
@@ -58,16 +88,55 @@ Stay on mission as an Islamic guide in every response.`;
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+// Mount new scholar & meet routes
+app.use('/api/scholars', require('./routes/scholarRoutes'));
+app.use('/api/meet', require('./routes/meetRoutes'));
+app.use('/api/meetings', require('./routes/meetingRoutes'));
 app.use('/api/hadith', require('./routes/hadithRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+
+// Upload endpoint (auth required)
+app.post('/api/upload/photo', auth, upload.single('photo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  const base = process.env.BASE_URL || `http://localhost:${port}`;
+  const url = `${base}/uploads/${req.file.filename}`;
+  res.json({ url });
+});
 
 app.post('/api/scholar-ai', auth, async (req, res) => {
-  const userPrompt = (req.body && (req.body.message || req.body.prompt)) || '';
+  let userPrompt = (req.body && (req.body.message || req.body.prompt)) || '';
   const conversation = Array.isArray(req.body?.conversation) ? req.body.conversation : [];
   const sessionId = req.body.sessionId;
   if (!userPrompt.trim()) {
     return res.status(400).json({ error: "Missing 'message' (or 'prompt') in request body." });
   }
   if (!apiKey) return res.status(500).json({ error: 'Gemini API key not configured.' });
+  // Sensitive data filter & temporary lockout
+  try {
+    const User = require('./models/User');
+    const { filterSensitive } = require('./middleware/messageFilter');
+    const SensitiveLog = require('./models/SensitiveLog');
+    // Check lock
+    if (req.user.lockUntil && new Date(req.user.lockUntil) > new Date()) {
+      const ms = new Date(req.user.lockUntil).getTime() - Date.now();
+      const hours = Math.ceil(ms / (60 * 60 * 1000));
+      return res.status(429).json({ error: `Messaging temporarily locked. Try again in ~${hours}h.` });
+    }
+    const { filtered, warn } = filterSensitive(userPrompt);
+    userPrompt = filtered;
+    if (warn) {
+      const user = await User.findById(req.user._id);
+      user.warningCount = (user.warningCount || 0) + 1;
+      if (user.warningCount >= 3) {
+        user.lockUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
+        user.warningCount = 0; // reset after lock
+      }
+      await user.save();
+      try { await SensitiveLog.create({ user: req.user._id, textSample: (req.body?.message||'').slice(0,200), redactedText: userPrompt.slice(0,200), endpoint: '/api/scholar-ai' }); } catch {}
+    }
+  } catch (filterErr) {
+    console.warn('Filter/lock failed:', filterErr?.message);
+  }
     try {
     const model = genAI.getGenerativeModel({
       model: modelName,
@@ -102,9 +171,13 @@ app.post('/api/scholar-ai', auth, async (req, res) => {
       try {
         const session = await ChatSession.findOne({ _id: sessionId, user: req.user._id, isActive: true });
         if (session) {
+          // Only persist AI messages to AI sessions
+          if (session.kind && session.kind !== 'ai') {
+            return res.status(200).json({ text, generated_text: text, session: { _id: session._id, title: session.title, lastActivity: session.lastActivity, createdAt: session.createdAt } });
+          }
           // Append latest user + assistant messages
-            session.messages.push({ role: 'user', content: userPrompt });
-            session.messages.push({ role: 'assistant', content: text });
+          session.messages.push({ role: 'user', content: userPrompt });
+          session.messages.push({ role: 'assistant', content: text });
           // Auto title if still default
           if (session.title === 'New Chat' && session.messages.length >= 1) {
             const firstUser = session.messages.find(m => m.role === 'user');
@@ -139,13 +212,194 @@ app.get('/', (_req, res) => {
   res.send('Hikmah AI API running with auth & chat');
 });
 
+// Decrypt and redirect to Meet link safely (no auth so new tab can open)
+app.get('/api/meet/open', (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).send('Missing token');
+    const { decryptLink } = require('./utils/encryption');
+    const link = decryptLink(String(token));
+    // Use 302 redirect to open meet link
+    res.redirect(link);
+  } catch (e) {
+    res.status(400).send('Invalid or expired link');
+  }
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // Join user to their personal room
+  socket.on('join-user-room', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log(`User ${userId} joined their room`);
+  });
+
+  // Join chat room
+  socket.on('join-chat', (chatId) => {
+    socket.join(`chat-${chatId}`);
+    console.log(`User joined chat ${chatId}`);
+  });
+
+  // Handle new message
+  socket.on('send-message', async (data) => {
+    try {
+      const { chatId, text, senderId } = data;
+      
+      // Emit to all users in the chat room
+      socket.to(`chat-${chatId}`).emit('new-message', {
+        chatId,
+        text,
+        senderId,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error('Socket message error:', error);
+    }
+  });
+
+  // Handle meeting request
+  socket.on('meeting-request', (data) => {
+    const { chatId, studentId, scholarId } = data;
+    socket.to(`chat-${chatId}`).emit('meetingRequest', {
+      chatId,
+      studentId,
+      scholarId
+    });
+  });
+
+  // Handle meeting scheduled
+  socket.on('meeting-scheduled', (data) => {
+    const { chatId, scheduledTime } = data;
+    socket.to(`chat-${chatId}`).emit('meetingScheduled', {
+      chatId,
+      scheduledTime
+    });
+  });
+
+  // Handle meeting link sent
+  socket.on('meeting-link-sent', (data) => {
+    const { chatId, link, roomId } = data;
+    socket.to(`chat-${chatId}`).emit('meetingLinkSent', {
+      chatId,
+      link,
+      roomId
+    });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// CRON job for automatic meeting link generation
+cron.schedule('* * * * *', async () => {
+  try {
+    const Meeting = require('./models/Meeting');
+    const Message = require('./models/Message');
+    const Chat = require('./models/Chat');
+    const { generateJitsiLink } = require('./controllers/meetingController');
+    
+    // Find meetings that should start now (within the last minute)
+    const now = new Date();
+    const oneMinuteAgo = new Date(now.getTime() - 60000);
+    
+    const meetings = await Meeting.find({
+      status: 'scheduled',
+      scheduledTime: { $gte: oneMinuteAgo, $lte: now }
+    });
+
+                for (const meeting of meetings) {
+      // Generate Jitsi link
+      const { roomId, link } = generateJitsiLink();
+      
+      // Update meeting
+      meeting.link = link;
+      meeting.roomId = roomId;
+      meeting.status = 'link_sent';
+      await meeting.save();
+
+      // Create meeting link message (system: Hikma)
+      const message = new Message({
+        sender: meeting.scholarId,
+        chatId: meeting.chatId,
+        text: `Hikma: Your meeting has started! Join here: ${link}`,
+        type: 'meeting_link',
+        metadata: { meetingLink: link, roomId }
+      });
+      await message.save();
+
+      // Add message to chat
+      const chat = await Chat.findById(meeting.chatId);
+      if (chat) {
+        chat.messages.push(message._id);
+        chat.lastActivity = new Date();
+        await chat.save();
+      }
+
+                  // Emit socket event
+      io.to(`chat-${meeting.chatId}`).emit('meetingLinkSent', {
+        chatId: meeting.chatId,
+        link,
+        roomId
+      });
+
+                  // Mirror into Hikma chat (legacy direct chat sessions)
+                  try {
+                    const ChatSession = require('./models/ChatSession');
+                    const Enrollment = require('./models/Enrollment');
+                    const Scholar = require('./models/Scholar');
+                    const scholarProfile = await Scholar.findOne({ user: meeting.scholarId }).select('_id user');
+                    if (scholarProfile) {
+                      const enrollment = await Enrollment.findOne({ student: meeting.studentId, scholar: scholarProfile._id }).lean();
+                      const text = `Hikma: Your meeting has started! Join here: ${link}`;
+                      if (enrollment?.studentSession) {
+                        await ChatSession.findByIdAndUpdate(enrollment.studentSession, { $push: { messages: { role: 'assistant', content: text } }, $set: { lastActivity: new Date() } });
+                      }
+                      if (enrollment?.scholarSession) {
+                        await ChatSession.findByIdAndUpdate(enrollment.scholarSession, { $push: { messages: { role: 'assistant', content: text } }, $set: { lastActivity: new Date() } });
+                      }
+                    }
+                  } catch (e) {
+                    console.warn('Cron mirror failed:', e?.message || e);
+                  }
+
+      // Email both participants with the link
+      try {
+        const { notifyAdmin } = require('./agents/notificationAgent');
+        const User = require('./models/User');
+        const scholarDoc = await User.findById(meeting.scholarId).select('email name');
+        const studentDoc = await User.findById(meeting.studentId).select('email name');
+        const preview = `Your meeting has started! Join here: ${link}`;
+        const payload = {
+          senderName: scholarDoc?.name || 'Scholar',
+          senderRole: 'scholar',
+          messageType: 'Chat',
+          messagePreview: preview,
+          sessionId: undefined,
+          chatId: String(meeting.chatId),
+          timestamp: Date.now(),
+        };
+        if (scholarDoc?.email) await notifyAdmin({ ...payload, toEmail: scholarDoc.email, force: true });
+        if (studentDoc?.email) await notifyAdmin({ ...payload, toEmail: studentDoc.email, force: true });
+      } catch {}
+
+      console.log(`Meeting link sent for meeting ${meeting._id}`);
+    }
+  } catch (error) {
+    console.error('CRON job error:', error);
+  }
+});
+
 // Start server AFTER DB connection using new connectDB implementation
 const port = process.env.PORT || 5000;
 (async () => {
   try {
     await connectDB();
-    app.listen(port, () => {
+    server.listen(port, () => {
       console.log(`Express server running http://localhost:${port}`);
+      console.log(`Socket.IO server running on port ${port}`);
     });
   } catch (err) {
     console.error('Failed to start server due to DB error:', err.message);

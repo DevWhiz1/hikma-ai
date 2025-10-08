@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, index: true },
     password: { type: String, required: true, minlength: 6 },
     role: { type: String, enum: ['user', 'scholar', 'admin'], default: 'user', index: true },
+    warningCount: { type: Number, default: 0 },
+    lockUntil: { type: Date },
 
     // Scholar-specific fields
     scholarProfile: {
@@ -16,7 +18,14 @@ const userSchema = new mongoose.Schema(
       availability: { type: String },
       languages: [{ type: String }],
       verified: { type: Boolean, default: false }
-    }
+    },
+    // Denormalized list of scholars this user is enrolled with (for fast sidebar rendering)
+    enrolledScholars: [
+      {
+        scholar: { type: mongoose.Schema.Types.ObjectId, ref: 'Scholar' },
+        name: { type: String }
+      }
+    ]
   },
   { timestamps: true }
 );

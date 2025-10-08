@@ -11,7 +11,8 @@ const chatSessionSchema = new mongoose.Schema({
   title: { type: String, required: true, maxlength: 100 },
   messages: [messageSchema],
   lastActivity: { type: Date, default: Date.now },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  kind: { type: String, enum: ['ai', 'direct'], default: 'ai', index: true }
 }, {
   timestamps: true
 });

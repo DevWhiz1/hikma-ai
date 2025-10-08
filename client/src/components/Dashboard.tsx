@@ -68,12 +68,19 @@ const Dashboard = () => {
     //   color: 'orange'
     // },
     {
-      icon: ChartBarIcon,
-      title: 'Analytics',
-      description: 'View your teaching statistics',
-      link: '/scholar/analytics',
-      color: 'green'
-    }
+      icon: Cog6ToothIcon,
+      title: 'Edit Scholar Profile',
+      description: 'Update your approved profile details',
+      link: '/scholars/profile/edit',
+      color: 'emerald'
+    },
+    // {
+    //   icon: ChartBarIcon,
+    //   title: 'Analytics',
+    //   description: 'View your teaching statistics',
+    //   link: '/scholar/analytics',
+    //   color: 'green'
+    // }
   ];
 
   const adminFeatures = [
@@ -119,7 +126,7 @@ const Dashboard = () => {
       indigo: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800',
       orange: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800',
       green: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800',
-      red: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800',
+      red: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800',
       gray: 'bg-gray-50 dark:bg-gray-900/20 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800'
     };
     return colors[color] || colors.gray;

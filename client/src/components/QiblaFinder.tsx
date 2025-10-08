@@ -193,7 +193,7 @@ export default function QiblaPage() {
   }, [qiblaDirection, heading]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="mx-auto max-w-5xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold text-slate-900 mb-1">Qibla Direction Finder</h1>

@@ -1,6 +1,120 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Light mode palette overrides */
+/* Light theme palette — Elegant, spiritual, uplifting */
+/* Primary (Emerald): #009975, Secondary (Gold Sand): #FFD166,
+   Accent (Teal Blue): #118AB2, Background (Off-white Sand): #FAF8F2,
+   Text Primary (Charcoal): #2F2F2F, Sidebar (Deep Forest): #003C3C */
+:root {
+  --color-bg: #FFFDF9;         /* Ivory White */
+  --color-surface: #FFFFFF;     /* card surface */
+  --color-muted: #F4A261;       /* Sand Beige for dividers */
+  --color-text: #1A1A1A;        /* Graphite */
+  --color-subtext: rgba(26,26,26,0.6); /* muted labels */
+
+  --color-primary: #E76F51;     /* Terracotta */
+  --color-primary-hover: #D85D43;
+  --color-secondary: #2A9D8F;   /* Sage Green */
+  --color-secondary-hover: #218177;
+  --color-accent: #F4A261;      /* Sand Beige */
+  --color-sidebar: #264653;     /* Deep Olive */
+}
+
+html.light body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+html.light .bg-gray-50 { background-color: var(--color-bg) !important; }
+html.light .bg-white { background-color: var(--color-surface) !important; }
+html.light .bg-gray-100 { background-color: var(--color-surface) !important; }
+html.light .text-gray-900 { color: var(--color-text) !important; }
+html.light .text-gray-600 { color: var(--color-subtext) !important; }
+html.light .border-gray-200 { border-color: var(--color-muted) !important; }
+html.light .border-gray-300 { border-color: var(--color-muted) !important; }
+
+/* Map common utilities to brand colors (no component rewrites needed) */
+/* Primary */
+html.light .bg-emerald-600 { background-color: var(--color-primary) !important; }
+html.light .hover\:bg-emerald-700:hover { background-color: var(--color-primary-hover) !important; }
+html.light .text-emerald-600 { color: var(--color-primary) !important; }
+html.light .hover\:text-emerald-700:hover { color: var(--color-primary-hover) !important; }
+
+/* Secondary (map common blue utilities to Sage Green) */
+html.light .bg-blue-600 { background-color: var(--color-secondary) !important; }
+html.light .hover\:bg-blue-700:hover { background-color: var(--color-secondary-hover) !important; }
+html.light .text-blue-600 { color: var(--color-secondary) !important; }
+html.light .hover\:text-blue-700:hover { color: var(--color-secondary-hover) !important; }
+
+/* Accent (map yellow/amber to Sand Beige) */
+html.light .bg-yellow-500, html.light .bg-amber-500 { background-color: var(--color-accent) !important; }
+html.light .hover\:bg-yellow-600:hover, html.light .hover\:bg-amber-600:hover { background-color: #e59a51 !important; }
+html.light .text-yellow-500, html.light .text-amber-500 { color: var(--color-accent) !important; }
+html.light .hover\:text-yellow-600:hover, html.light .hover\:text-amber-600:hover { color: #e59a51 !important; }
+
+/* Optional: sidebar hook if component provides a class */
+html.light .sidebar, html.light .Sidebar, html.light [data-role="sidebar"] {
+  background-color: var(--color-sidebar) !important;
+  color: #FFFDF9 !important;
+}
+
+/* Subtle cards/shadows on light */
+html.light .shadow, html.light .shadow-sm, html.light .shadow-md, html.light .shadow-lg {
+  --tw-shadow-color: rgba(244, 162, 97, 0.15); /* soft beige shadow */
+}
+
+/* Rounded card feel enhancer on light surfaces without touching layout */
+html.light .ring-1 { --tw-ring-color: var(--color-muted) !important; }
+
+/* Section dividers / hover backgrounds: very light Emerald tint */
+html.light .hover\:bg-emerald-50:hover { background-color: #E4F6F2 !important; }
+html.light .bg-emerald-50 { background-color: #E4F6F2 !important; }
+
+/* Cards: border radius + soft shadow defaults */
+.card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(244, 162, 97, 0.15);
+}
+
+/* Typography and links */
+html.light a { color: var(--color-primary); }
+html.light a:hover { color: var(--color-accent); text-decoration: underline; }
+
+/* Ensure sidebar links do not underline on hover */
+.sidebar a,
+.Sidebar a,
+[data-role="sidebar"] a {
+  text-decoration: none !important;
+}
+.sidebar a:hover,
+.Sidebar a:hover,
+[data-role="sidebar"] a:hover {
+  text-decoration: none !important;
+}
+
+/* Section dividers */
+html.light hr, html.light .divider { border-color: var(--color-accent) !important; }
+
+/* Headings and text */
+html.light h1, html.light h2 { color: var(--color-sidebar); }
+html.light h3, html.light .subheading { color: var(--color-secondary); }
+html.light body, html.light p, html.light li { color: var(--color-text); }
+
+/* Buttons rounding */
+button, .btn, .btn-primary, .btn-secondary { border-radius: 16px !important; }
+
+/* Tertiary button helper */
+.btn-tertiary {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-accent);
+}
+.btn-tertiary:hover {
+  background-color: rgba(244, 162, 97, 0.15);
+}
+
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {

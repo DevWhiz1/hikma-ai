@@ -1,5 +1,7 @@
 const AIChatMessage = require('../models/ChatMessage');
 const ChatSession = require('../models/ChatSession');
+const User = require('../models/User');
+const { filterSensitive } = require('../middleware/messageFilter');
 
 async function getSessions(req, res) {
   try {
@@ -50,14 +52,16 @@ async function getSession(req, res) {
 
 async function deleteSession(req, res) {
   try {
-    const session = await ChatSession.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id },
-      { isActive: false },
-      { new: true }
-    );
+    const session = await ChatSession.findOne({ _id: req.params.id, user: req.user._id });
     if (!session) {
       return res.status(404).json({ error: 'Chat session not found' });
     }
+    // Prevent deleting direct student-scholar chats
+    if (session.kind === 'direct') {
+      return res.status(403).json({ error: 'Direct chats between student and scholar cannot be deleted' });
+    }
+    session.isActive = false;
+    await session.save();
     res.json({ success: true });
   } catch (error) {
     console.error('Delete session error:', error);
