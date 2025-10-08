@@ -365,6 +365,26 @@ cron.schedule('* * * * *', async () => {
                     console.warn('Cron mirror failed:', e?.message || e);
                   }
 
+      // Email both participants with the link
+      try {
+        const { notifyAdmin } = require('./agents/notificationAgent');
+        const User = require('./models/User');
+        const scholarDoc = await User.findById(meeting.scholarId).select('email name');
+        const studentDoc = await User.findById(meeting.studentId).select('email name');
+        const preview = `Your meeting has started! Join here: ${link}`;
+        const payload = {
+          senderName: scholarDoc?.name || 'Scholar',
+          senderRole: 'scholar',
+          messageType: 'Chat',
+          messagePreview: preview,
+          sessionId: undefined,
+          chatId: String(meeting.chatId),
+          timestamp: Date.now(),
+        };
+        if (scholarDoc?.email) await notifyAdmin({ ...payload, toEmail: scholarDoc.email, force: true });
+        if (studentDoc?.email) await notifyAdmin({ ...payload, toEmail: studentDoc.email, force: true });
+      } catch {}
+
       console.log(`Meeting link sent for meeting ${meeting._id}`);
     }
   } catch (error) {

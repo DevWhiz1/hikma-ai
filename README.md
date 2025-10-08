@@ -142,6 +142,14 @@ GEMINI_API_KEY=<google gemini api key>
 HADITH_API_KEY=<hadithapi key>
 ALLOWED_ORIGINS=https://your-frontend-domain.com, http://localhost:5173
 MEET_ENCRYPT_SECRET=yourstrongsecret
+
+# Email notifications (Gmail SMTP)
+GMAIL_USER=yourgmail@gmail.com
+GMAIL_PASS=your_gmail_app_password
+APP_BASE_URL=https://hikmah.ai
+
+# Optional: debounce duplicate emails (ms). 120000 = 2 min, 0 disables
+NOTIFY_DEBOUNCE_MS=120000
 ```
 
 Frontend `.env` (at `client/.env`):
@@ -225,6 +233,26 @@ Visit: http://localhost:5173
 - Message history trimmed (keep last ~80 messages) to reduce token context size
 - Hadith requests time out after 20s to avoid hanging API calls
 - Fuzzy/NLP kept lightweight (optional dependency on `natural`)
+
+## Notification Agent (Gmail)
+- Sends email notifications for human messages and meetings:
+  - Student → Scholar (chat): Scholar receives email
+  - Scholar → Student (chat): Student receives email
+  - Student requests meeting: Scholar receives email
+  - Scholar schedules/reschedules meeting: Both receive confirmation
+  - Meeting link sent (auto): Both receive link
+- AI messages are ignored.
+- Debounce prevents duplicate emails within `NOTIFY_DEBOUNCE_MS` per recipient/session/type.
+- Critical events (meeting requests/schedules/link) bypass debounce.
+
+Backend mailer files:
+- `backend/utils/mailer.js` — Nodemailer (Gmail SMTP)
+- `backend/agents/notificationAgent.js` — formats and sends notifications
+- Integrated in:
+  - `backend/routes/chatRoutes.js`
+  - `backend/routes/adminRoutes.js`
+  - `backend/controllers/meetingController.js`
+  - `backend/index.js` (cron link sender)
 
 ## Future Improvements
 - Stream AI responses (Server-Sent Events)

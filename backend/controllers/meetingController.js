@@ -94,6 +94,25 @@ const requestMeeting = async (req, res) => {
     // Mirror into Hikma chat (legacy direct chat)
     await mirrorToHikmaChat(studentId, scholarId, message.text);
 
+    // Notify scholar about meeting request
+    try {
+      const { notifyAdmin } = require('../agents/notificationAgent');
+      const scholarDoc = await User.findById(scholarId).select('email name');
+      if (scholarDoc?.email) {
+        await notifyAdmin({
+          senderName: req.user?.name || 'Unknown',
+          senderRole: 'student',
+          messageType: 'Meeting Request',
+          messagePreview: reason || message.text,
+          sessionId: undefined,
+          chatId: String(chat._id),
+          timestamp: Date.now(),
+          toEmail: scholarDoc.email,
+          force: true,
+        });
+      }
+    } catch {}
+
     res.json({ 
       success: true, 
       chatId: chat._id, 
@@ -143,6 +162,24 @@ const scheduleMeeting = async (req, res) => {
   // Mirror into Hikma chat
   await mirrorToHikmaChat(chat.studentId, chat.scholarId, message.text);
 
+  // Notify both participants about scheduling
+  try {
+    const { notifyAdmin } = require('../agents/notificationAgent');
+    const scholarDoc = await User.findById(scholarId).select('email name');
+    const studentDoc = await User.findById(chat.studentId).select('email name');
+    const payload = {
+      senderName: scholarDoc?.name || 'Scholar',
+      senderRole: 'scholar',
+      messageType: 'Chat',
+      messagePreview: message.text,
+      sessionId: undefined,
+      chatId: String(chat._id),
+      timestamp: Date.now(),
+    };
+    if (scholarDoc?.email) await notifyAdmin({ ...payload, toEmail: scholarDoc.email, force: true });
+    if (studentDoc?.email) await notifyAdmin({ ...payload, toEmail: studentDoc.email, force: true });
+  } catch {}
+
     res.json({ success: true, messageId: message._id });
   } catch (error) {
     console.error('Error scheduling meeting:', error);
@@ -183,6 +220,28 @@ const requestReschedule = async (req, res) => {
     // Mirror into Hikma chat
     await mirrorToHikmaChat(chat.studentId, chat.scholarId, msg.text);
 
+    // Notify counterpart about reschedule request
+    try {
+      const { notifyAdmin } = require('../agents/notificationAgent');
+      const senderRole = String(userId) === String(chat.scholarId) ? 'scholar' : 'student';
+      const sender = await User.findById(userId).select('name email');
+      const recipientId = senderRole === 'scholar' ? chat.studentId : chat.scholarId;
+      const recipient = await User.findById(recipientId).select('email name');
+      if (recipient?.email) {
+        await notifyAdmin({
+          senderName: sender?.name || 'User',
+          senderRole,
+          messageType: 'Chat',
+          messagePreview: msg.text,
+          sessionId: undefined,
+          chatId: String(chat._id),
+          timestamp: Date.now(),
+          toEmail: recipient.email,
+          force: false,
+        });
+      }
+    } catch {}
+
     return res.json({ success: true });
   } catch (error) {
     console.error('Error requesting reschedule:', error);
@@ -216,6 +275,23 @@ const respondReschedule = async (req, res) => {
       chat.messages.push(msg._id);
       chat.lastActivity = new Date();
       await chat.save();
+      try {
+        const { notifyAdmin } = require('../agents/notificationAgent');
+        const studentDoc = await User.findById(chat.studentId).select('email name');
+        if (studentDoc?.email) {
+          await notifyAdmin({
+            senderName: (await User.findById(scholarId).select('name'))?.name || 'Scholar',
+            senderRole: 'scholar',
+            messageType: 'Chat',
+            messagePreview: msg.text,
+            sessionId: undefined,
+            chatId: String(chat._id),
+            timestamp: Date.now(),
+            toEmail: studentDoc.email,
+            force: false,
+          });
+        }
+      } catch {}
       return res.json({ success: true });
     }
 
@@ -240,6 +316,24 @@ const respondReschedule = async (req, res) => {
 
     // Mirror into Hikma chat
     await mirrorToHikmaChat(chat.studentId, chat.scholarId, msg.text);
+
+    // Notify both participants about reschedule acceptance
+    try {
+      const { notifyAdmin } = require('../agents/notificationAgent');
+      const scholarDoc = await User.findById(scholarId).select('email name');
+      const studentDoc = await User.findById(chat.studentId).select('email name');
+      const payload = {
+        senderName: scholarDoc?.name || 'Scholar',
+        senderRole: 'scholar',
+        messageType: 'Chat',
+        messagePreview: msg.text,
+        sessionId: undefined,
+        chatId: String(chat._id),
+        timestamp: Date.now(),
+      };
+    if (scholarDoc?.email) await notifyAdmin({ ...payload, toEmail: scholarDoc.email, force: true });
+    if (studentDoc?.email) await notifyAdmin({ ...payload, toEmail: studentDoc.email, force: true });
+    } catch {}
 
     return res.json({ success: true });
   } catch (error) {
@@ -279,6 +373,25 @@ const cancelMeeting = async (req, res) => {
 
     // Mirror into Hikma chat
     await mirrorToHikmaChat(chat.studentId, chat.scholarId, msg.text);
+
+    // Notify student about cancellation
+    try {
+      const { notifyAdmin } = require('../agents/notificationAgent');
+      const studentDoc = await User.findById(chat.studentId).select('email name');
+      if (studentDoc?.email) {
+        await notifyAdmin({
+          senderName: (await User.findById(scholarId).select('name'))?.name || 'Scholar',
+          senderRole: 'scholar',
+          messageType: 'Chat',
+          messagePreview: msg.text,
+          sessionId: undefined,
+          chatId: String(chat._id),
+          timestamp: Date.now(),
+          toEmail: studentDoc.email,
+          force: false,
+        });
+      }
+    } catch {}
 
     return res.json({ success: true });
   } catch (error) {

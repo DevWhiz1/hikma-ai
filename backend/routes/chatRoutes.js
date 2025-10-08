@@ -3,6 +3,7 @@ const { auth } = require('../middleware/auth');
 const { getHistory, createSession, getSession, getSessions, deleteSession } = require('../controllers/chatController');
 const ChatSession = require('../models/ChatSession');
 const { filterSensitive } = require('../middleware/messageFilter');
+const { notifyAdmin } = require('../agents/notificationAgent');
 const SensitiveLog = require('../models/SensitiveLog');
 const User = require('../models/User');
 const router = express.Router();
@@ -26,7 +27,8 @@ router.post('/sessions/:id/messages', auth, async (req, res) => {
     const session = await ChatSession.findOne({ _id: id, user: req.user._id, isActive: true });
     if (!session) return res.status(404).json({ error: 'Session not found' });
     if (session.kind && session.kind !== 'direct') return res.status(400).json({ error: 'Not a direct chat' });
-    session.messages.push({ role: 'user', content: content.trim() });
+    const trimmed = content.trim();
+    session.messages.push({ role: 'user', content: trimmed });
     await session.save();
 
     // Mirror to counterpart session (student <-> scholar)
@@ -37,8 +39,34 @@ router.post('/sessions/:id/messages', auth, async (req, res) => {
         const counterpartId = String(mirror.studentSession) === String(session._id) ? mirror.scholarSession : mirror.studentSession;
         if (counterpartId) {
           await ChatSession.findByIdAndUpdate(counterpartId, {
-            $push: { messages: { role: 'assistant', content: content.trim() } },
+            $push: { messages: { role: 'assistant', content: trimmed } },
             $set: { lastActivity: new Date() }
+          });
+        }
+      }
+    } catch {}
+    // Notify counterpart participant via email
+    try {
+      const senderRole = (req.user?.role === 'scholar') ? 'scholar' : 'student';
+      const Enrollment = require('../models/Enrollment');
+      const Scholar = require('../models/Scholar');
+      const User = require('../models/User');
+      const mirror = await Enrollment.findOne({ $or: [ { studentSession: session._id }, { scholarSession: session._id } ] }).lean();
+      if (mirror) {
+        const isStudentSession = String(mirror.studentSession) === String(session._id);
+        const scholarProfile = await Scholar.findById(mirror.scholar).populate('user','email name');
+        const studentUser = await User.findById(mirror.student).select('email name');
+        const recipient = isStudentSession ? scholarProfile?.user : studentUser;
+        if (recipient?.email) {
+          await notifyAdmin({
+            senderName: req.user?.name || 'Unknown',
+            senderRole,
+            messageType: 'Chat',
+            messagePreview: trimmed,
+            sessionId: isStudentSession ? mirror.scholarSession : mirror.studentSession,
+            timestamp: Date.now(),
+            toEmail: recipient.email,
+            force: false,
           });
         }
       }

@@ -153,13 +153,31 @@ router.post('/scholar-applications/:id/reject', auth, requireRole('admin'), asyn
 router.post('/users/:id/message', auth, requireRole('admin'), async (req, res) => {
   try {
     const ChatSession = require('../models/ChatSession');
+    const { notifyAdmin } = require('../agents/notificationAgent');
     const u = await User.findById(req.params.id).select('name');
     if (!u) return res.status(404).json({ error: 'User not found' });
     // Create session for the user
-    const session = await ChatSession.create({ user: u._id, title: 'Admin', messages: [{ role: 'assistant', content: (req.body?.message || 'Message from admin') }], kind: 'direct' });
+    const content = (req.body?.message || 'Message from admin');
+    const session = await ChatSession.create({ user: u._id, title: 'Admin', messages: [{ role: 'assistant', content }], kind: 'direct' });
     // Also create an admin-side session for audit/visibility
     try {
-      await ChatSession.create({ user: req.user._id, title: `Admin -> ${u.name}`, messages: [{ role: 'assistant', content: (req.body?.message || 'Message to user') }], kind: 'direct' });
+      await ChatSession.create({ user: req.user._id, title: `Admin -> ${u.name}`, messages: [{ role: 'assistant', content }], kind: 'direct' });
+    } catch {}
+    // Email the user a notification about the admin message
+    try {
+      const userDoc = await User.findById(u._id).select('email name');
+      if (userDoc?.email) {
+        await notifyAdmin({
+          senderName: req.user?.name || 'Admin',
+          senderRole: 'admin',
+          messageType: 'Admin',
+          messagePreview: content,
+          sessionId: session._id,
+          timestamp: Date.now(),
+          toEmail: userDoc.email,
+          force: true,
+        });
+      }
     } catch {}
     res.json({ success: true, sessionId: session._id });
   } catch (e) {
