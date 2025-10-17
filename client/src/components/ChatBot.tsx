@@ -17,8 +17,105 @@ const ChatBot = () => {
   const [showHistory, setShowHistory] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 768) ? false : true);
   const [showScholarPicker, setShowScholarPicker] = useState(false);
   const [scholarOptions, setScholarOptions] = useState<{ id: string; name: string }[]>([]);
+  const [showMeetingLinkWarning, setShowMeetingLinkWarning] = useState(false);
+  const [showContactWarning, setShowContactWarning] = useState(false);
+  const [showLinkWarning, setShowLinkWarning] = useState(false);
   const isMobile = useRef(false);
   const skipNextLoad = useRef(false);
+
+  // Function to detect meeting links
+  const detectMeetingLinks = (text: string): boolean => {
+    const meetingPatterns = [
+      // Zoom
+      /https?:\/\/(?:www\.)?(?:zoom\.us\/j\/|zoom\.us\/my\/|zoom\.us\/meeting\/join\/)/i,
+      /https?:\/\/(?:www\.)?(?:zoom\.us\/s\/)/i,
+      /https?:\/\/(?:www\.)?(?:zoom\.us\/p\/)/i,
+      /https?:\/\/(?:www\.)?(?:zoom\.us\/webinar\/register\/)/i,
+      
+      // Google Meet
+      /https?:\/\/(?:meet\.google\.com\/[a-z-]+)/i,
+      
+      // Microsoft Teams
+      /https?:\/\/(?:teams\.microsoft\.com\/l\/meetup-join\/)/i,
+      /https?:\/\/(?:teams\.live\.com\/meet\/)/i,
+      
+      // WebEx
+      /https?:\/\/(?:[a-z0-9-]+\.webex\.com\/meet\/)/i,
+      /https?:\/\/(?:[a-z0-9-]+\.webex\.com\/join\/)/i,
+      
+      // GoToMeeting
+      /https?:\/\/(?:global\.gotomeeting\.com\/join\/)/i,
+      /https?:\/\/(?:app\.gotomeeting\.com\/join\/)/i,
+      
+      // BlueJeans
+      /https?:\/\/(?:bluejeans\.com\/)/i,
+      
+      // Jitsi (external)
+      /https?:\/\/(?:meet\.jit\.si\/)/i,
+      /https?:\/\/(?:[a-z0-9-]+\.jitsi\.meet\/)/i,
+      
+      // Discord
+      /https?:\/\/(?:discord\.gg\/)/i,
+      /https?:\/\/(?:discord\.com\/invite\/)/i,
+      
+      // Skype
+      /https?:\/\/(?:join\.skype\.com\/)/i,
+      /https?:\/\/(?:meet\.skype\.com\/)/i,
+      
+      // Whereby
+      /https?:\/\/(?:whereby\.com\/)/i,
+      
+      // BigBlueButton
+      /https?:\/\/(?:[a-z0-9-]+\.bigbluebutton\.org\/)/i,
+    ];
+    
+    return meetingPatterns.some(pattern => pattern.test(text));
+  };
+
+  // Function to detect contact information (phone/email)
+  const detectContactInfo = (text: string): boolean => {
+    // Phone number patterns (various formats)
+    const phonePatterns = [
+      /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/, // 123-456-7890, 123.456.7890, 1234567890
+      /\b\(\d{3}\)\s*\d{3}[-.]?\d{4}\b/, // (123) 456-7890, (123)456-7890
+      /\b\d{3}\s\d{3}\s\d{4}\b/, // 123 456 7890
+      /\b\+1[-.]?\d{3}[-.]?\d{3}[-.]?\d{4}\b/, // +1-123-456-7890
+      /\b1[-.]?\d{3}[-.]?\d{3}[-.]?\d{4}\b/, // 1-123-456-7890
+      /\b\d{10}\b/, // 1234567890 (10 digits)
+      /\b\d{11}\b/, // 11234567890 (11 digits starting with 1)
+    ];
+    
+    // Email patterns
+    const emailPatterns = [
+      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,}\b/, // standard email
+      /\b[A-Za-z0-9._%+-]+\s*@\s*[A-Za-z0-9.-]+\s*\.\s*[A-Z]{2,}\b/, // email with spaces
+    ];
+    
+    const hasPhone = phonePatterns.some(pattern => pattern.test(text));
+    const hasEmail = emailPatterns.some(pattern => pattern.test(text));
+    
+    return hasPhone || hasEmail;
+  };
+
+  // Function to detect all links
+  const detectAllLinks = (text: string): boolean => {
+    const linkPatterns = [
+      // HTTP/HTTPS URLs
+      /https?:\/\/[^\s]+/i,
+      // www links
+      /www\.[^\s]+/i,
+      // ftp links
+      /ftp:\/\/[^\s]+/i,
+      // file links
+      /file:\/\/[^\s]+/i,
+      // mailto links
+      /mailto:[^\s]+/i,
+      // tel links
+      /tel:[^\s]+/i,
+    ];
+    
+    return linkPatterns.some(pattern => pattern.test(text));
+  };
 
   // Load sessions on mount
   useEffect(() => {
@@ -376,11 +473,83 @@ const ChatBot = () => {
 
         {/* Input Form */}
         <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          {showMeetingLinkWarning && (
+            <div className="mb-3 p-3 bg-orange-100 dark:bg-orange-900 border border-orange-300 dark:border-orange-700 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-orange-800 dark:text-orange-200">
+                    <strong>Meeting links are not allowed.</strong> Please use the built-in meeting system to schedule meetings with scholars.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          {showContactWarning && (
+            <div className="mb-3 p-3 bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-800 dark:text-red-200">
+                    <strong>Contact information is not allowed.</strong> Please do not share phone numbers or email addresses in chat.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          {showLinkWarning && (
+            <div className="mb-3 p-3 bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded-lg">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>Links detected.</strong> All links are logged for security purposes. Please be mindful of what you share.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="flex space-x-2">
             <input
               type="text"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => {
+                const newMessage = e.target.value;
+                setMessage(newMessage);
+                
+                // Check for meeting links and show warning
+                if (detectMeetingLinks(newMessage)) {
+                  setShowMeetingLinkWarning(true);
+                } else {
+                  setShowMeetingLinkWarning(false);
+                }
+                
+                // Check for contact info and show warning
+                if (detectContactInfo(newMessage)) {
+                  setShowContactWarning(true);
+                } else {
+                  setShowContactWarning(false);
+                }
+                
+                // Check for links and show warning
+                if (detectAllLinks(newMessage)) {
+                  setShowLinkWarning(true);
+                } else {
+                  setShowLinkWarning(false);
+                }
+              }}
               placeholder="Type your message..."
               disabled={isLoading}
               className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"

@@ -4,6 +4,7 @@ import { authService } from '../services/authService';
 import { meetingService } from '../services/meetingService';
 import { Link, useNavigate } from 'react-router-dom';
 import MeetingChat from './MeetingChat';
+import ScholarFeedbackModal from './ScholarFeedbackModal';
 
 interface Scholar {
   _id: string;
@@ -24,6 +25,8 @@ export default function ScholarsPage() {
   const [error, setError] = useState<string | null>(null);
   const [enrolledIds, setEnrolledIds] = useState<Set<string>>(new Set());
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [selectedScholar, setSelectedScholar] = useState<{ id: string; name: string } | null>(null);
   const user = authService.getUser();
   const navigate = useNavigate();
 
@@ -85,10 +88,11 @@ export default function ScholarsPage() {
   };
 
   const onFeedback = async (id: string) => {
-    const text = prompt('Leave anonymous feedback:') || '';
-    const rating = Number(prompt('Rating 1-5:') || '5');
-    await leaveFeedback({ scholarId: id, text, rating });
-    alert('Feedback submitted');
+    const scholar = scholars.find(s => s._id === id);
+    if (scholar) {
+      setSelectedScholar({ id: scholar.user._id, name: scholar.user.name });
+      setFeedbackModalOpen(true);
+    }
   };
 
   const onChatWithScholar = async (scholarProfileId: string) => {
@@ -261,6 +265,19 @@ export default function ScholarsPage() {
             />
           </div>
         </div>
+      )}
+
+      {/* Scholar Feedback Modal */}
+      {selectedScholar && (
+        <ScholarFeedbackModal
+          isOpen={feedbackModalOpen}
+          onClose={() => {
+            setFeedbackModalOpen(false);
+            setSelectedScholar(null);
+          }}
+          scholarId={selectedScholar.id}
+          scholarName={selectedScholar.name}
+        />
       )}
     </div>
   );

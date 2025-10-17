@@ -2,7 +2,7 @@ const express = require('express');
 const { auth } = require('../middleware/auth');
 const { getHistory, createSession, getSession, getSessions, deleteSession } = require('../controllers/chatController');
 const ChatSession = require('../models/ChatSession');
-const { filterSensitive } = require('../middleware/messageFilter');
+const { filterSensitive, filterMeetingLinks, filterContactInfo, detectAllLinks } = require('../middleware/messageFilter');
 const { notifyAdmin } = require('../agents/notificationAgent');
 const SensitiveLog = require('../models/SensitiveLog');
 const User = require('../models/User');
@@ -22,8 +22,21 @@ router.post('/sessions/:id/messages', auth, async (req, res) => {
     const { id } = req.params;
     let { content } = req.body;
     if (!content || !content.trim()) return res.status(400).json({ error: 'Message content required' });
-    const { filtered, warn } = filterSensitive(content);
-    content = filtered;
+    
+    // Filter sensitive content
+    const { filtered: sensitiveFiltered, warn } = filterSensitive(content);
+    content = sensitiveFiltered;
+    
+    // Filter meeting links
+    const { filtered: meetingFiltered, hasMeetingLink } = filterMeetingLinks(content);
+    content = meetingFiltered;
+    
+    // Filter contact information (phone/email)
+    const { filtered: contactFiltered, hasContactInfo, hasPhone, hasEmail } = filterContactInfo(content);
+    content = contactFiltered;
+    
+    // Detect all links for logging
+    const { hasLinks, links } = detectAllLinks(req.body.content || '');
     const session = await ChatSession.findOne({ _id: id, user: req.user._id, isActive: true });
     if (!session) return res.status(404).json({ error: 'Session not found' });
     if (session.kind && session.kind !== 'direct') return res.status(400).json({ error: 'Not a direct chat' });
@@ -84,6 +97,49 @@ router.post('/sessions/:id/messages', auth, async (req, res) => {
           user.warningCount = 0;
         }
         await user.save();
+      } catch {}
+    }
+    
+    // Log meeting link usage
+    if (hasMeetingLink) {
+      try {
+        await SensitiveLog.create({ 
+          user: req.user._id, 
+          textSample: (req.body?.content||'').slice(0,200), 
+          redactedText: content.slice(0,200), 
+          endpoint: `/api/chat/sessions/${id}/messages`,
+          type: 'meeting_link_blocked'
+        });
+      } catch {}
+    }
+    
+    // Log contact info usage
+    if (hasContactInfo) {
+      try {
+        await SensitiveLog.create({ 
+          user: req.user._id, 
+          textSample: (req.body?.content||'').slice(0,200), 
+          redactedText: content.slice(0,200), 
+          endpoint: `/api/chat/sessions/${id}/messages`,
+          type: hasPhone ? 'phone_blocked' : 'email_blocked'
+        });
+      } catch {}
+    }
+    
+    // Log all links for sensitive information tracking
+    if (hasLinks) {
+      try {
+        await SensitiveLog.create({ 
+          user: req.user._id, 
+          textSample: (req.body?.content||'').slice(0,200), 
+          redactedText: content.slice(0,200), 
+          endpoint: `/api/chat/sessions/${id}/messages`,
+          type: 'link_detected',
+          metadata: { 
+            links: links.slice(0, 10), // Store first 10 links
+            linkCount: links.length 
+          }
+        });
       } catch {}
     }
     res.json({ success: true });

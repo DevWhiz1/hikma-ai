@@ -105,6 +105,33 @@ html.light body, html.light p, html.light li { color: var(--color-text); }
 /* Buttons rounding */
 button, .btn, .btn-primary, .btn-secondary { border-radius: 16px !important; }
 
+/* Force badge text to be black in light mode */
+html.light .text-black { color: #000000 !important; }
+html.light [class*="text-black"] { color: #000000 !important; }
+html.light .bg-red-100 .text-black,
+html.light .bg-blue-100 .text-black,
+html.light .bg-purple-100 .text-black,
+html.light .bg-yellow-100 .text-black,
+html.light .bg-orange-100 .text-black,
+html.light .bg-green-100 .text-black,
+html.light .bg-gray-100 .text-black { color: #000000 !important; }
+
+/* Force button text to be white in light mode */
+html.light button[class*="bg-"]:not([class*="bg-white"]):not([class*="bg-gray-100"]):not([class*="bg-transparent"]) {
+  color: #ffffff !important;
+}
+html.light .bg-blue-600,
+html.light .bg-emerald-600,
+html.light .bg-purple-600,
+html.light .bg-orange-600,
+html.light .bg-red-600,
+html.light .bg-gray-600,
+html.light .bg-gray-700,
+html.light .bg-indigo-600,
+html.light .bg-yellow-600 {
+  color: #ffffff !important;
+}
+
 /* Tertiary button helper */
 .btn-tertiary {
   background: transparent;

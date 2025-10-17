@@ -6,6 +6,8 @@ const crypto = require('crypto');
 const ChatSession = require('../models/ChatSession');
 const Enrollment = require('../models/Enrollment');
 const Scholar = require('../models/Scholar');
+const SensitiveLog = require('../models/SensitiveLog');
+const { filterMeetingLinks, filterContactInfo, detectAllLinks } = require('../middleware/messageFilter');
 
 // Generate Jitsi meeting link
 const generateJitsiLink = () => {
@@ -456,11 +458,21 @@ const sendMessage = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found or unauthorized' });
     }
 
+    // Filter meeting links
+    const { filtered: meetingFiltered, hasMeetingLink } = filterMeetingLinks(text);
+    
+    // Filter contact information (phone/email)
+    const { filtered: contactFiltered, hasContactInfo } = filterContactInfo(meetingFiltered);
+    const finalText = contactFiltered;
+    
+    // Detect all links for logging
+    const { hasLinks, links } = detectAllLinks(text);
+
     // Create message
     const message = new Message({
       sender: senderId,
       chatId,
-      text,
+      text: finalText,
       type: 'text'
     });
     await message.save();
@@ -472,6 +484,23 @@ const sendMessage = async (req, res) => {
 
     // Populate sender info
     await message.populate('sender', 'name email');
+
+    // Log all links for sensitive information tracking
+    if (hasLinks) {
+      try {
+        await SensitiveLog.create({ 
+          user: senderId, 
+          textSample: text.slice(0,200), 
+          redactedText: finalText.slice(0,200), 
+          endpoint: `/api/meetings/send-message`,
+          type: 'link_detected',
+          metadata: { 
+            links: links.slice(0, 10), // Store first 10 links
+            linkCount: links.length 
+          }
+        });
+      } catch {}
+    }
 
     res.json({ success: true, message });
   } catch (error) {
