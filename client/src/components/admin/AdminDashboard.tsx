@@ -551,11 +551,11 @@ export default function AdminDashboard() {
                             </div>
                             <div className="text-right">
                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                log.type === 'meeting_link_blocked' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' :
-                                log.type === 'phone_blocked' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300' :
-                                log.type === 'email_blocked' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' :
-                                log.type === 'link_detected' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' :
-                                'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300'
+                                log.type === 'meeting_link_blocked' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300' :
+                                log.type === 'phone_blocked' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
+                                log.type === 'email_blocked' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300' :
+                                log.type === 'link_detected' ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/50 dark:text-lime-300' :
+                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
                               }`}>
                                 {log.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                               </span>

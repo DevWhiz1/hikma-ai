@@ -4,8 +4,8 @@ import TopBar from './components/shared/TopBar';
 import Sidebar from './components/shared/Sidebar';
 import UserDashboard from './components/user/Dashboard/UserDashboard';
 import ScholarProfileView from './components/user/ScholarProfile/ScholarProfileView';
-import AIChat from './components/user/Chat/AIChat';
-import ScholarChat from './components/user/Chat/ScholarChat';
+import AIChat from './components/user/Chat/EnhancedAIChat';
+import ScholarChat from './components/user/Chat/EnhancedScholarChat';
 import UpcomingClasses from './components/user/UpcomingClasses/UpcomingClasses';
 import QiblaFinder from './components/features/QiblaFinder';
 import AppContent from './components/shared/AppContent';
@@ -19,6 +19,8 @@ import ScholarDashboard from './components/scholar/ScholarDashboard';
 import ScholarFeedbackManagement from './components/scholar/ScholarFeedbackManagement';
 import AdminDashboard from './components/admin/AdminDashboard';
 import FeedbackButton from './components/shared/FeedbackButton';
+import PaymentTracking from './components/user/PaymentTracking/PaymentTracking';
+import ScholarPaymentTracking from './components/scholar/PaymentTracking/ScholarPaymentTracking';
 import { authService } from './services/authService';
 
 interface MainAppProps {
@@ -136,6 +138,8 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
                   <Route path="/qibla" element={<QiblaFinder />} />
                   <Route path="/prayer-times" element={<PrayerTimesPage />} />
                   <Route path="/tasbih" element={<TasbihCounter />} />
+                  <Route path="/payments" element={<PaymentTracking />} />
+                  <Route path="/scholar/payments" element={<ScholarPaymentTracking />} />
                   <Route path="/resources" element={
                     <div className="p-6">
                       <h1 className="text-2xl font-bold mb-4">Islamic Resources</h1>

@@ -66,9 +66,23 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onPaymentSelect }
   const loadAnalytics = async () => {
     try {
       const response = await paymentService.getPaymentAnalytics('30d');
-      setAnalytics(response.analytics);
+      setAnalytics(response?.analytics || {
+        totalRevenue: 0,
+        totalTransactions: 0,
+        completedTransactions: 0,
+        pendingTransactions: 0,
+        failedTransactions: 0
+      });
     } catch (error) {
       console.error('Failed to load analytics:', error);
+      // Set default values on error
+      setAnalytics({
+        totalRevenue: 0,
+        totalTransactions: 0,
+        completedTransactions: 0,
+        pendingTransactions: 0,
+        failedTransactions: 0
+      });
     }
   };
 
@@ -157,16 +171,16 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onPaymentSelect }
             <CurrencyDollarIcon className="h-8 w-8 text-green-600 mr-3" />
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">${analytics.totalRevenue.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">${(analytics?.totalRevenue || 0).toFixed(2)}</p>
             </div>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex items-center">
-            <CalendarIcon className="h-8 w-8 text-blue-600 mr-3" />
+            <CalendarIcon className="h-8 w-8 text-emerald-600 mr-3" />
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Transactions</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.totalTransactions}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics?.totalTransactions || 0}</p>
             </div>
           </div>
         </div>
@@ -175,25 +189,25 @@ const PaymentManagement: React.FC<PaymentManagementProps> = ({ onPaymentSelect }
             <CheckCircleIcon className="h-8 w-8 text-green-600 mr-3" />
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.completedTransactions}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics?.completedTransactions || 0}</p>
             </div>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex items-center">
-            <ClockIcon className="h-8 w-8 text-yellow-600 mr-3" />
+            <ClockIcon className="h-8 w-8 text-teal-600 mr-3" />
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.pendingTransactions}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics?.pendingTransactions || 0}</p>
             </div>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <div className="flex items-center">
-            <XCircleIcon className="h-8 w-8 text-red-600 mr-3" />
+            <XCircleIcon className="h-8 w-8 text-lime-600 mr-3" />
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Failed</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics.failedTransactions}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics?.failedTransactions || 0}</p>
             </div>
           </div>
         </div>

@@ -197,13 +197,16 @@ const getPaymentAnalytics = async (req, res) => {
       {
         $group: {
           _id: null,
-          totalAmount: { $sum: '$amount' },
-          totalPayments: { $sum: 1 },
-          completedPayments: {
+          totalRevenue: { $sum: '$amount' },
+          totalTransactions: { $sum: 1 },
+          completedTransactions: {
             $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
           },
-          pendingPayments: {
+          pendingTransactions: {
             $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+          },
+          failedTransactions: {
+            $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] }
           }
         }
       }
@@ -212,10 +215,11 @@ const getPaymentAnalytics = async (req, res) => {
     res.json({
       success: true,
       analytics: analytics[0] || {
-        totalAmount: 0,
-        totalPayments: 0,
-        completedPayments: 0,
-        pendingPayments: 0
+        totalRevenue: 0,
+        totalTransactions: 0,
+        completedTransactions: 0,
+        pendingTransactions: 0,
+        failedTransactions: 0
       }
     });
   } catch (error) {

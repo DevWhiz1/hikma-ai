@@ -88,6 +88,7 @@ Stay on mission as an Islamic guide in every response.`;
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/enhanced-chat', require('./routes/enhancedChatRoutes'));
 // Mount new scholar & meet routes
 app.use('/api/scholars', require('./routes/scholarRoutes'));
 app.use('/api/meet', require('./routes/meetRoutes'));

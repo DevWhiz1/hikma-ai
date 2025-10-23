@@ -15,26 +15,26 @@ const FeedbackHistory: React.FC<FeedbackHistoryProps> = ({ isOpen, onClose }) =>
   const [totalPages, setTotalPages] = useState(1);
 
   const categories = {
-    bug: { label: 'Bug Report', icon: '🐛', color: 'bg-red-100 text-black dark:bg-red-900/20 dark:text-red-200' },
-    feature: { label: 'Feature Request', icon: '💡', color: 'bg-blue-100 text-black dark:bg-blue-900/20 dark:text-blue-200' },
-    ui: { label: 'UI/UX Issue', icon: '🎨', color: 'bg-purple-100 text-black dark:bg-purple-900/20 dark:text-purple-200' },
-    performance: { label: 'Performance', icon: '⚡', color: 'bg-yellow-100 text-black dark:bg-yellow-900/20 dark:text-yellow-200' },
-    security: { label: 'Security Concern', icon: '🔒', color: 'bg-orange-100 text-black dark:bg-orange-900/20 dark:text-orange-200' },
+    bug: { label: 'Bug Report', icon: '🐛', color: 'bg-emerald-100 text-black dark:bg-emerald-900/20 dark:text-emerald-200' },
+    feature: { label: 'Feature Request', icon: '💡', color: 'bg-green-100 text-black dark:bg-green-900/20 dark:text-green-200' },
+    ui: { label: 'UI/UX Issue', icon: '🎨', color: 'bg-teal-100 text-black dark:bg-teal-900/20 dark:text-teal-200' },
+    performance: { label: 'Performance', icon: '⚡', color: 'bg-lime-100 text-black dark:bg-lime-900/20 dark:text-lime-200' },
+    security: { label: 'Security Concern', icon: '🔒', color: 'bg-emerald-100 text-black dark:bg-emerald-900/20 dark:text-emerald-200' },
     general: { label: 'General Feedback', icon: '💬', color: 'bg-green-100 text-black dark:bg-green-900/20 dark:text-green-200' }
   };
 
   const statuses = {
-    pending: { label: 'Pending', icon: Clock, color: 'text-black dark:text-blue-200', bgColor: 'bg-blue-100 dark:bg-blue-900/20' },
-    in_progress: { label: 'In Progress', icon: Loader, color: 'text-black dark:text-yellow-200', bgColor: 'bg-yellow-100 dark:bg-yellow-900/20' },
+    pending: { label: 'Pending', icon: Clock, color: 'text-black dark:text-emerald-200', bgColor: 'bg-emerald-100 dark:bg-emerald-900/20' },
+    in_progress: { label: 'In Progress', icon: Loader, color: 'text-black dark:text-teal-200', bgColor: 'bg-teal-100 dark:bg-teal-900/20' },
     resolved: { label: 'Resolved', icon: CheckCircle, color: 'text-black dark:text-green-200', bgColor: 'bg-green-100 dark:bg-green-900/20' },
     closed: { label: 'Closed', icon: XCircle, color: 'text-black dark:text-gray-200', bgColor: 'bg-gray-100 dark:bg-gray-900/20' }
   };
 
   const priorities = {
     low: { label: 'Low', color: 'text-green-600' },
-    medium: { label: 'Medium', color: 'text-yellow-600' },
-    high: { label: 'High', color: 'text-orange-600' },
-    critical: { label: 'Critical', color: 'text-red-600' }
+    medium: { label: 'Medium', color: 'text-teal-600' },
+    high: { label: 'High', color: 'text-emerald-600' },
+    critical: { label: 'Critical', color: 'text-lime-600' }
   };
 
   const loadFeedback = async (pageNum: number = 1) => {

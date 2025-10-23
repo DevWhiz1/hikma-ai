@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../../services/authService';
 import { getMyEnrollments } from '../../../services/scholarService';
+import PaymentSummary from '../../shared/PaymentSummary/PaymentSummary';
+import PaymentHistory from '../../shared/PaymentHistory/PaymentHistory';
 import { 
   ChatBubbleLeftRightIcon,
   CalendarIcon,
@@ -16,7 +18,8 @@ import {
   ChevronRightIcon,
   BellIcon,
   ChartBarIcon,
-  SparklesIcon
+  SparklesIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 
 interface Enrollment {
@@ -121,16 +124,24 @@ const UserDashboard = () => {
       title: 'Tasbih Counter',
       description: 'Track your dhikr and remembrance',
       link: '/tasbih',
-      color: 'orange',
-      gradient: 'from-amber-500 to-yellow-500'
+      color: 'emerald',
+      gradient: 'from-emerald-500 to-teal-500'
     },
     {
       icon: BookOpenIcon,
       title: 'Hadith Explorer',
       description: 'Search and explore authentic hadith',
       link: '/hadith',
-      color: 'purple',
-      gradient: 'from-purple-500 to-pink-600'
+      color: 'teal',
+      gradient: 'from-teal-500 to-emerald-600'
+    },
+    {
+      icon: CurrencyDollarIcon,
+      title: 'Payment Tracking',
+      description: 'Track your payments and spending history',
+      link: '/payments',
+      color: 'lime',
+      gradient: 'from-lime-500 to-emerald-600'
     },
   ];
 
@@ -138,10 +149,10 @@ const UserDashboard = () => {
     const colors: { [key: string]: string } = {
       emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
       green: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800',
-      blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800',
-      purple: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800',
-      indigo: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800',
-      orange: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+      teal: 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800',
+      lime: 'bg-lime-50 dark:bg-lime-900/20 text-lime-600 dark:text-lime-400 border-lime-200 dark:border-lime-800',
+      mint: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700',
+      forest: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700',
     };
     return colors[color] || colors.emerald;
   };
@@ -285,6 +296,14 @@ const UserDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Payment Summary */}
+        <div className="mb-12">
+          <PaymentSummary 
+            isScholar={false}
+            onViewDetails={() => navigate('/payments')}
+          />
+        </div>
 
         {/* Features Grid */}
         <div className="mb-12">

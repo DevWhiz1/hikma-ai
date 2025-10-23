@@ -26,6 +26,8 @@ import {
 import { meetingService } from '../../services/meetingService';
 import { authService } from '../../services/authService';
 import { getMyScholarProfile } from '../../services/scholarService';
+import PaymentSummary from '../shared/PaymentSummary/PaymentSummary';
+import PaymentHistory from '../shared/PaymentHistory/PaymentHistory';
 
 interface DashboardData {
   enrolledStudents: any[];
@@ -81,8 +83,8 @@ const ScholarDashboard = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20 flex items-center justify-center">
         <div className="text-center">
-          <ExclamationTriangleIcon className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <ExclamationTriangleIcon className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-emerald-600 mb-4">Access Denied</h1>
           <p className="text-gray-600 dark:text-gray-400 mb-6">This dashboard is only available to approved scholars.</p>
           <Link 
             to="/" 
@@ -169,8 +171,8 @@ const ScholarDashboard = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20 flex items-center justify-center">
         <div className="text-center">
-          <ExclamationTriangleIcon className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Error Loading Dashboard</h2>
+          <ExclamationTriangleIcon className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-emerald-600 mb-2">Error Loading Dashboard</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           <button
             onClick={loadData}
@@ -207,7 +209,7 @@ const ScholarDashboard = () => {
               </Link>
               <Link 
                 to="/scholars/profile/edit" 
-                className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-lg"
+                className="flex items-center px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors shadow-lg"
               >
                 <PencilIcon className="h-5 w-5 mr-2" />
                 Edit Profile
@@ -238,7 +240,7 @@ const ScholarDashboard = () => {
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     profile.approved 
                       ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
-                      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'
+                      : 'bg-lime-100 text-lime-800 dark:bg-lime-900/50 dark:text-lime-300'
                   }`}>
                     {profile.approved ? 'Approved' : 'Pending Approval'}
                   </span>
@@ -265,8 +267,8 @@ const ScholarDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
             <div className="flex items-center">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
-                <UserGroupIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
+                <UserGroupIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Enrolled Students</p>
@@ -277,8 +279,8 @@ const ScholarDashboard = () => {
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
             <div className="flex items-center">
-              <div className="p-3 bg-amber-100 dark:bg-amber-900/50 rounded-xl">
-                <BellIcon className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              <div className="p-3 bg-teal-100 dark:bg-teal-900/50 rounded-xl">
+                <BellIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Meeting Requests</p>
@@ -301,8 +303,8 @@ const ScholarDashboard = () => {
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
             <div className="flex items-center">
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/50 rounded-xl">
-                <VideoCameraIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              <div className="p-3 bg-lime-100 dark:bg-lime-900/50 rounded-xl">
+                <VideoCameraIcon className="h-6 w-6 text-lime-600 dark:text-lime-400" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Meetings</p>
@@ -323,8 +325,8 @@ const ScholarDashboard = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                    <StarIcon className="h-4 w-4 text-blue-600" />
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
+                    <StarIcon className="h-4 w-4 text-emerald-600" />
                   </div>
                   <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">Average Rating</span>
                 </div>
@@ -341,8 +343,8 @@ const ScholarDashboard = () => {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
-                    <BookOpenIcon className="h-4 w-4 text-purple-600" />
+                  <div className="p-2 bg-teal-100 dark:bg-teal-900/50 rounded-lg">
+                    <BookOpenIcon className="h-4 w-4 text-teal-600" />
                   </div>
                   <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">Total Sessions</span>
                 </div>
@@ -350,8 +352,8 @@ const ScholarDashboard = () => {
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
-                    <CurrencyDollarIcon className="h-4 w-4 text-amber-600" />
+                  <div className="p-2 bg-lime-100 dark:bg-lime-900/50 rounded-lg">
+                    <CurrencyDollarIcon className="h-4 w-4 text-lime-600" />
                   </div>
                   <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">Monthly Earnings</span>
                 </div>
@@ -400,7 +402,7 @@ const ScholarDashboard = () => {
               className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 text-left"
             >
               <div className="flex items-center mb-2">
-                <PencilIcon className="h-5 w-5 text-blue-600 mr-2" />
+                <PencilIcon className="h-5 w-5 text-emerald-600 mr-2" />
                 <span className="font-medium text-gray-900 dark:text-white">Edit Profile</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Update your bio and specializations</p>
@@ -411,7 +413,7 @@ const ScholarDashboard = () => {
               className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 text-left"
             >
               <div className="flex items-center mb-2">
-                <StarIcon className="h-5 w-5 text-amber-600 mr-2" />
+                <StarIcon className="h-5 w-5 text-teal-600 mr-2" />
                 <span className="font-medium text-gray-900 dark:text-white">View Feedback</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Check student reviews and ratings</p>
@@ -433,7 +435,7 @@ const ScholarDashboard = () => {
               className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 text-left"
             >
               <div className="flex items-center mb-2">
-                <ChatBubbleLeftRightIcon className="h-5 w-5 text-purple-600 mr-2" />
+                <ChatBubbleLeftRightIcon className="h-5 w-5 text-lime-600 mr-2" />
                 <span className="font-medium text-gray-900 dark:text-white">Chat</span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">Communicate with students</p>
@@ -525,7 +527,7 @@ const ScholarDashboard = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Meeting Requests</h2>
             {data.requested.length > 0 && (
-              <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-sm font-medium rounded-full">
+              <span className="px-3 py-1 bg-lime-100 dark:bg-lime-900/50 text-lime-800 dark:text-lime-300 text-sm font-medium rounded-full">
                 {data.requested.length} pending
               </span>
             )}
@@ -534,7 +536,7 @@ const ScholarDashboard = () => {
             {data.requested.length > 0 ? (
               <div className="p-6 space-y-4">
                 {data.requested.map((meeting: any) => (
-                  <div key={meeting._id} className="p-4 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800">
+                  <div key={meeting._id} className="p-4 rounded-xl border border-lime-200 bg-lime-50 dark:bg-lime-900/20 dark:border-lime-800">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">{meeting.studentId?.name}</div>
@@ -542,7 +544,7 @@ const ScholarDashboard = () => {
                           Chat ID: {meeting.chatId?._id}
                         </div>
                       </div>
-                      <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-sm font-medium rounded-full">
+                      <span className="px-3 py-1 bg-lime-100 dark:bg-lime-900/50 text-lime-800 dark:text-lime-300 text-sm font-medium rounded-full">
                         Pending
                       </span>
                     </div>
@@ -607,15 +609,15 @@ const ScholarDashboard = () => {
               {data.scheduled.length > 0 ? (
                 <div className="p-6 space-y-4">
                   {data.scheduled.map((meeting: any) => (
-                    <div key={meeting._id} className="p-4 rounded-xl border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
+                    <div key={meeting._id} className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:border-emerald-800">
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <div className="font-medium text-gray-900 dark:text-white">{meeting.studentId?.name}</div>
-                          <div className="text-sm text-blue-700 dark:text-blue-300">
+                          <div className="text-sm text-emerald-700 dark:text-emerald-300">
                             {meeting.scheduledTime ? new Date(meeting.scheduledTime).toLocaleString() : 'TBD'}
                           </div>
                         </div>
-                        <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium rounded-full">
+                        <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 text-sm font-medium rounded-full">
                           Scheduled
                         </span>
                       </div>
@@ -632,7 +634,7 @@ const ScholarDashboard = () => {
                         )}
                         <button
                           onClick={() => handleCancelMeeting(meeting.chatId._id)}
-                          className="px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                          className="px-3 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors"
                         >
                           Cancel
                         </button>
@@ -684,7 +686,7 @@ const ScholarDashboard = () => {
                         )}
                         <button
                           onClick={() => handleCancelMeeting(meeting.chatId._id)}
-                          className="px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                          className="px-3 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors"
                         >
                           Cancel
                         </button>
@@ -703,6 +705,14 @@ const ScholarDashboard = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Payment Summary */}
+        <div className="mb-8">
+          <PaymentSummary 
+            isScholar={true}
+            onViewDetails={() => navigate('/scholar/payments')}
+          />
         </div>
       </div>
     </div>

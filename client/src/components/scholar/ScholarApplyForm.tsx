@@ -267,13 +267,13 @@ const ScholarApplyForm = () => {
                     onChange={handleInputChange}
                     placeholder="Tell us about your Islamic background, education, and teaching experience..."
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.bio ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.bio ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     rows={4}
                     required
                   />
                   {errors.bio && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.bio}
                     </p>
@@ -290,7 +290,7 @@ const ScholarApplyForm = () => {
                     onChange={handleInputChange}
                     placeholder="e.g., Quran Recitation, Hadith Studies, Islamic Law, Arabic Language"
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.specializations ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.specializations ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     required
                   />
@@ -298,7 +298,7 @@ const ScholarApplyForm = () => {
                     Separate multiple specializations with commas
                   </p>
                   {errors.specializations && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.specializations}
                     </p>
@@ -315,7 +315,7 @@ const ScholarApplyForm = () => {
                     onChange={handleInputChange}
                     placeholder="e.g., Arabic, English, Urdu, French"
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.languages ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.languages ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     required
                   />
@@ -323,7 +323,7 @@ const ScholarApplyForm = () => {
                     Separate multiple languages with commas
                   </p>
                   {errors.languages && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.languages}
                     </p>
@@ -353,12 +353,12 @@ const ScholarApplyForm = () => {
                     onChange={handleInputChange}
                     placeholder="e.g., 5"
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.experienceYears ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.experienceYears ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     required
                   />
                   {errors.experienceYears && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.experienceYears}
                     </p>
@@ -375,13 +375,13 @@ const ScholarApplyForm = () => {
                     onChange={handleInputChange}
                     placeholder="List your Islamic education, degrees, certifications, and any notable achievements..."
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.qualifications ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.qualifications ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     rows={4}
                     required
                   />
                   {errors.qualifications && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.qualifications}
                     </p>
@@ -410,12 +410,12 @@ const ScholarApplyForm = () => {
                     placeholder="Describe your teaching approach, methodology, and how you make Islamic knowledge accessible to students..."
                     rows={6}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.teachingPhilosophy ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.teachingPhilosophy ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     required
                   />
                   {errors.teachingPhilosophy && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.teachingPhilosophy}
                     </p>
@@ -433,12 +433,12 @@ const ScholarApplyForm = () => {
                     placeholder="List any Islamic certifications, ijazahs, awards, or recognitions you have received..."
                     rows={4}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.certifications ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.certifications ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     required
                   />
                   {errors.certifications && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.certifications}
                     </p>
@@ -495,12 +495,12 @@ const ScholarApplyForm = () => {
                     placeholder="Describe your available teaching hours, time zones, and preferred days for sessions..."
                     rows={4}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.availability ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.availability ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     required
                   />
                   {errors.availability && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.availability}
                     </p>
@@ -520,7 +520,7 @@ const ScholarApplyForm = () => {
                     min="0"
                     step="5"
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.hourlyRate ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.hourlyRate ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     required
                   />
@@ -528,16 +528,16 @@ const ScholarApplyForm = () => {
                     Set your hourly rate for one-on-one sessions with students
                   </p>
                   {errors.hourlyRate && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.hourlyRate}
                     </p>
                   )}
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">Pricing Guidelines</h4>
-                  <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-4 border border-emerald-200 dark:border-emerald-800">
+                  <h4 className="text-sm font-medium text-emerald-900 dark:text-emerald-100 mb-2">Pricing Guidelines</h4>
+                  <ul className="text-sm text-emerald-800 dark:text-emerald-200 space-y-1">
                     <li>• $20-40/hour: Beginner scholars or new to online teaching</li>
                     <li>• $40-80/hour: Experienced scholars with proven track record</li>
                     <li>• $80+/hour: Highly qualified scholars with extensive credentials</li>
@@ -565,7 +565,7 @@ const ScholarApplyForm = () => {
                     onChange={handleInputChange}
                     placeholder="https://www.youtube.com/watch?v=..."
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                      errors.demoVideoUrl ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      errors.demoVideoUrl ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                     }`}
                     required
                   />
@@ -573,7 +573,7 @@ const ScholarApplyForm = () => {
                     Upload a short video demonstrating your teaching style or recitation
                   </p>
                   {errors.demoVideoUrl && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.demoVideoUrl}
                     </p>
@@ -592,7 +592,7 @@ const ScholarApplyForm = () => {
                         onChange={handleInputChange}
                         placeholder="Or enter photo URL directly"
                         className={`flex-1 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                          errors.photoUrl ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                          errors.photoUrl ? 'border-emerald-500' : 'border-gray-300 dark:border-gray-600'
                         }`}
                         required
                       />
@@ -628,7 +628,7 @@ const ScholarApplyForm = () => {
                     )}
                   </div>
                   {errors.photoUrl && (
-                    <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
+                    <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
                       <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                       {errors.photoUrl}
                     </p>
@@ -670,9 +670,9 @@ const ScholarApplyForm = () => {
         </div>
 
         {/* Application Tips */}
-        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
-          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4">Application Tips</h3>
-          <ul className="space-y-2 text-blue-800 dark:text-blue-200">
+        <div className="mt-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-6 border border-emerald-200 dark:border-emerald-800">
+          <h3 className="text-lg font-semibold text-emerald-900 dark:text-emerald-100 mb-4">Application Tips</h3>
+          <ul className="space-y-2 text-emerald-800 dark:text-emerald-200">
             <li className="flex items-start">
               <CheckCircleIcon className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
               <span>Be detailed in your bio and qualifications to help students understand your expertise</span>

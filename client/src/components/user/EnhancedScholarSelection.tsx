@@ -17,6 +17,7 @@ import {
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { getScholars } from '../../services/scholarService';
 import { Link } from 'react-router-dom';
+import ScholarImage from '../shared/ScholarImage';
 
 interface Scholar {
   _id: string;
@@ -324,10 +325,10 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center">
-                    <img
-                      src={scholar.photoUrl || 'https://via.placeholder.com/60x60?text=Scholar'}
+                    <ScholarImage
+                      src={scholar.photoUrl}
                       alt={scholar.user.name}
-                      className="h-15 w-15 rounded-full object-cover mr-4"
+                      className="h-12 w-12 rounded-full object-cover mr-4"
                     />
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{scholar.user.name}</h3>
@@ -422,10 +423,10 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
             <div key={scholar._id} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <img
-                    src={scholar.photoUrl || 'https://via.placeholder.com/60x60?text=Scholar'}
+                  <ScholarImage
+                    src={scholar.photoUrl}
                     alt={scholar.user.name}
-                    className="h-15 w-15 rounded-full object-cover"
+                    className="h-12 w-12 rounded-full object-cover"
                   />
                   <div>
                     <div className="flex items-center space-x-2">
@@ -509,10 +510,10 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
 
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
-                  <img
-                    src={selectedScholar.photoUrl || 'https://via.placeholder.com/80x80?text=Scholar'}
+                  <ScholarImage
+                    src={selectedScholar.photoUrl}
                     alt={selectedScholar.user.name}
-                    className="h-20 w-20 rounded-full object-cover"
+                    className="h-16 w-16 rounded-full object-cover"
                   />
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{selectedScholar.user.name}</h4>

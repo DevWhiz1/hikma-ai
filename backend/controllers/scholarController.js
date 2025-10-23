@@ -52,7 +52,9 @@ async function applyScholar(req, res) {
 
 async function listScholars(_req, res) {
   try {
-    const scholars = await Scholar.find({ approved: true }).populate('user', 'name lockUntil _id');
+    const scholars = await Scholar.find({ approved: true })
+      .populate('user', 'name lockUntil _id')
+      .select('user bio specializations languages experienceYears qualifications demoVideoUrl photoUrl approved averageRating totalReviews totalStudents totalSessions isActive isVerified country hourlyRate monthlyRate createdAt updatedAt');
     res.json(scholars);
   } catch (e) {
     res.status(500).json({ message: e.message });

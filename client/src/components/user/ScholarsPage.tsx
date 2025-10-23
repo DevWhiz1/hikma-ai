@@ -5,6 +5,7 @@ import { meetingService } from '../../services/meetingService';
 import { Link, useNavigate } from 'react-router-dom';
 import MeetingChat from './Chat/MeetingChat';
 import ScholarFeedbackModal from './ScholarFeedbackModal';
+import ScholarImage from '../shared/ScholarImage';
 import EnhancedScholarSelection from './EnhancedScholarSelection';
 
 interface Scholar {
@@ -165,11 +166,10 @@ export default function ScholarsPage() {
               <div className="p-5">
                 {/* Header */}
                 <div className="flex items-start gap-4">
-                  <img
-                    src={s.photoUrl || 'https://via.placeholder.com/140x140?text=Scholar'}
+                  <ScholarImage
+                    src={s.photoUrl}
                     alt={s.user?.name || 'Scholar'}
-                    className="h-16 w-16 md:h-20 md:w-20 rounded-lg object-cover border border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-100 dark:bg-gray-900"
-                    onError={(e:any)=>{ e.currentTarget.src = 'https://via.placeholder.com/140x140?text=Scholar'; }}
+                    className="h-12 w-12 md:h-14 md:w-14 rounded-lg object-cover border border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-100 dark:bg-gray-900"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

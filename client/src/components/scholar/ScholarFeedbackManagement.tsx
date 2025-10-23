@@ -70,26 +70,26 @@ const ScholarFeedbackManagement: React.FC = () => {
   const [showAnalytics, setShowAnalytics] = useState(false);
 
   const categories = {
-    teaching_quality: { label: 'Teaching Quality', icon: '🎓', color: 'bg-blue-100 text-black dark:bg-blue-900/20 dark:text-blue-200' },
+    teaching_quality: { label: 'Teaching Quality', icon: '🎓', color: 'bg-emerald-100 text-black dark:bg-emerald-900/20 dark:text-emerald-200' },
     communication: { label: 'Communication', icon: '💬', color: 'bg-green-100 text-black dark:bg-green-900/20 dark:text-green-200' },
-    knowledge: { label: 'Knowledge & Expertise', icon: '📚', color: 'bg-purple-100 text-black dark:bg-purple-900/20 dark:text-purple-200' },
-    availability: { label: 'Availability', icon: '⏰', color: 'bg-yellow-100 text-black dark:bg-yellow-900/20 dark:text-yellow-200' },
-    patience: { label: 'Patience & Understanding', icon: '🤲', color: 'bg-orange-100 text-black dark:bg-orange-900/20 dark:text-orange-200' },
+    knowledge: { label: 'Knowledge & Expertise', icon: '📚', color: 'bg-teal-100 text-black dark:bg-teal-900/20 dark:text-teal-200' },
+    availability: { label: 'Availability', icon: '⏰', color: 'bg-lime-100 text-black dark:bg-lime-900/20 dark:text-lime-200' },
+    patience: { label: 'Patience & Understanding', icon: '🤲', color: 'bg-emerald-100 text-black dark:bg-emerald-900/20 dark:text-emerald-200' },
     general: { label: 'General Feedback', icon: '💭', color: 'bg-gray-100 text-black dark:bg-gray-900/20 dark:text-gray-200' }
   };
 
   const statuses = {
-    pending: { label: 'Pending', icon: Clock, color: 'text-black dark:text-blue-200', bgColor: 'bg-blue-100 dark:bg-blue-900/20' },
-    in_progress: { label: 'In Progress', icon: Loader, color: 'text-black dark:text-yellow-200', bgColor: 'bg-yellow-100 dark:bg-yellow-900/20' },
+    pending: { label: 'Pending', icon: Clock, color: 'text-black dark:text-emerald-200', bgColor: 'bg-emerald-100 dark:bg-emerald-900/20' },
+    in_progress: { label: 'In Progress', icon: Loader, color: 'text-black dark:text-teal-200', bgColor: 'bg-teal-100 dark:bg-teal-900/20' },
     resolved: { label: 'Resolved', icon: CheckCircle, color: 'text-black dark:text-green-200', bgColor: 'bg-green-100 dark:bg-green-900/20' },
     closed: { label: 'Closed', icon: XCircle, color: 'text-black dark:text-gray-200', bgColor: 'bg-gray-100 dark:bg-gray-900/20' }
   };
 
   const priorities = {
     low: { label: 'Low', color: 'text-black dark:text-green-200', bgColor: 'bg-green-100 dark:bg-green-900/20' },
-    medium: { label: 'Medium', color: 'text-black dark:text-yellow-200', bgColor: 'bg-yellow-100 dark:bg-yellow-900/20' },
-    high: { label: 'High', color: 'text-black dark:text-orange-200', bgColor: 'bg-orange-100 dark:bg-orange-900/20' },
-    critical: { label: 'Critical', color: 'text-black dark:text-red-200', bgColor: 'bg-red-100 dark:bg-red-900/20' }
+    medium: { label: 'Medium', color: 'text-black dark:text-teal-200', bgColor: 'bg-teal-100 dark:bg-teal-900/20' },
+    high: { label: 'High', color: 'text-black dark:text-emerald-200', bgColor: 'bg-emerald-100 dark:bg-emerald-900/20' },
+    critical: { label: 'Critical', color: 'text-black dark:text-lime-200', bgColor: 'bg-lime-100 dark:bg-lime-900/20' }
   };
 
   const loadFeedback = async () => {

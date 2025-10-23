@@ -9,7 +9,8 @@ import {
   UserGroupIcon, 
   CalendarIcon,
   AcademicCapIcon,
-  ClockIcon
+  ClockIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import hikmahLogo from '../../../assets/logo.png';
 interface SidebarProps {
@@ -23,6 +24,7 @@ const baseNavigationItems = [
   { name: 'AI Chat', icon: ChatBubbleLeftRightIcon, id: 'ai-chat', path: '/chat/ai' },
   { name: 'Scholar Chat', icon: UserGroupIcon, id: 'scholar-chat', path: '/chat/scholar' },
   { name: 'Scholars', icon: AcademicCapIcon, id: 'scholars', path: '/scholars' },
+  { name: 'Payment Tracking', icon: CurrencyDollarIcon, id: 'payments', path: '/payments' },
   { name: 'Upcoming Classes', icon: CalendarIcon, id: 'upcoming-classes', path: '/upcoming-classes' },
   { name: 'Prayer Times', icon: ClockIcon, id: 'prayer-times', path: '/prayer-times' },
   { name: 'Find Qibla', icon: GlobeAltIcon, id: 'qibla', path: '/qibla' },
@@ -44,12 +46,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
   const user = authService.getUser();
   const navigationItems = React.useMemo(() => {
     const items = [...baseNavigationItems];
+    
+    // Replace payment tracking with role-specific versions
+    if (user?.role === 'scholar') {
+      const paymentIndex = items.findIndex(item => item.id === 'payments');
+      if (paymentIndex !== -1) {
+        items[paymentIndex] = { 
+          name: 'Earnings & Payments', 
+          icon: CurrencyDollarIcon, 
+          id: 'scholar-payments', 
+          path: '/scholar/payments' 
+        };
+      }
+      items.push({ name: 'Scholar Dashboard', icon: BookOpenIcon, id: 'scholar-dashboard', path: '/scholars/dashboard' });
+    }
+    
     if (user?.role === 'admin') {
       items.push({ name: 'Admin', icon: BookOpenIcon, id: 'admin', path: '/admin' });
     }
-    if (user?.role === 'scholar') {
-      items.push({ name: 'Scholar Dashboard', icon: BookOpenIcon, id: 'scholar-dashboard', path: '/scholars/dashboard' });
-    }
+    
     return items;
   }, [user?.role]);
 
@@ -63,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
         <div className="p-4 overflow-y-auto">
           <div className="flex items-center p-2 mb-6 select-none">
             <img src={`${hikmahLogo}`} alt="Islamic Scholar Logo" className="h-16 w-16" />
-            <h2 className="text-xl font-bold text-amber-500 dark:text-emerald-400 ml-2">Hikmah</h2>
+            <h2 className="text-xl font-bold text-emerald-500 dark:text-emerald-400 ml-2">Hikmah</h2>
           </div>
           <nav className="space-y-1">
             {navigationItems.map((item) => (
@@ -71,10 +86,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
                 key={item.id}
                 to={item.path}
                 onClick={() => handleClick(item.id)}
-                className={({ isActive }) => `group relative flex items-center w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200 no-underline hover:no-underline
+                className={({ isActive }) => `group relative flex items-center w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200 no-underline hover:no-underline
                   ${isActive
-                    ? 'text-[#FFFDF9] bg-blue-600 dark:bg-emerald-700 dark:text-gray-300'
-                    : `text-[#FFFDF9] hover:bg-blue-700 ${isDashboardPage ? 'hover:[&_*]:text-white' : ''} dark:text-gray-300 dark:hover:bg-emerald-700 dark:hover:text-gray-300`}
+                    ? 'text-[#FFFDF9] bg-emerald-600 dark:bg-emerald-700 dark:text-gray-300'
+                    : `text-[#FFFDF9] hover:bg-emerald-700 ${isDashboardPage ? 'hover:[&_*]:text-white' : ''} dark:text-gray-300 dark:hover:bg-emerald-700 dark:hover:text-gray-300`}
                 `}
               >
                 {({ isActive }) => (
