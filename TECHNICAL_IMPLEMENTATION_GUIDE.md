@@ -713,8 +713,8 @@ describe('Smart Scheduler Component', () => {
 
 #### Production Environment Variables
 ```bash
-# Database
-MONGO_URI=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/your_database_name
+# Database (replace with your actual MongoDB connection string)
+MONGO_URI=your_mongodb_connection_string_here
 
 # Authentication
 JWT_SECRET=your_secure_jwt_secret_key_here
@@ -777,7 +777,7 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - MONGO_URI=mongodb://mongo:27017/hikmah-ai
+      - MONGO_URI=mongodb://mongo:27017/database_name
     depends_on:
       - mongo
     volumes:
