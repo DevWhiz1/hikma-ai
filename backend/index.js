@@ -94,6 +94,8 @@ app.use('/api/meet', require('./routes/meetRoutes'));
 app.use('/api/meetings', require('./routes/meetingRoutes'));
 app.use('/api/hadith', require('./routes/hadithRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/enhanced-admin', require('./routes/enhancedAdminRoutes'));
+app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
 app.use('/api/scholar-feedback', require('./routes/scholarFeedbackRoutes'));
 
