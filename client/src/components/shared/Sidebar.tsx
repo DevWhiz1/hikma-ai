@@ -34,7 +34,6 @@ const baseNavigationItems = [
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) => {
   const location = useLocation();
-  const isDashboardPage = location.pathname.includes('/scholars/dashboard') || location.pathname.includes('/admin');
   
   console.log('Sidebar isOpen:', isOpen);
   
@@ -78,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
         <div className="p-4 overflow-y-auto">
           <div className="flex items-center p-2 mb-6 select-none">
             <img src={`${hikmahLogo}`} alt="Islamic Scholar Logo" className="h-16 w-16" />
-            <h2 className="text-xl font-bold text-emerald-500 dark:text-emerald-400 ml-2">Hikmah</h2>
+            <h2 className="text-xl font-bold text-emerald-600 ml-2">Hikmah</h2>
           </div>
           <nav className="space-y-1">
             {navigationItems.map((item) => (
@@ -88,15 +87,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
                 onClick={() => handleClick(item.id)}
                 className={({ isActive }) => `group relative flex items-center w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200 no-underline hover:no-underline
                   ${isActive
-                    ? 'text-[#FFFDF9] bg-emerald-600 dark:bg-emerald-700 dark:text-gray-300'
-                    : `text-[#FFFDF9] hover:bg-emerald-700 ${isDashboardPage ? 'hover:[&_*]:text-white' : ''} dark:text-gray-300 dark:hover:bg-emerald-700 dark:hover:text-gray-300`}
+                    ? 'text-white bg-emerald-600 dark:bg-emerald-700 dark:text-gray-300'
+                    : `text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 dark:text-gray-300 dark:hover:bg-emerald-700 dark:hover:text-gray-300`}
                 `}
               >
                 {({ isActive }) => (
                   <>
                     <span className={`absolute left-0 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full ${isActive ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-transparent'}`} />
-                    <item.icon className={`h-5 w-5 mr-3 ${isActive ? 'text-[#FFFDF9] dark:text-gray-300' : 'text-[#FFFDF9] dark:text-gray-300'}`} />
-                    <span className={`font-medium truncate ${isActive ? 'dark:text-gray-300' : 'dark:text-gray-300'}`}>{item.name}</span>
+                    <item.icon className={`h-5 w-5 mr-3 ${isActive ? 'text-white dark:text-gray-300' : 'text-gray-700 dark:text-gray-300'}`} />
+                    <span className={`font-medium truncate ${isActive ? 'text-white dark:text-gray-300' : 'text-gray-700 dark:text-gray-300'}`}>{item.name}</span>
                   </>
                 )}
               </NavLink>

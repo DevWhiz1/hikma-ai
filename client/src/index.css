@@ -2,23 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 /* Light mode palette overrides */
-/* Light theme palette — Elegant, spiritual, uplifting */
-/* Primary (Emerald): #009975, Secondary (Gold Sand): #FFD166,
-   Accent (Teal Blue): #118AB2, Background (Off-white Sand): #FAF8F2,
-   Text Primary (Charcoal): #2F2F2F, Sidebar (Deep Forest): #003C3C */
+/* Clean modern green theme with white background */
 :root {
-  --color-bg: #FFFDF9;         /* Ivory White */
-  --color-surface: #FFFFFF;     /* card surface */
-  --color-muted: #F4A261;       /* Sand Beige for dividers */
-  --color-text: #1A1A1A;        /* Graphite */
-  --color-subtext: rgba(26,26,26,0.6); /* muted labels */
+  --color-bg: #FFFFFF;          /* Pure White */
+  --color-surface: #14b8a61f;   /* card surface */
+  --color-muted: #E5E7EB;       /* Light Gray for dividers */
+  --color-text: #1F2937;        /* Dark Gray */
+  --color-subtext: rgba(31,41,55,0.6); /* muted labels */
 
-  --color-primary: #E76F51;     /* Terracotta */
-  --color-primary-hover: #D85D43;
-  --color-secondary: #2A9D8F;   /* Sage Green */
-  --color-secondary-hover: #218177;
-  --color-accent: #F4A261;      /* Sand Beige */
-  --color-sidebar: #264653;     /* Deep Olive */
+  --color-primary: #10B981;     /* Emerald Green */
+  --color-primary-hover: #059669;
+  --color-secondary: #34D399;   /* Light Green */
+  --color-secondary-hover: #10B981;
+  --color-accent: #6EE7B7;      /* Light Green Accent */
+  --color-sidebar: #F9FAFB;     /* Light Gray Sidebar */
 }
 
 html.light body {
@@ -29,53 +26,63 @@ html.light body {
 html.light .bg-gray-50 { background-color: var(--color-bg) !important; }
 html.light .bg-white { background-color: var(--color-surface) !important; }
 html.light .bg-gray-100 { background-color: var(--color-surface) !important; }
+
+/* Keep navbar white in light mode - separate from surface color */
+html.light .navbar,
+html.light .topbar,
+html.light .header,
+html.light [class*="top-"],
+html.light [class*="sticky"],
+html.light [class*="fixed"] {
+  background-color: #FFFFFF !important;
+}
 html.light .text-gray-900 { color: var(--color-text) !important; }
 html.light .text-gray-600 { color: var(--color-subtext) !important; }
 html.light .border-gray-200 { border-color: var(--color-muted) !important; }
 html.light .border-gray-300 { border-color: var(--color-muted) !important; }
 
 /* Map common utilities to brand colors (no component rewrites needed) */
-/* Primary */
+/* Primary Green */
 html.light .bg-emerald-600 { background-color: var(--color-primary) !important; }
 html.light .hover\:bg-emerald-700:hover { background-color: var(--color-primary-hover) !important; }
 html.light .text-emerald-600 { color: var(--color-primary) !important; }
 html.light .hover\:text-emerald-700:hover { color: var(--color-primary-hover) !important; }
 
-/* Secondary (map common blue utilities to Sage Green) */
+/* Secondary Green (map blue utilities to green) */
 html.light .bg-blue-600 { background-color: var(--color-secondary) !important; }
 html.light .hover\:bg-blue-700:hover { background-color: var(--color-secondary-hover) !important; }
 html.light .text-blue-600 { color: var(--color-secondary) !important; }
 html.light .hover\:text-blue-700:hover { color: var(--color-secondary-hover) !important; }
 
-/* Accent (map yellow/amber to Sand Beige) */
+/* Accent Green (map yellow/amber to green) */
 html.light .bg-yellow-500, html.light .bg-amber-500 { background-color: var(--color-accent) !important; }
-html.light .hover\:bg-yellow-600:hover, html.light .hover\:bg-amber-600:hover { background-color: #e59a51 !important; }
+html.light .hover\:bg-yellow-600:hover, html.light .hover\:bg-amber-600:hover { background-color: var(--color-secondary-hover) !important; }
 html.light .text-yellow-500, html.light .text-amber-500 { color: var(--color-accent) !important; }
-html.light .hover\:text-yellow-600:hover, html.light .hover\:text-amber-600:hover { color: #e59a51 !important; }
+html.light .hover\:text-yellow-600:hover, html.light .hover\:text-amber-600:hover { color: var(--color-secondary-hover) !important; }
 
 /* Optional: sidebar hook if component provides a class */
 html.light .sidebar, html.light .Sidebar, html.light [data-role="sidebar"] {
   background-color: var(--color-sidebar) !important;
-  color: #FFFDF9 !important;
+  color: var(--color-text) !important;
 }
 
 /* Subtle cards/shadows on light */
 html.light .shadow, html.light .shadow-sm, html.light .shadow-md, html.light .shadow-lg {
-  --tw-shadow-color: rgba(244, 162, 97, 0.15); /* soft beige shadow */
+  --tw-shadow-color: rgba(16, 185, 129, 0.1); /* soft green shadow */
 }
 
 /* Rounded card feel enhancer on light surfaces without touching layout */
 html.light .ring-1 { --tw-ring-color: var(--color-muted) !important; }
 
-/* Section dividers / hover backgrounds: very light Emerald tint */
-html.light .hover\:bg-emerald-50:hover { background-color: #E4F6F2 !important; }
-html.light .bg-emerald-50 { background-color: #E4F6F2 !important; }
+/* Section dividers / hover backgrounds: very light Green tint */
+html.light .hover\:bg-emerald-50:hover { background-color: #d7ffec !important; }
+html.light .bg-emerald-50 { background-color: #d7ffec !important; }
 
 /* Cards: border radius + soft shadow defaults */
 .card {
   background-color: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 6px 18px rgba(244, 162, 97, 0.15);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.1);
 }
 
 /* Typography and links */
@@ -132,6 +139,535 @@ html.light .bg-yellow-600 {
   color: #ffffff !important;
 }
 
+/* Force sidebar and navbar text to be black in light mode for visibility */
+html.light .sidebar *,
+html.light .Sidebar *,
+html.light [data-role="sidebar"] *,
+html.light .navbar *,
+html.light .topbar *,
+html.light .header * {
+  color: #1F2937 !important;
+}
+
+/* Force navbar text to be black in light mode - more specific targeting */
+html.light .sticky.top-0 *,
+html.light [class*="sticky"] *,
+html.light [class*="top-0"] *,
+html.light .flex.items-center.justify-between * {
+  color: #1F2937 !important;
+}
+
+/* Make Hikmah AI logo green and constant in both light and dark modes */
+html.light h1.text-emerald-600,
+html.light h1[class*="text-emerald"],
+html.light .text-xl.font-bold.text-emerald-600,
+html.light [class*="Hikmah"] {
+  color: #10B981 !important;
+}
+
+html.dark h1.text-emerald-600,
+html.dark h1[class*="text-emerald"],
+html.dark .text-xl.font-bold.text-emerald-600,
+html.dark [class*="Hikmah"] {
+  color: #10B981 !important;
+}
+
+/* Force white text to be black in light mode for visibility */
+html.light .text-white,
+html.light .text-gray-100,
+html.light .text-gray-200,
+html.light .text-gray-300,
+html.light .text-gray-400,
+html.light .text-gray-500,
+html.light .text-gray-600,
+html.light .text-gray-700,
+html.light .text-gray-800,
+html.light .text-gray-900 {
+  color: #1F2937 !important;
+}
+
+/* Remove duplicate rules - handled above */
+
+/* Keep emerald colors for branding */
+html.light .text-emerald-600,
+html.light .text-emerald-500,
+html.light .text-emerald-400 {
+  color: #10B981 !important;
+}
+
+/* Keep green colors for branding */
+html.light .text-green-600,
+html.light .text-green-500,
+html.light .text-green-400 {
+  color: #10B981 !important;
+}
+
+/* Override specific text colors to be dark in light mode (but not icons) */
+html.light .text-blue-600:not(svg *),
+html.light .text-blue-500:not(svg *),
+html.light .text-blue-400:not(svg *),
+html.light .text-purple-600:not(svg *),
+html.light .text-purple-500:not(svg *),
+html.light .text-purple-400:not(svg *),
+html.light .text-red-600:not(svg *),
+html.light .text-red-500:not(svg *),
+html.light .text-red-400:not(svg *),
+html.light .text-yellow-600:not(svg *),
+html.light .text-yellow-500:not(svg *),
+html.light .text-yellow-400:not(svg *),
+html.light .text-orange-600:not(svg *),
+html.light .text-orange-500:not(svg *),
+html.light .text-orange-400:not(svg *),
+html.light .text-indigo-600:not(svg *),
+html.light .text-indigo-500:not(svg *),
+html.light .text-indigo-400:not(svg *),
+html.light p.text-blue-600,
+html.light p.text-blue-500,
+html.light p.text-blue-400,
+html.light p.text-purple-600,
+html.light p.text-purple-500,
+html.light p.text-purple-400,
+html.light p.text-red-600,
+html.light p.text-red-500,
+html.light p.text-red-400,
+html.light p.text-yellow-600,
+html.light p.text-yellow-500,
+html.light p.text-yellow-400,
+html.light p.text-orange-600,
+html.light p.text-orange-500,
+html.light p.text-orange-400,
+html.light p.text-indigo-600,
+html.light p.text-indigo-500,
+html.light p.text-indigo-400 {
+  color: #1F2937 !important;
+}
+
+/* Preserve all icon colors in light mode - these rules override the text color changes */
+html.light .text-emerald-600,
+html.light .text-emerald-500,
+html.light .text-emerald-400,
+html.light svg.text-emerald-600,
+html.light svg.text-emerald-500,
+html.light svg.text-emerald-400,
+html.light [class*="Icon"].text-emerald-600,
+html.light [class*="Icon"].text-emerald-500,
+html.light [class*="Icon"].text-emerald-400 {
+  color: #10B981 !important;
+}
+
+html.light .text-green-600,
+html.light .text-green-500,
+html.light .text-green-400 {
+  color: #059669 !important;
+}
+
+html.light .text-blue-600,
+html.light .text-blue-500,
+html.light .text-blue-400 {
+  color: #2563EB !important;
+}
+
+html.light .text-purple-600,
+html.light .text-purple-500,
+html.light .text-purple-400 {
+  color: #7C3AED !important;
+}
+
+html.light .text-yellow-600,
+html.light .text-yellow-500,
+html.light .text-yellow-400 {
+  color: #D97706 !important;
+}
+
+html.light .text-orange-600,
+html.light .text-orange-500,
+html.light .text-orange-400 {
+  color: #EA580C !important;
+}
+
+html.light .text-red-600,
+html.light .text-red-500,
+html.light .text-red-400 {
+  color: #DC2626 !important;
+}
+
+html.light .text-indigo-600,
+html.light .text-indigo-500,
+html.light .text-indigo-400 {
+  color: #4F46E5 !important;
+}
+
+html.light .text-teal-600,
+html.light .text-teal-500,
+html.light .text-teal-400 {
+  color: #0D9488 !important;
+}
+
+html.light .text-cyan-600,
+html.light .text-cyan-500,
+html.light .text-cyan-400 {
+  color: #0891B2 !important;
+}
+
+html.light .text-lime-600,
+html.light .text-lime-500,
+html.light .text-lime-400 {
+  color: #65A30D !important;
+}
+
+html.light .text-pink-600,
+html.light .text-pink-500,
+html.light .text-pink-400 {
+  color: #DB2777 !important;
+}
+
+html.light .text-rose-600,
+html.light .text-rose-500,
+html.light .text-rose-400 {
+  color: #E11D48 !important;
+}
+
+html.light .text-violet-600,
+html.light .text-violet-500,
+html.light .text-violet-400 {
+  color: #7C2D12 !important;
+}
+
+html.light .text-sky-600,
+html.light .text-sky-500,
+html.light .text-sky-400 {
+  color: #0284C7 !important;
+}
+
+html.light .text-slate-600,
+html.light .text-slate-500,
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-zinc-600,
+html.light .text-zinc-500,
+html.light .text-zinc-400 {
+  color: #525252 !important;
+}
+
+html.light .text-neutral-600,
+html.light .text-neutral-500,
+html.light .text-neutral-400 {
+  color: #525252 !important;
+}
+
+html.light .text-stone-600,
+html.light .text-stone-500,
+html.light .text-stone-400 {
+  color: #57534E !important;
+}
+
+/* Universal icon protection - override all text color changes for icons */
+html.light svg,
+html.light [class*="Icon"],
+html.light [class*="icon"],
+html.light .h-5,
+html.light .h-6,
+html.light .h-4,
+html.light .w-5,
+html.light .w-6,
+html.light .w-4 {
+  color: inherit !important;
+}
+
+/* Force specific icon colors to override text changes */
+html.light svg.text-emerald-600,
+html.light svg.text-emerald-500,
+html.light svg.text-emerald-400,
+html.light [class*="Icon"].text-emerald-600,
+html.light [class*="Icon"].text-emerald-500,
+html.light [class*="Icon"].text-emerald-400 {
+  color: #10B981 !important;
+}
+
+html.light svg.text-green-600,
+html.light svg.text-green-500,
+html.light svg.text-green-400,
+html.light [class*="Icon"].text-green-600,
+html.light [class*="Icon"].text-green-500,
+html.light [class*="Icon"].text-green-400 {
+  color: #059669 !important;
+}
+
+html.light svg.text-blue-600,
+html.light svg.text-blue-500,
+html.light svg.text-blue-400,
+html.light [class*="Icon"].text-blue-600,
+html.light [class*="Icon"].text-blue-500,
+html.light [class*="Icon"].text-blue-400 {
+  color: #2563EB !important;
+}
+
+html.light svg.text-purple-600,
+html.light svg.text-purple-500,
+html.light svg.text-purple-400,
+html.light [class*="Icon"].text-purple-600,
+html.light [class*="Icon"].text-purple-500,
+html.light [class*="Icon"].text-purple-400 {
+  color: #7C3AED !important;
+}
+
+/* Make Explore Our Features icons white and constant */
+html.light .bg-gradient-to-r svg,
+html.light .bg-gradient-to-r [class*="Icon"],
+html.light .bg-gradient-to-r .h-6,
+html.light .bg-gradient-to-r .w-6,
+html.light .bg-gradient-to-r .h-5,
+html.light .bg-gradient-to-r .w-5,
+html.light [class*="gradient"] svg,
+html.light [class*="gradient"] [class*="Icon"],
+html.light [class*="gradient"] .h-6,
+html.light [class*="gradient"] .w-6,
+html.light [class*="gradient"] .h-5,
+html.light [class*="gradient"] .w-5 {
+  color: #ffffff !important;
+}
+
+html.dark .bg-gradient-to-r svg,
+html.dark .bg-gradient-to-r [class*="Icon"],
+html.dark .bg-gradient-to-r .h-6,
+html.dark .bg-gradient-to-r .w-6,
+html.dark .bg-gradient-to-r .h-5,
+html.dark .bg-gradient-to-r .w-5,
+html.dark [class*="gradient"] svg,
+html.dark [class*="gradient"] [class*="Icon"],
+html.dark [class*="gradient"] .h-6,
+html.dark [class*="gradient"] .w-6,
+html.dark [class*="gradient"] .h-5,
+html.dark [class*="gradient"] .w-5 {
+  color: #ffffff !important;
+}
+
+/* Sidebar hover and active states - Light Mode */
+html.light .sidebar a:hover,
+html.light .Sidebar a:hover,
+html.light [data-role="sidebar"] a:hover,
+html.light .sidebar .group:hover,
+html.light .Sidebar .group:hover,
+html.light [data-role="sidebar"] .group:hover {
+  background-color: #ECFDF5 !important; /* Light green background */
+  color: #10B981 !important; /* Accent green text */
+}
+
+html.light .sidebar a:hover *,
+html.light .Sidebar a:hover *,
+html.light [data-role="sidebar"] a:hover *,
+html.light .sidebar .group:hover *,
+html.light .Sidebar .group:hover *,
+html.light [data-role="sidebar"] .group:hover * {
+  color: #10B981 !important; /* Accent green for all child elements */
+}
+
+/* Sidebar active state - Light Mode */
+html.light .sidebar a.active,
+html.light .Sidebar a.active,
+html.light [data-role="sidebar"] a.active,
+html.light .sidebar [aria-current="page"],
+html.light .Sidebar [aria-current="page"],
+html.light [data-role="sidebar"] [aria-current="page"] {
+  background-color: #10B981 !important; /* Emerald background */
+  color: #ffffff !important; /* White text */
+}
+
+html.light .sidebar a.active *,
+html.light .Sidebar a.active *,
+html.light [data-role="sidebar"] a.active *,
+html.light .sidebar [aria-current="page"] *,
+html.light .Sidebar [aria-current="page"] *,
+html.light [data-role="sidebar"] [aria-current="page"] * {
+  color: #ffffff !important; /* White for all child elements */
+}
+
+/* Remove bullets from active state - Comprehensive targeting */
+html.light .sidebar a.active::before,
+html.light .Sidebar a.active::before,
+html.light [data-role="sidebar"] a.active::before,
+html.light .sidebar [aria-current="page"]::before,
+html.light .Sidebar [aria-current="page"]::before,
+html.light [data-role="sidebar"] [aria-current="page"]::before,
+html.light .sidebar a[class*="active"]::before,
+html.light .Sidebar a[class*="active"]::before,
+html.light [data-role="sidebar"] a[class*="active"]::before,
+html.light .sidebar .active::before,
+html.light .Sidebar .active::before,
+html.light [data-role="sidebar"] .active::before,
+html.light .sidebar span[class*="absolute"]::before,
+html.light .Sidebar span[class*="absolute"]::before,
+html.light [data-role="sidebar"] span[class*="absolute"]::before {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Sidebar hover and active states - Dark Mode */
+html.dark .sidebar a:hover,
+html.dark .Sidebar a:hover,
+html.dark [data-role="sidebar"] a:hover,
+html.dark .sidebar .group:hover,
+html.dark .Sidebar .group:hover,
+html.dark [data-role="sidebar"] .group:hover {
+  background-color: #064E3B !important; /* Dark green background */
+  color: #10B981 !important; /* Accent green text */
+}
+
+html.dark .sidebar a:hover *,
+html.dark .Sidebar a:hover *,
+html.dark [data-role="sidebar"] a:hover *,
+html.dark .sidebar .group:hover *,
+html.dark .Sidebar .group:hover *,
+html.dark [data-role="sidebar"] .group:hover * {
+  color: #10B981 !important; /* Accent green for all child elements */
+}
+
+/* Sidebar active state - Dark Mode */
+html.dark .sidebar a.active,
+html.dark .Sidebar a.active,
+html.dark [data-role="sidebar"] a.active,
+html.dark .sidebar [aria-current="page"],
+html.dark .Sidebar [aria-current="page"],
+html.dark [data-role="sidebar"] [aria-current="page"] {
+  background-color: #10B981 !important; /* Emerald background */
+  color: #ffffff !important; /* White text */
+}
+
+html.dark .sidebar a.active *,
+html.dark .Sidebar a.active *,
+html.dark [data-role="sidebar"] a.active *,
+html.dark .sidebar [aria-current="page"] *,
+html.dark .Sidebar [aria-current="page"] *,
+html.dark [data-role="sidebar"] [aria-current="page"] * {
+  color: #ffffff !important; /* White for all child elements */
+}
+
+/* Remove bullets from active state - Dark Mode - Comprehensive targeting */
+html.dark .sidebar a.active::before,
+html.dark .Sidebar a.active::before,
+html.dark [data-role="sidebar"] a.active::before,
+html.dark .sidebar [aria-current="page"]::before,
+html.dark .Sidebar [aria-current="page"]::before,
+html.dark [data-role="sidebar"] [aria-current="page"]::before,
+html.dark .sidebar a[class*="active"]::before,
+html.dark .Sidebar a[class*="active"]::before,
+html.dark [data-role="sidebar"] a[class*="active"]::before,
+html.dark .sidebar .active::before,
+html.dark .Sidebar .active::before,
+html.dark [data-role="sidebar"] .active::before,
+html.dark .sidebar span[class*="absolute"]::before,
+html.dark .Sidebar span[class*="absolute"]::before,
+html.dark [data-role="sidebar"] span[class*="absolute"]::before {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Protect CTA card from light mode text changes - maintain dark appearance */
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] {
+  background: linear-gradient(to right, #059669, #0d9488) !important;
+}
+
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 *,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] * {
+  color: #ffffff !important;
+}
+
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 h2,
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 p,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] h2,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] p {
+  color: #ffffff !important;
+}
+
+/* Ensure active states remain constant and don't change */
+html.light .sidebar a.active,
+html.light .Sidebar a.active,
+html.light [data-role="sidebar"] a.active,
+html.light .sidebar [aria-current="page"],
+html.light .Sidebar [aria-current="page"],
+html.light [data-role="sidebar"] [aria-current="page"],
+html.light .sidebar a[class*="active"],
+html.light .Sidebar a[class*="active"],
+html.light [data-role="sidebar"] a[class*="active"] {
+  background-color: #10B981 !important;
+  color: #ffffff !important;
+  pointer-events: none !important; /* Prevent hover effects on active items */
+}
+
+html.light .sidebar a.active *,
+html.light .Sidebar a.active *,
+html.light [data-role="sidebar"] a.active *,
+html.light .sidebar [aria-current="page"] *,
+html.light .Sidebar [aria-current="page"] *,
+html.light [data-role="sidebar"] [aria-current="page"] *,
+html.light .sidebar a[class*="active"] *,
+html.light .Sidebar a[class*="active"] *,
+html.light [data-role="sidebar"] a[class*="active"] * {
+  color: #ffffff !important;
+}
+
+/* Dark mode active state persistence */
+html.dark .sidebar a.active,
+html.dark .Sidebar a.active,
+html.dark [data-role="sidebar"] a.active,
+html.dark .sidebar [aria-current="page"],
+html.dark .Sidebar [aria-current="page"],
+html.dark [data-role="sidebar"] [aria-current="page"],
+html.dark .sidebar a[class*="active"],
+html.dark .Sidebar a[class*="active"],
+html.dark [data-role="sidebar"] a[class*="active"] {
+  background-color: #10B981 !important;
+  color: #ffffff !important;
+  pointer-events: none !important; /* Prevent hover effects on active items */
+}
+
+html.dark .sidebar a.active *,
+html.dark .Sidebar a.active *,
+html.dark [data-role="sidebar"] a.active *,
+html.dark .sidebar [aria-current="page"] *,
+html.dark .Sidebar [aria-current="page"] *,
+html.dark [data-role="sidebar"] [aria-current="page"] *,
+html.dark .sidebar a[class*="active"] *,
+html.dark .Sidebar a[class*="active"] *,
+html.dark [data-role="sidebar"] a[class*="active"] * {
+  color: #ffffff !important;
+}
+
+/* Protect buttons inside CTA card from light mode changes */
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 button,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] button {
+  background-color: #ffffff !important;
+  color: #059669 !important;
+}
+
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 button:hover,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] button:hover {
+  background-color: #f3f4f6 !important;
+  color: #059669 !important;
+}
+
+/* Protect specific button classes inside CTA card */
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 .bg-white,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] .bg-white {
+  background-color: #ffffff !important;
+  color: #059669 !important;
+}
+
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 .bg-emerald-700,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] .bg-emerald-700 {
+  background-color: #047857 !important;
+  color: #ffffff !important;
+}
+
 /* Tertiary button helper */
 .btn-tertiary {
   background: transparent;
@@ -139,7 +675,7 @@ html.light .bg-yellow-600 {
   border: 1px solid var(--color-accent);
 }
 .btn-tertiary:hover {
-  background-color: rgba(244, 162, 97, 0.15);
+  background-color: rgba(16, 185, 129, 0.1);
 }
 
 

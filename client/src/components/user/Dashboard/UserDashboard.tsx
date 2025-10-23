@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../../services/authService';
 import { getMyEnrollments } from '../../../services/scholarService';
 import PaymentSummary from '../../shared/PaymentSummary/PaymentSummary';
-import PaymentHistory from '../../shared/PaymentHistory/PaymentHistory';
 import { 
   ChatBubbleLeftRightIcon,
   CalendarIcon,
@@ -11,14 +10,8 @@ import {
   GlobeAltIcon,
   HandRaisedIcon,
   UserGroupIcon,
-  AcademicCapIcon,
-  ClockIcon,
-  VideoCameraIcon,
-  StarIcon,
   ChevronRightIcon,
-  BellIcon,
   ChartBarIcon,
-  SparklesIcon,
   CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 
@@ -39,13 +32,10 @@ const UserDashboard = () => {
   const user = authService.getUser();
   const navigate = useNavigate();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user?.role === 'user') {
       loadEnrollments();
-    } else {
-      setLoading(false);
     }
   }, [user?.role]);
 
@@ -55,8 +45,6 @@ const UserDashboard = () => {
       setEnrollments(enrollments || []);
     } catch (error) {
       console.error('Failed to load enrollments:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -64,7 +52,7 @@ const UserDashboard = () => {
   if (user?.role === 'scholar') {
     navigate('/scholars/dashboard');
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Redirecting to Scholar Dashboard...</p>
@@ -77,7 +65,7 @@ const UserDashboard = () => {
   if (user?.role === 'admin') {
     navigate('/admin');
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Redirecting to Admin Dashboard...</p>
@@ -145,95 +133,53 @@ const UserDashboard = () => {
     },
   ];
 
-  const getColorClasses = (color: string) => {
-    const colors: { [key: string]: string } = {
-      emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
-      green: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800',
-      teal: 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800',
-      lime: 'bg-lime-50 dark:bg-lime-900/20 text-lime-600 dark:text-lime-400 border-lime-200 dark:border-lime-800',
-      mint: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700',
-      forest: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700',
-    };
-    return colors[color] || colors.emerald;
-  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/10 to-teal-600/10 dark:from-emerald-500/20 dark:to-teal-500/20"></div>
-        <div className="relative px-6 py-12 max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full mb-6 shadow-lg">
-              <SparklesIcon className="h-10 w-10 text-white" />
-            </div>
-            <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Welcome to <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Hikma AI</span>
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Your gateway to authentic Islamic knowledge. Connect with scholars, explore teachings, and deepen your understanding of Islam.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => navigate('/chat')}
-                className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-              >
-                Start Learning Now
-              </button>
-              <button
-                onClick={() => navigate('/scholars')}
-                className="px-8 py-4 bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 font-semibold rounded-xl border-2 border-emerald-600 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-              >
-                Find Scholars
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-white dark:bg-gray-900">
 
-      <div className="px-6 pb-12 max-w-7xl mx-auto">
+      <div className="px-6 pb-12 pt-6 max-w-7xl mx-auto">
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
             <div className="flex items-center">
-              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-900/50 rounded-xl">
                 <ChatBubbleLeftRightIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Chats</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-400">Active Chats</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
             <div className="flex items-center">
-              <div className="p-3 bg-green-100 dark:bg-green-900/50 rounded-xl">
-                <UserGroupIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+               <div className="p-3 bg-emerald-50 dark:bg-emerald-900/50 rounded-xl">
+                 <UserGroupIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Enrolled Scholars</p>
+                 <p className="text-sm font-medium text-gray-700 dark:text-gray-400">Enrolled Scholars</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{enrollments.length}</p>
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
             <div className="flex items-center">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
-                <CalendarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+               <div className="p-3 bg-emerald-50 dark:bg-emerald-900/50 rounded-xl">
+                 <CalendarIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Prayer Streak</p>
+                 <p className="text-sm font-medium text-gray-700 dark:text-gray-400">Prayer Streak</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
             <div className="flex items-center">
-              <div className="p-3 bg-purple-100 dark:bg-purple-900/50 rounded-xl">
-                <ChartBarIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+               <div className="p-3 bg-emerald-50 dark:bg-emerald-900/50 rounded-xl">
+                 <ChartBarIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Learning Progress</p>
+                 <p className="text-sm font-medium text-gray-700 dark:text-gray-400">Learning Progress</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
               </div>
             </div>
@@ -254,7 +200,7 @@ const UserDashboard = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {enrollments.map((enrollment) => (
-                <div key={enrollment._id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                <div key={enrollment._id} className="bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300 overflow-hidden">
                   <div className="p-6">
                     <div className="flex items-center space-x-4 mb-4">
                       <img
@@ -317,7 +263,7 @@ const UserDashboard = () => {
                   to={feature.link}
                   className="group block"
                 >
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 h-full">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 h-full">
                     <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${feature.gradient} mb-4 shadow-lg`}>
                       <IconComponent className="h-6 w-6 text-white" />
                     </div>
@@ -340,7 +286,7 @@ const UserDashboard = () => {
         {/* Upcoming Classes Section */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Upcoming Classes</h2>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="text-center py-12">
               <CalendarIcon className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Upcoming Classes</h3>
