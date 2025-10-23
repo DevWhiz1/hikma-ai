@@ -99,6 +99,9 @@ app.use('/api/enhanced-admin', require('./routes/enhancedAdminRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
 app.use('/api/scholar-feedback', require('./routes/scholarFeedbackRoutes'));
+app.use('/api/smart-scheduler', require('./routes/smartSchedulerRoutes'));
+app.use('/api/enhanced-meetings', require('./routes/enhancedMeetingRoutes'));
+app.use('/api/ai-agent', require('./routes/aiAgentRoutes'));
 
 // Upload endpoint (auth required)
 app.post('/api/upload/photo', auth, upload.single('photo'), (req, res) => {
@@ -215,6 +218,30 @@ app.post('/api/scholar-ai', auth, async (req, res) => {
 // Health check
 app.get('/', (_req, res) => {
   res.send('Hikmah AI API running with auth & chat');
+});
+
+// Credential validation endpoint
+app.get('/api/validate-credentials', async (_req, res) => {
+  try {
+    const CredentialValidator = require('./utils/validateCredentials');
+    const validator = new CredentialValidator();
+    const results = await validator.validateAll();
+    
+    const allValid = Object.values(results).every(r => r.status === 'success');
+    
+    res.json({
+      success: allValid,
+      message: allValid ? 'All credentials are valid' : 'Some credentials need attention',
+      results,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to validate credentials',
+      error: error.message
+    });
+  }
 });
 
 // Decrypt and redirect to Meet link safely (no auth so new tab can open)

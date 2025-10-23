@@ -4,11 +4,16 @@ import { PaperAirplaneIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { chatService, ChatSession, ChatMessage } from '../../../services/chatService';
 import ChatHistory from '../../shared/ChatHistory';
 import { startDirectChat, getMyEnrollments, getScholars } from '../../../services/scholarService';
+import { authService } from '../../../services/authService';
 import ReactMarkdown from 'react-markdown';
+import MeetingBroadcastMessage from './MeetingBroadcastMessage';
+import ScholarMeetingNotification from './ScholarMeetingNotification';
+import SimpleMeetingNotification from './SimpleMeetingNotification';
 
 const ChatBot = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const user = authService.getUser();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -166,7 +171,30 @@ const ChatBot = () => {
     try {
       const { session } = await chatService.getSession(id);
       setCurrentSession(session);
-      setMessages(session.messages || []);
+      console.log('Loaded session messages:', session.messages);
+      
+      // Filter out old and expired broadcast messages
+      const filteredMessages = (session.messages || []).filter(msg => {
+        if (msg.metadata?.meetingTimes && msg.metadata?.meetingTimes.length > 0) {
+          // Check if broadcast is still active (not expired)
+          if (msg.metadata?.expiresAt) {
+            const expirationDate = new Date(msg.metadata.expiresAt);
+            const now = new Date();
+            if (expirationDate <= now) {
+              return false; // Remove expired broadcasts
+            }
+          }
+          
+          // Also filter out very old messages (older than 7 days)
+          const messageDate = new Date(msg.timestamp);
+          const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          return messageDate > sevenDaysAgo;
+        }
+        return true; // Keep all non-broadcast messages
+      });
+      
+      console.log('Filtered messages:', filteredMessages);
+      setMessages(filteredMessages);
     } catch (e) {
       console.error('Failed to load session:', e); navigate('/chat');
     }
@@ -413,46 +441,79 @@ const ChatBot = () => {
                   {msg.role === 'user' ? (
                     <p>{msg.content}</p>
                   ) : (
+                    // Check if this is a meeting broadcast message
+                    (() => {
+                      const hasMeetingTimes = msg.metadata?.meetingTimes && msg.metadata?.meetingTimes.length > 0;
+                      const hasScholarText = msg.content.includes('Scholar') && msg.content.includes('has set available meeting times');
+                      const isMeetingBroadcast = hasMeetingTimes || hasScholarText;
+                      
+                      console.log('Message rendering check:', {
+                        msgId: msg._id || 'no-id',
+                        content: msg.content?.substring(0, 100) + '...',
+                        metadata: msg.metadata,
+                        hasMeetingTimes,
+                        hasScholarText,
+                        isMeetingBroadcast,
+                        userRole: user?.role
+                      });
+                      
+                      return isMeetingBroadcast;
+                    })() ? (
+                      // Show different components based on user role
+                      user?.role === 'scholar' ? (
+                        <ScholarMeetingNotification
+                          content={msg.content}
+                          scholarName={msg.metadata?.scholarName || 'Scholar'}
+                          meetingCount={msg.metadata?.meetingTimes?.length || 0}
+                        />
+                      ) : (
+                        <SimpleMeetingNotification
+                          scholarName={msg.metadata?.scholarName || 'Scholar'}
+                          meetingCount={msg.metadata?.meetingTimes?.length || 0}
+                        />
+                      )
+                    ) : (
                       <div className="prose prose-sm max-w-none dark:prose-invert [&_a]:text-black [&_a]:dark:text-emerald-400">
-                      <ReactMarkdown 
-                        components={{
-                          h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                          h2: ({ children }) => <h2 className="text-md font-semibold mb-2">{children}</h2>,
-                          h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
-                          strong: ({ children }) => <strong className="font-semibold text-emerald-700 dark:text-emerald-300">{children}</strong>,
-                          em: ({ children }) => <em className="italic text-emerald-600 dark:text-emerald-400">{children}</em>,
-                          ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                          li: ({ children }) => <li className="mb-1">{children}</li>,
-                          p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
-                          a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-black dark:text-emerald-400 hover:text-emerald-200 dark:hover:text-emerald-300 underline" style={{color: 'black', textDecoration: 'none'}}>{children}</a>,
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
-                      {(() => {
-                        try {
-                          const urlMatch = (msg.content || '').match(/https?:\/\/[^\s]+/);
-                          if (urlMatch) {
-                            const href = urlMatch[0];
-                            return (
-                              <div className="mt-2">
-                                <a
-                                  href={href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-block bg-emerald-600 text-black px-3 py-1 rounded text-sm hover:bg-emerald-700"
-                                  style={{color: 'black', textDecoration: 'none'}}
-                                >
-                                  Open Link
-                                </a>
-                              </div>
-                            );
-                          }
-                        } catch {}
-                        return null;
-                      })()}
-                    </div>
+                        <ReactMarkdown 
+                          components={{
+                            h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-md font-semibold mb-2">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
+                            strong: ({ children }) => <strong className="font-semibold text-emerald-700 dark:text-emerald-300">{children}</strong>,
+                            em: ({ children }) => <em className="italic text-emerald-600 dark:text-emerald-400">{children}</em>,
+                            ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                            li: ({ children }) => <li className="mb-1">{children}</li>,
+                            p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+                            a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-black dark:text-emerald-400 hover:text-emerald-200 dark:hover:text-emerald-300 underline" style={{color: 'black', textDecoration: 'none'}}>{children}</a>,
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                        {(() => {
+                          try {
+                            const urlMatch = (msg.content || '').match(/https?:\/\/[^\s]+/);
+                            if (urlMatch) {
+                              const href = urlMatch[0];
+                              return (
+                                <div className="mt-2">
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-block bg-emerald-600 text-black px-3 py-1 rounded text-sm hover:bg-emerald-700"
+                                    style={{color: 'black', textDecoration: 'none'}}
+                                  >
+                                    Open Link
+                                  </a>
+                                </div>
+                              );
+                            }
+                          } catch {}
+                          return null;
+                        })()}
+                      </div>
+                    )
                   )}
                 </div>
               </div>
