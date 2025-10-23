@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import TopBar from './components/TopBar';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import ChatBot from './components/ChatBot';
-import QiblaFinder from './components/QiblaFinder';
-import AppContent from './components/AppContent';
-import PrayerTimesPage from './components/PrayerTimes';
-import TasbihCounter from './components/TasbihCounter';
-import HadithExplorer from './components/HadithExplorer';
-import ScholarApplyForm from './components/ScholarApplyForm';
-import ScholarsPage from './components/ScholarsPage';
-import ScholarProfileEditor from './components/ScholarProfileEditor';
-import ScholarDashboard from './components/ScholarDashboard';
-import ScholarFeedbackManagement from './components/ScholarFeedbackManagement';
-import AdminDashboard from './components/AdminDashboard';
-import FeedbackButton from './components/FeedbackButton';
+import TopBar from './components/shared/TopBar';
+import Sidebar from './components/shared/Sidebar';
+import UserDashboard from './components/user/Dashboard/UserDashboard';
+import ScholarProfileView from './components/user/ScholarProfile/ScholarProfileView';
+import AIChat from './components/user/Chat/EnhancedAIChat';
+import ScholarChat from './components/user/Chat/EnhancedScholarChat';
+import UpcomingClasses from './components/user/UpcomingClasses/UpcomingClasses';
+import QiblaFinder from './components/features/QiblaFinder';
+import AppContent from './components/shared/AppContent';
+import PrayerTimesPage from './components/features/PrayerTimes';
+import TasbihCounter from './components/features/TasbihCounter';
+import HadithExplorer from './components/features/HadithExplorer';
+import ScholarApplyForm from './components/scholar/ScholarApplyForm';
+import ScholarsPage from './components/user/EnhancedScholarsPage';
+import ScholarProfileEditor from './components/scholar/ScholarProfileEditor';
+import ScholarDashboard from './components/scholar/ScholarDashboard';
+import ScholarFeedbackManagement from './components/scholar/ScholarFeedbackManagement';
+import AdminDashboard from './components/admin/AdminDashboard';
+import FeedbackButton from './components/shared/FeedbackButton';
+import PaymentTracking from './components/user/PaymentTracking/PaymentTracking';
+import ScholarPaymentTracking from './components/scholar/PaymentTracking/ScholarPaymentTracking';
 import { authService } from './services/authService';
 
 interface MainAppProps {
@@ -75,6 +80,18 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
     setIsAuthenticated(false);
   };
 
+  // Check if current route is admin
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
+  // If admin route, render AdminDashboard without main layout
+  if (isAdminRoute) {
+    return (
+      <div className={`App min-h-screen ${isDarkMode ? 'dark' : ''}`}>
+        <AdminDashboard />
+      </div>
+    );
+  }
+
   return (
     <>
       {/* mobile overlay */}
@@ -104,19 +121,25 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
               />
               <main className={`flex-1 transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-0 lg:ml-64' : 'ml-0'} ${isChatRoute ? 'overflow-hidden' : 'overflow-y-auto'} focus:outline-none`} tabIndex={-1}>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/chat" element={<ChatBot />} />
-                  <Route path="/chat/:sessionId" element={<ChatBot />} />
+                  <Route path="/" element={<UserDashboard />} />
+                  <Route path="/chat" element={<AIChat />} />
+                  <Route path="/chat/ai" element={<AIChat />} />
+                  <Route path="/chat/ai/:sessionId" element={<AIChat />} />
+                  <Route path="/chat/scholar" element={<ScholarChat />} />
+                  <Route path="/chat/scholar/:sessionId" element={<ScholarChat />} />
+                  <Route path="/scholar/:id" element={<ScholarProfileView />} />
+                  <Route path="/upcoming-classes" element={<UpcomingClasses />} />
                   <Route path="/hadith" element={<HadithExplorer />} />
                   <Route path="/scholars" element={<ScholarsPage />} />
                   <Route path="/scholars/apply" element={<ScholarApplyForm />} />
                   <Route path="/scholars/profile/edit" element={<ScholarProfileEditor />} />
                   <Route path="/scholars/dashboard" element={<ScholarDashboard />} />
                   <Route path="/scholar/feedback" element={<ScholarFeedbackManagement />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
                   <Route path="/qibla" element={<QiblaFinder />} />
                   <Route path="/prayer-times" element={<PrayerTimesPage />} />
                   <Route path="/tasbih" element={<TasbihCounter />} />
+                  <Route path="/payments" element={<PaymentTracking />} />
+                  <Route path="/scholar/payments" element={<ScholarPaymentTracking />} />
                   <Route path="/resources" element={
                     <div className="p-6">
                       <h1 className="text-2xl font-bold mb-4">Islamic Resources</h1>

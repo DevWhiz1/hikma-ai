@@ -1,0 +1,386 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '../../../services/authService';
+import { getMyEnrollments } from '../../../services/scholarService';
+import PaymentSummary from '../../shared/PaymentSummary/PaymentSummary';
+import PaymentHistory from '../../shared/PaymentHistory/PaymentHistory';
+import { 
+  ChatBubbleLeftRightIcon,
+  CalendarIcon,
+  BookOpenIcon,
+  GlobeAltIcon,
+  HandRaisedIcon,
+  UserGroupIcon,
+  AcademicCapIcon,
+  ClockIcon,
+  VideoCameraIcon,
+  StarIcon,
+  ChevronRightIcon,
+  BellIcon,
+  ChartBarIcon,
+  SparklesIcon,
+  CurrencyDollarIcon
+} from '@heroicons/react/24/outline';
+
+interface Enrollment {
+  _id: string;
+  scholar: {
+    _id: string;
+    user: {
+      name: string;
+    };
+    photoUrl?: string;
+    specializations?: string[];
+  };
+  createdAt: string;
+}
+
+const UserDashboard = () => {
+  const user = authService.getUser();
+  const navigate = useNavigate();
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.role === 'user') {
+      loadEnrollments();
+    } else {
+      setLoading(false);
+    }
+  }, [user?.role]);
+
+  const loadEnrollments = async () => {
+    try {
+      const enrollments = await getMyEnrollments();
+      setEnrollments(enrollments || []);
+    } catch (error) {
+      console.error('Failed to load enrollments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Redirect scholars to their dashboard
+  if (user?.role === 'scholar') {
+    navigate('/scholars/dashboard');
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Redirecting to Scholar Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect admins to their dashboard
+  if (user?.role === 'admin') {
+    navigate('/admin');
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Redirecting to Admin Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const userFeatures = [
+    {
+      icon: ChatBubbleLeftRightIcon,
+      title: 'AI Scholar Chat',
+      description: 'Get instant Islamic guidance from our AI assistant',
+      link: '/chat',
+      color: 'emerald',
+      gradient: 'from-emerald-500 to-teal-600'
+    },
+    {
+      icon: UserGroupIcon,
+      title: 'Connect with Scholars',
+      description: 'Find and enroll with qualified Islamic scholars',
+      link: '/scholars',
+      color: 'green',
+      gradient: 'from-green-500 to-emerald-600'
+    },
+    {
+      icon: CalendarIcon,
+      title: 'Prayer Times',
+      description: 'Never miss a prayer with accurate timings',
+      link: '/prayer-times',
+      color: 'blue',
+      gradient: 'from-blue-500 to-cyan-600'
+    },
+    {
+      icon: GlobeAltIcon,
+      title: 'Qibla Finder',
+      description: 'Find the direction to the Kaaba',
+      link: '/qibla',
+      color: 'indigo',
+      gradient: 'from-indigo-500 to-purple-600'
+    },
+    {
+      icon: HandRaisedIcon,
+      title: 'Tasbih Counter',
+      description: 'Track your dhikr and remembrance',
+      link: '/tasbih',
+      color: 'emerald',
+      gradient: 'from-emerald-500 to-teal-500'
+    },
+    {
+      icon: BookOpenIcon,
+      title: 'Hadith Explorer',
+      description: 'Search and explore authentic hadith',
+      link: '/hadith',
+      color: 'teal',
+      gradient: 'from-teal-500 to-emerald-600'
+    },
+    {
+      icon: CurrencyDollarIcon,
+      title: 'Payment Tracking',
+      description: 'Track your payments and spending history',
+      link: '/payments',
+      color: 'lime',
+      gradient: 'from-lime-500 to-emerald-600'
+    },
+  ];
+
+  const getColorClasses = (color: string) => {
+    const colors: { [key: string]: string } = {
+      emerald: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+      green: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800',
+      teal: 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800',
+      lime: 'bg-lime-50 dark:bg-lime-900/20 text-lime-600 dark:text-lime-400 border-lime-200 dark:border-lime-800',
+      mint: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700',
+      forest: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700',
+    };
+    return colors[color] || colors.emerald;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/10 to-teal-600/10 dark:from-emerald-500/20 dark:to-teal-500/20"></div>
+        <div className="relative px-6 py-12 max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full mb-6 shadow-lg">
+              <SparklesIcon className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              Welcome to <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Hikma AI</span>
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Your gateway to authentic Islamic knowledge. Connect with scholars, explore teachings, and deepen your understanding of Islam.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate('/chat')}
+                className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
+                Start Learning Now
+              </button>
+              <button
+                onClick={() => navigate('/scholars')}
+                className="px-8 py-4 bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 font-semibold rounded-xl border-2 border-emerald-600 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
+                Find Scholars
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-6 pb-12 max-w-7xl mx-auto">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center">
+              <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
+                <ChatBubbleLeftRightIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Chats</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center">
+              <div className="p-3 bg-green-100 dark:bg-green-900/50 rounded-xl">
+                <UserGroupIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Enrolled Scholars</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{enrollments.length}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
+                <CalendarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Prayer Streak</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900/50 rounded-xl">
+                <ChartBarIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Learning Progress</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* My Enrollments Section */}
+        {enrollments.length > 0 && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">My Scholars</h2>
+              <Link 
+                to="/scholars" 
+                className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium flex items-center"
+              >
+                View All <ChevronRightIcon className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {enrollments.map((enrollment) => (
+                <div key={enrollment._id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                  <div className="p-6">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <img
+                        src={enrollment.scholar.photoUrl || 'https://via.placeholder.com/60x60?text=Scholar'}
+                        alt={enrollment.scholar.user.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-emerald-200 dark:border-emerald-700"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{enrollment.scholar.user.name}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Islamic Scholar</p>
+                      </div>
+                    </div>
+                    {enrollment.scholar.specializations && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {enrollment.scholar.specializations.slice(0, 2).map((spec, index) => (
+                          <span key={index} className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs rounded-full">
+                            {spec}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => navigate('/chat')}
+                        className="flex-1 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+                      >
+                        Chat
+                      </button>
+                      <button
+                        onClick={() => navigate('/scholars')}
+                        className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        View Profile
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Payment Summary */}
+        <div className="mb-12">
+          <PaymentSummary 
+            isScholar={false}
+            onViewDetails={() => navigate('/payments')}
+          />
+        </div>
+
+        {/* Features Grid */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Explore Our Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {userFeatures.map((feature, index) => {
+              const IconComponent = feature.icon;
+              return (
+                <Link
+                  key={index}
+                  to={feature.link}
+                  className="group block"
+                >
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 h-full">
+                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${feature.gradient} mb-4 shadow-lg`}>
+                      <IconComponent className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                      {feature.title}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                      {feature.description}
+                    </p>
+                    <div className="mt-4 flex items-center text-emerald-600 dark:text-emerald-400 text-sm font-medium">
+                      Get Started <ChevronRightIcon className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Upcoming Classes Section */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Upcoming Classes</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+            <div className="text-center py-12">
+              <CalendarIcon className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Upcoming Classes</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Schedule a meeting with your enrolled scholars to see upcoming classes here.
+              </p>
+              <button
+                onClick={() => navigate('/scholars')}
+                className="px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                Schedule a Meeting
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Call to Action */}
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl shadow-xl p-8 text-center text-white">
+          <h2 className="text-3xl font-bold mb-4">Ready to Begin Your Journey?</h2>
+          <p className="text-xl mb-6 opacity-90">
+            Join thousands of Muslims learning and growing in their faith with Hikma AI.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/chat')}
+              className="px-8 py-4 bg-white text-emerald-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-lg"
+            >
+              Start Chatting
+            </button>
+            <button
+              onClick={() => navigate('/scholars')}
+              className="px-8 py-4 bg-emerald-700 text-white font-semibold rounded-xl hover:bg-emerald-800 transition-colors shadow-lg"
+            >
+              Find Scholars
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UserDashboard;
