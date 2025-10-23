@@ -267,11 +267,11 @@ Get user's scheduled meetings
 ```bash
 # AI Scheduler Configuration
 DEFAULT_TIMEZONE=UTC
-PRAYER_TIMES_API_KEY=your_prayer_times_api_key
+PRAYER_TIMES_API_KEY=your_prayer_times_api_key_here
 
 # Google Services (Optional)
-GOOGLE_SERVICE_EMAIL=your_service_email
-GOOGLE_PRIVATE_KEY=your_private_key
+GOOGLE_SERVICE_EMAIL=your_service_email_here
+GOOGLE_PRIVATE_KEY=your_private_key_here
 
 # Notification Settings
 NOTIFY_DEBOUNCE_MS=120000

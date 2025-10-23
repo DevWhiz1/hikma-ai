@@ -119,12 +119,12 @@ Add these to your `.env` file:
 ```env
 # Google Calendar Integration (for availability checking only)
 GOOGLE_SERVICE_EMAIL=your-service-account@domain.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-GOOGLE_CALENDAR_ID=your-calendar-id@gmail.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_CONTENT_HERE\n-----END PRIVATE KEY-----\n"
+GOOGLE_CALENDAR_ID=your_calendar_id_here
 
 # Smart Scheduler Configuration
 DEFAULT_TIMEZONE=UTC
-PRAYER_TIMES_API_KEY=your_prayer_times_api_key
+PRAYER_TIMES_API_KEY=your_prayer_times_api_key_here
 
 # Jitsi Meet Integration (uses existing system)
 # No additional configuration needed - uses existing Jitsi setup

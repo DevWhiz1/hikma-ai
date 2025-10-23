@@ -714,23 +714,23 @@ describe('Smart Scheduler Component', () => {
 #### Production Environment Variables
 ```bash
 # Database
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/hikmah-ai
+MONGO_URI=mongodb+srv://your_username:your_password@your_cluster.mongodb.net/your_database_name
 
 # Authentication
-JWT_SECRET=your_production_jwt_secret
+JWT_SECRET=your_secure_jwt_secret_key_here
 JWT_EXPIRES=7d
 
 # AI Services
-GEMINI_API_KEY=your_production_gemini_key
-HADITH_API_KEY=your_production_hadith_key
+GEMINI_API_KEY=your_gemini_api_key_here
+HADITH_API_KEY=your_hadith_api_key_here
 
 # Email
-GMAIL_USER=your_production_email
-GMAIL_PASS=your_production_password
+GMAIL_USER=your_gmail_address_here
+GMAIL_PASS=your_gmail_app_password_here
 
 # AI Scheduler
 DEFAULT_TIMEZONE=UTC
-PRAYER_TIMES_API_KEY=your_prayer_times_key
+PRAYER_TIMES_API_KEY=your_prayer_times_api_key_here
 
 # Security
 ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com

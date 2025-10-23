@@ -166,17 +166,17 @@ npm run dev
 # Backend .env
 PORT=5000
 MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
-GEMINI_API_KEY=your_gemini_api_key
-HADITH_API_KEY=your_hadith_api_key
+JWT_SECRET=your_secure_jwt_secret_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+HADITH_API_KEY=your_hadith_api_key_here
 
 # AI Scheduler Configuration
 DEFAULT_TIMEZONE=UTC
-PRAYER_TIMES_API_KEY=your_prayer_times_api_key
+PRAYER_TIMES_API_KEY=your_prayer_times_api_key_here
 
 # Notification Settings
-GMAIL_USER=your_gmail
-GMAIL_PASS=your_gmail_password
+GMAIL_USER=your_gmail_address_here
+GMAIL_PASS=your_gmail_app_password_here
 NOTIFY_DEBOUNCE_MS=120000
 ```
 
