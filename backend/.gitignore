@@ -16,3 +16,42 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .env
+
+# ChromaDB data (large files)
+chroma_data/
+chroma-data/
+chroma-data-test/
+**/chroma_data/
+**/chroma-data/
+*.db
+*.sqlite3
+*.chroma
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+backend/venv/
+backend/env/
+
+# Logs and temporary files
+logs/
+ingestion_*.log
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Test files
+test_*.py
+test_*.js
+
