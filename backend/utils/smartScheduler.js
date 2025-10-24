@@ -8,6 +8,7 @@ const Scholar = require('../models/Scholar');
 const BroadcastMeeting = require('../models/BroadcastMeeting');
 const ChatSession = require('../models/ChatSession');
 const { notifyAdmin } = require('../agents/notificationAgent');
+const { emitBroadcastMeetingPosted, emitBroadcastMeetingBooked } = require('./socketEmitter');
 
 class SmartScheduler {
   constructor() {
@@ -338,6 +339,15 @@ class SmartScheduler {
           }
 
           notifiedCount++;
+
+          // Emit WebSocket event for broadcast meeting posted
+          emitBroadcastMeetingPosted(enrollment.student._id, {
+            broadcastId: broadcastMeeting._id,
+            scholarName: scholar.name,
+            meetingTimes: meetingTimes.length,
+            title,
+            description
+          });
         }
       }
 
@@ -590,6 +600,14 @@ class SmartScheduler {
           force: true
         });
       }
+
+      // Emit WebSocket event for broadcast meeting booked
+      emitBroadcastMeetingBooked(broadcastMeeting.scholarId, {
+        broadcastId: broadcastId,
+        studentName: student.name,
+        scheduledTime: timeSlot.start,
+        topic: broadcastMeeting.title
+      });
 
       return { meeting, message, chat };
     } catch (error) {

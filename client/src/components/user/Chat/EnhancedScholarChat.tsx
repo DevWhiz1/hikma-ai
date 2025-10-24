@@ -18,6 +18,7 @@ import { startDirectChat, getMyEnrollments, getScholars } from '../../../service
 import { authService } from '../../../services/authService';
 import ScholarChatHistory from '../../shared/ScholarChatHistory';
 import ScholarImage from '../../shared/ScholarImage';
+import socketService from '../../../services/socketService';
 
 interface Scholar {
   _id: string;
@@ -57,6 +58,79 @@ const EnhancedScholarChat = () => {
     loadSessions();
     loadScholarOptions();
   }, []);
+
+  // WebSocket event listeners
+  useEffect(() => {
+    if (!user) return;
+
+    // Join user room for real-time updates
+    socketService.joinUserRoom(user.id);
+
+    // Listen for new messages
+    const handleNewMessage = (data: any) => {
+      if (data.chatId === sessionId) {
+        const newMessage: ChatMessage = {
+          role: data.senderId === user.id ? 'user' : 'assistant',
+          content: data.text,
+          timestamp: data.timestamp
+        };
+        setMessages(prev => [...prev, newMessage]);
+      }
+    };
+
+    // Listen for session updates
+    const handleSessionUpdate = (data: any) => {
+      if (data.sessionId === sessionId) {
+        setCurrentSession(prev => prev ? { ...prev, ...data.session } : null);
+        if (data.messages) {
+          setMessages(data.messages);
+        }
+      }
+    };
+
+    // Listen for meeting events
+    const handleMeetingRequest = (data: any) => {
+      if (data.chatId === sessionId) {
+        // Handle meeting request notification
+        console.log('Meeting request received:', data);
+      }
+    };
+
+    const handleMeetingScheduled = (data: any) => {
+      if (data.chatId === sessionId) {
+        // Handle meeting scheduled notification
+        console.log('Meeting scheduled:', data);
+      }
+    };
+
+    const handleMeetingLinkSent = (data: any) => {
+      if (data.chatId === sessionId) {
+        // Handle meeting link sent notification
+        console.log('Meeting link sent:', data);
+      }
+    };
+
+    // Listen for typing indicators
+    const handleTyping = (data: any) => {
+      if (data.chatId === sessionId && data.userId !== user.id) {
+        // Handle typing indicators from other users
+        console.log('User typing:', data);
+      }
+    };
+
+    socketService.onNewMessage(handleNewMessage);
+    socketService.onSessionUpdate(handleSessionUpdate);
+    socketService.onMeetingRequest(handleMeetingRequest);
+    socketService.onMeetingScheduled(handleMeetingScheduled);
+    socketService.onMeetingLinkSent(handleMeetingLinkSent);
+    socketService.onTyping(handleTyping);
+
+    return () => {
+      socketService.offNewMessage(handleNewMessage);
+      socketService.offSessionUpdate(handleSessionUpdate);
+      socketService.offTyping(handleTyping);
+    };
+  }, [user, sessionId]);
 
   // Load specific session when sessionId changes
   useEffect(() => {

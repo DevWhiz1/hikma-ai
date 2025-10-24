@@ -12,6 +12,7 @@ import {
 import { enhancedChatService, ChatSession, ChatMessage } from '../../../services/enhancedChatService';
 import { authService } from '../../../services/authService';
 import AIChatHistory from '../../shared/AIChatHistory';
+import socketService from '../../../services/socketService';
 
 const EnhancedAIChat = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -31,6 +32,52 @@ const EnhancedAIChat = () => {
   useEffect(() => {
     loadSessions();
   }, []);
+
+  // WebSocket event listeners
+  useEffect(() => {
+    if (!user) return;
+
+    // Join user room for real-time updates
+    socketService.joinUserRoom(user.id);
+
+    // Listen for new messages
+    const handleNewMessage = (data: any) => {
+      if (data.chatId === sessionId) {
+        const newMessage: ChatMessage = {
+          role: 'assistant',
+          content: data.text,
+          timestamp: data.timestamp
+        };
+        setMessages(prev => [...prev, newMessage]);
+      }
+    };
+
+    // Listen for session updates
+    const handleSessionUpdate = (data: any) => {
+      if (data.sessionId === sessionId) {
+        setCurrentSession(prev => prev ? { ...prev, ...data.session } : null);
+        if (data.messages) {
+          setMessages(data.messages);
+        }
+      }
+    };
+
+    // Listen for typing indicators
+    const handleTyping = (data: any) => {
+      // Handle typing indicators if needed
+      console.log('User typing:', data);
+    };
+
+    socketService.onNewMessage(handleNewMessage);
+    socketService.onSessionUpdate(handleSessionUpdate);
+    socketService.onTyping(handleTyping);
+
+    return () => {
+      socketService.offNewMessage(handleNewMessage);
+      socketService.offSessionUpdate(handleSessionUpdate);
+      socketService.offTyping(handleTyping);
+    };
+  }, [user, sessionId]);
 
   // Load specific session when sessionId changes
   useEffect(() => {

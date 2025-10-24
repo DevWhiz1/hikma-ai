@@ -8,6 +8,7 @@ const Enrollment = require('../models/Enrollment');
 const Scholar = require('../models/Scholar');
 const SensitiveLog = require('../models/SensitiveLog');
 const { filterMeetingLinks, filterContactInfo, detectAllLinks } = require('../middleware/messageFilter');
+const { emitMeetingRequest, emitMeetingScheduled, emitMeetingLinkSent } = require('../utils/socketEmitter');
 
 // Generate Jitsi meeting link
 const generateJitsiLink = () => {
@@ -115,6 +116,9 @@ const requestMeeting = async (req, res) => {
       }
     } catch {}
 
+    // Emit WebSocket event for meeting request
+    emitMeetingRequest(chat._id, req.user._id, scholarId);
+
     res.json({ 
       success: true, 
       chatId: chat._id, 
@@ -181,6 +185,9 @@ const scheduleMeeting = async (req, res) => {
     if (scholarDoc?.email) await notifyAdmin({ ...payload, toEmail: scholarDoc.email, force: true });
     if (studentDoc?.email) await notifyAdmin({ ...payload, toEmail: studentDoc.email, force: true });
   } catch {}
+
+    // Emit WebSocket event for meeting scheduled
+    emitMeetingScheduled(chat._id, scheduledTime);
 
     res.json({ success: true, messageId: message._id });
   } catch (error) {

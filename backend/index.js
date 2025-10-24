@@ -18,6 +18,7 @@ const { auth } = require('./middleware/auth');
 const ChatSession = require('./models/ChatSession');
 const DirectMessage = require('./models/DirectMessage');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { emitNewMessage, emitSessionUpdate } = require('./utils/socketEmitter');
 
 const modelName = 'gemini-2.5-flash'; 
 
@@ -31,10 +32,21 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ["http://localhost:5173"],
-    methods: ["GET", "POST"]
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+      "http://localhost:5173",
+      "http://localhost:5174", 
+      "http://localhost:3000",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174"
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
+
+// Initialize socket emitter
+const { initializeSocket } = require('./utils/socketEmitter');
+initializeSocket(io);
 
 app.use(cors());
 app.use(express.json());
@@ -201,6 +213,20 @@ app.post('/api/scholar-ai', auth, async (req, res) => {
           }
           await session.save();
           updatedSessionSummary = { _id: session._id, title: session.title, lastActivity: session.lastActivity, createdAt: session.createdAt };
+          
+          // Emit WebSocket events for AI response
+          emitNewMessage(session._id, {
+            text: text,
+            senderId: 'ai',
+            timestamp: new Date()
+          });
+
+          emitSessionUpdate(req.user._id, session._id, {
+            _id: session._id,
+            title: session.title,
+            lastActivity: session.lastActivity,
+            messages: session.messages
+          });
         }
       } catch (sessErr) {
         console.error('Session persistence error:', sessErr.message);
@@ -261,6 +287,13 @@ app.get('/api/meet/open', (req, res) => {
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
+  console.log('Socket namespace:', socket.nsp.name);
+
+  // Test connection
+  socket.on('test-connection', (data) => {
+    console.log('Test connection received:', data);
+    socket.emit('test-response', { message: 'Hello from server', timestamp: new Date() });
+  });
 
   // Join user to their personal room
   socket.on('join-user-room', (userId) => {
