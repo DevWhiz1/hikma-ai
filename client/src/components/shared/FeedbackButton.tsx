@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { MessageSquare, X, History } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { MessageSquare, History } from 'lucide-react';
 import FeedbackModal from './FeedbackModal';
 import FeedbackHistory from '../user/FeedbackHistory';
 
@@ -14,9 +15,13 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
   variant = 'floating',
   className = ''
 }) => {
+  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+
+  // Check if we're on a chat route
+  const isChatRoute = location.pathname.startsWith('/chat');
 
   const positionClasses = {
     'bottom-right': 'bottom-6 right-6',
@@ -24,6 +29,11 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     'top-right': 'top-6 right-6',
     'top-left': 'top-6 left-6'
   };
+
+  // Hide feedback button on chat routes
+  if (isChatRoute) {
+    return null;
+  }
 
   if (variant === 'inline') {
     return (
@@ -44,7 +54,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
   return (
     <>
       {/* Floating Feedback Button with Menu */}
-      <div className={`fixed ${positionClasses[position]} z-40`}>
+      <div className={`fixed ${positionClasses[position]} z-40 !bg-transparent `}style={{ backgroundColor: "transparent !important" }}>
         {/* Menu */}
         {showMenu && (
           <div className="absolute bottom-16 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 min-w-[200px]">
@@ -53,7 +63,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                 setIsModalOpen(true);
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
+              className="feedback-menu-item w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-gray-700 flex items-center space-x-3 rounded-lg"
             >
               <MessageSquare className="w-5 h-5 text-emerald-600" />
               <span className="text-gray-900 dark:text-white">Submit Feedback</span>
@@ -63,7 +73,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                 setIsHistoryOpen(true);
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3"
+              className="feedback-menu-item w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-gray-700 flex items-center space-x-3 rounded-lg"
             >
               <History className="w-5 h-5 text-blue-600" />
               <span className="text-gray-900 dark:text-white">View History</span>
