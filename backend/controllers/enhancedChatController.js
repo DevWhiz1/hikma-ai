@@ -427,35 +427,43 @@ const generateAIResponse = async (message, conversation) => {
     // Step 3: Determine if context is relevant (check if scores are above threshold)
     const isRelevantContext = ragResult.hasContext && ragResult.fatwaCount > 0;
     
-    // Step 4: Build enhanced prompt with RAG context
-    let systemPrompt = `You are Hikma AI, an Islamic knowledge assistant providing authentic guidance based on Quran and Hadith.
+    // Step 4: Build enhanced prompt - AI generates response, then adds Quran/Hadith references
+    let systemPrompt = `You are Hikma AI, a knowledgeable Islamic assistant. Provide comprehensive, accurate, and thoughtful answers about Islam.
 
-IMPORTANT INSTRUCTIONS:
-- Always respond in the SAME LANGUAGE the user used in their question
-- If user asks in Arabic, respond in Arabic
-- If user asks in English, respond in English  
-- If user asks in Urdu, French, Turkish, Indonesian, or any other language, respond in that language
-- Provide answers based on authentic Islamic sources when available
-- For greetings and casual conversation, respond naturally without forcing citations
-- Be respectful, compassionate, and clear
-- If uncertain, acknowledge limitations and suggest consulting a scholar
+FORMATTING:
+- Use clear, well-structured responses
+- Always respond in the SAME language the user used
+- Be respectful and scholarly in tone
+
+IMPORTANT: 
+- Provide detailed, informative answers
+- Support responses with Islamic knowledge when appropriate
 `;
 
+    // Add retrieved Quran/Hadith context if available
     if (isRelevantContext) {
-      systemPrompt += `\n\nRELEVANT ISLAMIC SOURCES:\n${ragResult.context}\n\nUse these authentic sources to answer the question. Always cite the specific source (Surah:Ayah or Hadith reference) when quoting.`;
-      console.log(`✅ Retrieved ${ragResult.sources.length} relevant sources`);
+      systemPrompt += `\n\nAUTHENTIC ISLAMIC SOURCES AVAILABLE:
+${ragResult.context}
+
+IMPORTANT: Weave these Quran verses and Hadiths naturally into your response. Don't just list them at the end. Incorporate them smoothly like:
+- "As Allah beautifully says in Surah Al-Baqarah..."
+- "The Prophet ﷺ taught us in Sahih Bukhari..."
+- "This is supported by the verse..."
+
+Make the citations feel natural and conversational, not academic.`;
+      console.log(`✅ Retrieved ${ragResult.sources.length} relevant sources to enhance response`);
     } else {
-      console.log('ℹ️ No specific sources found or not relevant, using general knowledge');
+      console.log('ℹ️ No specific sources found, generating comprehensive response from general knowledge');
     }
     
-    // Step 5: Generate AI response with Gemini
+    // Step 5: Generate comprehensive AI response with Gemini
     const chat = model.startChat({
       history: conversationHistory,
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.8,  // Slightly higher for more natural, detailed responses
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,  // Increased for comprehensive responses
       },
     });
     

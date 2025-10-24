@@ -284,11 +284,16 @@ const ChatBot = () => {
   };
 
   const quickSend = (text: string) => {
+    if (isLoading) return;  // Don't send if already loading
     setMessage(text);
+    // Use setTimeout to ensure state update completes before submission
     setTimeout(() => {
       const form = document.querySelector('form');
-      if (form) (form as HTMLFormElement).requestSubmit();
-    }, 50);
+      if (form) {
+        const event = new Event('submit', { bubbles: true, cancelable: true });
+        form.dispatchEvent(event);
+      }
+    }, 100);
   };
 
   return (
@@ -413,19 +418,21 @@ const ChatBot = () => {
                   {msg.role === 'user' ? (
                     <p>{msg.content}</p>
                   ) : (
-                      <div className="prose prose-sm max-w-none dark:prose-invert [&_a]:text-black [&_a]:dark:text-emerald-400">
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
                       <ReactMarkdown 
                         components={{
-                          h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                          h2: ({ children }) => <h2 className="text-md font-semibold mb-2">{children}</h2>,
-                          h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
-                          strong: ({ children }) => <strong className="font-semibold text-emerald-700 dark:text-emerald-300">{children}</strong>,
-                          em: ({ children }) => <em className="italic text-emerald-600 dark:text-emerald-400">{children}</em>,
-                          ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                          li: ({ children }) => <li className="mb-1">{children}</li>,
-                          p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
-                          a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-black dark:text-emerald-400 hover:text-emerald-200 dark:hover:text-emerald-300 underline" style={{color: 'black', textDecoration: 'none'}}>{children}</a>,
+                          h1: ({ children }) => <h1 className="text-xl font-bold mb-3 text-emerald-800 dark:text-emerald-300">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-lg font-bold mb-2 text-emerald-700 dark:text-emerald-400">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-md font-semibold mb-2 text-emerald-600 dark:text-emerald-500">{children}</h3>,
+                          strong: ({ children }) => <strong className="font-bold text-emerald-900 dark:text-emerald-200">{children}</strong>,
+                          em: ({ children }) => <em className="italic text-emerald-700 dark:text-emerald-400">{children}</em>,
+                          ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-2">{children}</ol>,
+                          li: ({ children }) => <li className="mb-1 leading-relaxed">{children}</li>,
+                          p: ({ children }) => <p className="mb-3 leading-relaxed text-gray-800 dark:text-gray-200">{children}</p>,
+                          blockquote: ({ children }) => <blockquote className="border-l-4 border-emerald-500 pl-4 italic my-3 text-gray-700 dark:text-gray-300">{children}</blockquote>,
+                          code: ({ children }) => <code className="bg-emerald-50 dark:bg-emerald-900 px-1 py-0.5 rounded text-emerald-800 dark:text-emerald-200">{children}</code>,
+                          a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline font-medium">{children}</a>,
                         }}
                       >
                         {msg.content}
