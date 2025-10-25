@@ -3,6 +3,7 @@ const Subscription = require('../models/Subscription');
 const Scholar = require('../models/Scholar');
 const User = require('../models/User');
 const Meeting = require('../models/Meeting');
+const { stripe } = require('../config/stripeConfig');
 
 // Create a new payment
 const createPayment = async (req, res) => {
@@ -278,6 +279,178 @@ const cancelSubscription = async (req, res) => {
   }
 };
 
+// Create Stripe payment intent
+const createStripePaymentIntent = async (req, res) => {
+  try {
+    const { scholarId, amount, paymentType, description, sessionId, subscriptionId } = req.body;
+    const userId = req.user.id;
+
+    // Validate required fields
+    if (!scholarId || !amount || !paymentType) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Check if scholar exists and is approved
+    const scholar = await Scholar.findById(scholarId).populate('user');
+    if (!scholar || !scholar.approved) {
+      return res.status(404).json({ error: 'Scholar not found or not approved' });
+    }
+
+    // Create payment intent with Stripe
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: 'usd',
+      metadata: {
+        userId: userId,
+        scholarId: scholarId,
+        paymentType: paymentType,
+        description: description,
+        sessionId: sessionId || '',
+        subscriptionId: subscriptionId || ''
+      }
+    });
+
+    // Create payment record in database
+    const payment = new Payment({
+      user: userId,
+      scholar: scholarId,
+      amount,
+      paymentType,
+      paymentMethod: 'stripe',
+      transactionId: paymentIntent.id,
+      description,
+      sessionId,
+      subscriptionId,
+      status: 'pending'
+    });
+
+    await payment.save();
+
+    res.json({
+      success: true,
+      clientSecret: paymentIntent.client_secret,
+      paymentId: payment._id
+    });
+  } catch (error) {
+    console.error('Error creating Stripe payment intent:', error);
+    res.status(500).json({ error: 'Failed to create payment intent' });
+  }
+};
+
+// Confirm Stripe payment
+const confirmStripePayment = async (req, res) => {
+  try {
+    const { paymentIntentId } = req.body;
+
+    // Retrieve payment intent from Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.status === 'succeeded') {
+      // Update payment status in database
+      const payment = await Payment.findOne({ transactionId: paymentIntentId });
+      if (payment) {
+        payment.status = 'completed';
+        await payment.save();
+
+        // If it's a subscription payment, create subscription
+        if (payment.paymentType === 'subscription' && payment.subscriptionId) {
+          const subscription = new Subscription({
+            user: payment.user,
+            scholar: payment.scholar,
+            plan: 'basic',
+            amount: payment.amount,
+            startDate: new Date(),
+            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            paymentMethod: 'stripe',
+            paymentId: paymentIntentId
+          });
+
+          await subscription.save();
+        }
+      }
+
+      res.json({
+        success: true,
+        status: 'succeeded',
+        payment
+      });
+    } else {
+      res.json({
+        success: false,
+        status: paymentIntent.status
+      });
+    }
+  } catch (error) {
+    console.error('Error confirming Stripe payment:', error);
+    res.status(500).json({ error: 'Failed to confirm payment' });
+  }
+};
+
+// Stripe webhook handler
+const handleStripeWebhook = async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  try {
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object;
+        const payment = await Payment.findOne({ transactionId: paymentIntent.id });
+        
+        if (payment) {
+          payment.status = 'completed';
+          await payment.save();
+
+          // Create subscription if needed
+          if (payment.paymentType === 'subscription' && payment.subscriptionId) {
+            const subscription = new Subscription({
+              user: payment.user,
+              scholar: payment.scholar,
+              plan: 'basic',
+              amount: payment.amount,
+              startDate: new Date(),
+              endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              paymentMethod: 'stripe',
+              paymentId: paymentIntent.id
+            });
+
+            await subscription.save();
+          }
+        }
+        break;
+
+      case 'payment_intent.payment_failed':
+        const failedPaymentIntent = event.data.object;
+        const failedPayment = await Payment.findOne({ transactionId: failedPaymentIntent.id });
+        
+        if (failedPayment) {
+          failedPayment.status = 'failed';
+          await failedPayment.save();
+        }
+        break;
+
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error('Error handling webhook:', error);
+    res.status(500).json({ error: 'Webhook handler failed' });
+  }
+};
+
 module.exports = {
   createPayment,
   getUserPayments,
@@ -285,5 +458,8 @@ module.exports = {
   updatePaymentStatus,
   getPaymentAnalytics,
   getSubscriptions,
-  cancelSubscription
+  cancelSubscription,
+  createStripePaymentIntent,
+  confirmStripePayment,
+  handleStripeWebhook
 };
