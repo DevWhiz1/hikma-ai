@@ -6,7 +6,7 @@ const messageSchema = new mongoose.Schema({
   text: { type: String, required: true },
   type: { 
     type: String, 
-    enum: ['text', 'meeting_request', 'meeting_scheduled', 'meeting_link'], 
+    enum: ['text', 'meeting_request', 'meeting_scheduled', 'meeting_link', 'meeting_broadcast', 'meeting_booked'], 
     default: 'text' 
   },
   timestamp: { type: Date, default: Date.now },

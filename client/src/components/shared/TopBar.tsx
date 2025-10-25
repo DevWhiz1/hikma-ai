@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bars3Icon, MoonIcon, SunIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { authService } from '../../services/authService';
+import WebSocketStatus from './WebSocketStatus';
 
 interface TopBarProps {
   toggleSidebar: () => void;
@@ -31,6 +32,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMo
         </h1>
       </div>
       <div className="flex items-center space-x-4">
+        <WebSocketStatus />
         {user && (
           <span className="text-sm text-gray-700 dark:text-gray-300">
             Welcome, {user.name}

@@ -6,6 +6,7 @@ const { filterSensitive, filterMeetingLinks, filterContactInfo, detectAllLinks }
 const { notifyAdmin } = require('../agents/notificationAgent');
 const SensitiveLog = require('../models/SensitiveLog');
 const User = require('../models/User');
+const { emitNewMessage, emitSessionUpdate } = require('../utils/socketEmitter');
 const router = express.Router();
 
 router.get('/sessions', auth, getSessions);
@@ -43,6 +44,21 @@ router.post('/sessions/:id/messages', auth, async (req, res) => {
     const trimmed = content.trim();
     session.messages.push({ role: 'user', content: trimmed });
     await session.save();
+
+    // Emit WebSocket event for new message
+    emitNewMessage(session._id, {
+      text: trimmed,
+      senderId: req.user._id,
+      timestamp: new Date()
+    });
+
+    // Emit session update
+    emitSessionUpdate(req.user._id, session._id, {
+      _id: session._id,
+      title: session.title,
+      lastActivity: session.lastActivity,
+      messages: session.messages
+    });
 
     // Mirror to counterpart session (student <-> scholar)
     try {

@@ -1,0 +1,5 @@
+# Pinecone Migration Requirements
+pinecone>=7.0.0
+chromadb>=0.4.24
+python-dotenv>=1.0.0
+tqdm>=4.66.0

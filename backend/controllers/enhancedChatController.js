@@ -4,6 +4,12 @@ const Enrollment = require('../models/Enrollment');
 const Scholar = require('../models/Scholar');
 const User = require('../models/User');
 const { filterSensitive, filterMeetingLinks, filterContactInfo, detectAllLinks } = require('../middleware/messageFilter');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { retrieveContext } = require('../utils/ragSystemPinecone');
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
 // Get all chat sessions for a user (separated by type)
 const getChatSessions = async (req, res) => {
@@ -407,15 +413,81 @@ const deleteChatSession = async (req, res) => {
 
 // Helper function to generate AI response (placeholder)
 const generateAIResponse = async (message, conversation) => {
-  // This is a placeholder - in real implementation, you would call your AI service
-  const responses = [
-    "Thank you for your question. Based on Islamic teachings, I can help you understand this topic better. Could you provide more specific details about what you'd like to know?",
-    "That's an excellent question about Islamic principles. Let me provide you with a comprehensive answer based on authentic Islamic sources.",
-    "I understand you're seeking guidance on this matter. According to Islamic teachings, here's what I can share with you...",
-    "Your question touches on an important aspect of Islamic practice. Let me explain this from both a traditional and contemporary perspective."
-  ];
-  
-  return responses[Math.floor(Math.random() * responses.length)];
+  try {
+    // Step 1: Retrieve relevant context from Pinecone (Quran + Hadiths)
+    console.log('🔍 Retrieving context from Pinecone...');
+    const ragResult = await retrieveContext(message, { topK: 5 });
+    
+    // Step 2: Build conversation history
+    const conversationHistory = conversation.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    }));
+    
+    // Step 3: Determine if context is relevant (check if scores are above threshold)
+    const isRelevantContext = ragResult.hasContext && ragResult.fatwaCount > 0;
+    
+    // Step 4: Build enhanced prompt - AI generates response, then adds Quran/Hadith references
+    let systemPrompt = `You are Hikma AI, a knowledgeable Islamic assistant. Provide comprehensive, accurate, and thoughtful answers about Islam.
+
+FORMATTING:
+- Use clear, well-structured responses
+- Always respond in the SAME language the user used
+- Be respectful and scholarly in tone
+
+IMPORTANT: 
+- Provide detailed, informative answers
+- Support responses with Islamic knowledge when appropriate
+`;
+
+    // Add retrieved Quran/Hadith context if available
+    if (isRelevantContext) {
+      systemPrompt += `\n\nAUTHENTIC ISLAMIC SOURCES AVAILABLE:
+${ragResult.context}
+
+IMPORTANT: Weave these Quran verses and Hadiths naturally into your response. Don't just list them at the end. Incorporate them smoothly like:
+- "As Allah beautifully says in Surah Al-Baqarah..."
+- "The Prophet ﷺ taught us in Sahih Bukhari..."
+- "This is supported by the verse..."
+
+Make the citations feel natural and conversational, not academic.`;
+      console.log(`✅ Retrieved ${ragResult.sources.length} relevant sources to enhance response`);
+    } else {
+      console.log('ℹ️ No specific sources found, generating comprehensive response from general knowledge');
+    }
+    
+    // Step 5: Generate comprehensive AI response with Gemini
+    const chat = model.startChat({
+      history: conversationHistory,
+      generationConfig: {
+        temperature: 0.8,  // Slightly higher for more natural, detailed responses
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 2048,  // Increased for comprehensive responses
+      },
+    });
+    
+    const result = await chat.sendMessage(systemPrompt + '\n\nUser question: ' + message);
+    const response = result.response;
+    const aiResponse = response.text();
+    
+    // Step 6: Add source attribution ONLY if context was actually used
+    let finalResponse = aiResponse;
+    if (isRelevantContext && ragResult.sources.length > 0) {
+      const sourcesList = ragResult.sources
+        .slice(0, 3) // Show top 3 sources
+        .map(src => `• ${src}`)
+        .join('\n');
+      finalResponse += `\n\n📚 **Sources:**\n${sourcesList}`;
+    }
+    
+    return finalResponse;
+    
+  } catch (error) {
+    console.error('Error generating AI response:', error);
+    // Fallback response in case of error
+    return "I apologize, but I'm having trouble processing your question right now. Please try again in a moment, or rephrase your question.";
+  }
 };
 
 module.exports = {

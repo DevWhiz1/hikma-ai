@@ -61,45 +61,28 @@ const UpcomingClasses = () => {
         const enrollments = await getMyEnrollments();
         setEnrollments(enrollments || []);
         
-        // Mock upcoming classes data for users
-        const mockClasses: UpcomingClass[] = [
-          {
-            id: '1',
-            title: 'Quran Recitation Session',
-            scholar: {
-              name: 'Dr. Ahmed Hassan',
-              photoUrl: 'https://via.placeholder.com/60x60?text=AH'
-            },
-            date: '2024-01-25',
-            time: '10:00 AM',
-            duration: '1 hour',
-            meetingLink: 'https://meet.google.com/abc-defg-hij',
-            status: 'scheduled',
-            description: 'Learn proper Quran recitation techniques and tajweed rules.'
-          },
-          {
-            id: '2',
-            title: 'Islamic History Discussion',
-            scholar: {
-              name: 'Sheikh Fatima Al-Zahra',
-              photoUrl: 'https://via.placeholder.com/60x60?text=FA'
-            },
-            date: '2024-01-27',
-            time: '2:00 PM',
-            duration: '1.5 hours',
-            status: 'scheduled',
-            description: 'Explore the golden age of Islamic civilization and its contributions.'
+        // Load real scheduled meetings for users
+        try {
+          const response = await meetingService.getUserScheduledMeetings();
+          if (response.success) {
+            setUpcomingClasses(response.meetings || []);
+          } else {
+            setUpcomingClasses([]);
           }
-        ];
-        
-        setUpcomingClasses(mockClasses);
+        } catch (error) {
+          console.error('Failed to load scheduled meetings:', error);
+          setUpcomingClasses([]);
+        }
       } else if (user?.role === 'scholar') {
         // Load scholar's scheduled meetings
         try {
           const dashboardData = await meetingService.getScholarDashboard();
+          console.log('Scholar dashboard data:', dashboardData);
+          console.log('Scheduled meetings:', dashboardData?.scheduled);
           setScholarMeetings(dashboardData?.scheduled || []);
         } catch (error) {
           console.error('Failed to load scholar meetings:', error);
+          setScholarMeetings([]);
         }
       }
     } catch (error) {
@@ -217,7 +200,7 @@ const UpcomingClasses = () => {
                       <div className="flex-1">
                         <div className="flex items-start space-x-4 mb-4">
                           <img
-                            src={meeting.student?.photoUrl || 'https://via.placeholder.com/60x60?text=Student'}
+                            src={meeting.student?.photoUrl || '/api/placeholder/60/60'}
                             alt={meeting.student?.name || 'Student'}
                             className="w-12 h-12 rounded-full object-cover border-2 border-emerald-200 dark:border-emerald-700"
                           />
@@ -346,7 +329,7 @@ const UpcomingClasses = () => {
                     <div className="flex-1">
                       <div className="flex items-start space-x-4 mb-4">
                         <img
-                          src={classItem.scholar.photoUrl || 'https://via.placeholder.com/60x60?text=Scholar'}
+                          src={classItem.scholar.photoUrl || '/api/placeholder/60/60'}
                           alt={classItem.scholar.name}
                           className="w-12 h-12 rounded-full object-cover border-2 border-emerald-200 dark:border-emerald-700"
                         />
@@ -440,7 +423,7 @@ const UpcomingClasses = () => {
                 <div key={enrollment._id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-all duration-300">
                   <div className="flex items-center space-x-4 mb-4">
                     <img
-                      src={enrollment.scholar.photoUrl || 'https://via.placeholder.com/60x60?text=Scholar'}
+                      src={enrollment.scholar.photoUrl || '/api/placeholder/60/60'}
                       alt={enrollment.scholar.user.name}
                       className="w-12 h-12 rounded-full object-cover border-2 border-emerald-200 dark:border-emerald-700"
                     />
