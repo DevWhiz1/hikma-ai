@@ -50,6 +50,12 @@ export const meetingService = {
     return response.data;
   },
 
+  // Get user's scheduled meetings
+  getUserScheduledMeetings: async () => {
+    const response = await axios.get(`${API_URL}/meetings/user/scheduled`, getAuthHeaders());
+    return response.data;
+  },
+
   // Send a message
   sendMessage: async (chatId: string, text: string) => {
     const response = await axios.post(`${API_URL}/meetings/send-message`, {

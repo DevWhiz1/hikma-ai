@@ -4,11 +4,17 @@ import { PaperAirplaneIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { chatService, ChatSession, ChatMessage } from '../../../services/chatService';
 import ChatHistory from '../../shared/ChatHistory';
 import { startDirectChat, getMyEnrollments, getScholars } from '../../../services/scholarService';
+import { authService } from '../../../services/authService';
 import ReactMarkdown from 'react-markdown';
+import MeetingBroadcastMessage from './MeetingBroadcastMessage';
+import ScholarMeetingNotification from './ScholarMeetingNotification';
+import SimpleMeetingNotification from './SimpleMeetingNotification';
+import socketService from '../../../services/socketService';
 
 const ChatBot = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const user = authService.getUser();
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -122,6 +128,92 @@ const ChatBot = () => {
     loadSessions();
   }, []);
 
+  // WebSocket event listeners
+  useEffect(() => {
+    if (!user) return;
+
+    // Join user room for real-time updates
+    socketService.joinUserRoom(user.id);
+
+    // Listen for new messages
+    const handleNewMessage = (data: any) => {
+      if (data.chatId === sessionId) {
+        const newMessage: ChatMessage = {
+          role: data.senderId === user.id ? 'user' : 'assistant',
+          content: data.text,
+          timestamp: data.timestamp
+        };
+        setMessages(prev => [...prev, newMessage]);
+      }
+    };
+
+    // Listen for session updates
+    const handleSessionUpdate = (data: any) => {
+      if (data.sessionId === sessionId) {
+        setCurrentSession(prev => prev ? { ...prev, ...data.session } : null);
+        if (data.messages) {
+          setMessages(data.messages);
+        }
+      }
+    };
+
+    // Listen for meeting events
+    const handleMeetingRequest = (data: any) => {
+      if (data.chatId === sessionId) {
+        // Handle meeting request notification
+        console.log('Meeting request received:', data);
+      }
+    };
+
+    const handleMeetingScheduled = (data: any) => {
+      if (data.chatId === sessionId) {
+        // Handle meeting scheduled notification
+        console.log('Meeting scheduled:', data);
+      }
+    };
+
+    const handleMeetingLinkSent = (data: any) => {
+      if (data.chatId === sessionId) {
+        // Handle meeting link sent notification
+        console.log('Meeting link sent:', data);
+      }
+    };
+
+    // Listen for broadcast meeting events
+    const handleBroadcastMeetingPosted = (data: any) => {
+      // Handle broadcast meeting posted notification
+      console.log('Broadcast meeting posted:', data);
+    };
+
+    const handleBroadcastMeetingBooked = (data: any) => {
+      // Handle broadcast meeting booked notification
+      console.log('Broadcast meeting booked:', data);
+    };
+
+    // Listen for typing indicators
+    const handleTyping = (data: any) => {
+      if (data.chatId === sessionId && data.userId !== user.id) {
+        // Handle typing indicators from other users
+        console.log('User typing:', data);
+      }
+    };
+
+    socketService.onNewMessage(handleNewMessage);
+    socketService.onSessionUpdate(handleSessionUpdate);
+    socketService.onMeetingRequest(handleMeetingRequest);
+    socketService.onMeetingScheduled(handleMeetingScheduled);
+    socketService.onMeetingLinkSent(handleMeetingLinkSent);
+    socketService.onBroadcastMeetingPosted(handleBroadcastMeetingPosted);
+    socketService.onBroadcastMeetingBooked(handleBroadcastMeetingBooked);
+    socketService.onTyping(handleTyping);
+
+    return () => {
+      socketService.offNewMessage(handleNewMessage);
+      socketService.offSessionUpdate(handleSessionUpdate);
+      socketService.offTyping(handleTyping);
+    };
+  }, [user, sessionId]);
+
   // Load specific session when sessionId changes
   useEffect(() => {
     if (sessionId) {
@@ -166,7 +258,30 @@ const ChatBot = () => {
     try {
       const { session } = await chatService.getSession(id);
       setCurrentSession(session);
-      setMessages(session.messages || []);
+      console.log('Loaded session messages:', session.messages);
+      
+      // Filter out old and expired broadcast messages
+      const filteredMessages = (session.messages || []).filter(msg => {
+        if (msg.metadata?.meetingTimes && msg.metadata?.meetingTimes.length > 0) {
+          // Check if broadcast is still active (not expired)
+          if (msg.metadata?.expiresAt) {
+            const expirationDate = new Date(msg.metadata.expiresAt);
+            const now = new Date();
+            if (expirationDate <= now) {
+              return false; // Remove expired broadcasts
+            }
+          }
+          
+          // Also filter out very old messages (older than 7 days)
+          const messageDate = new Date(msg.timestamp);
+          const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+          return messageDate > sevenDaysAgo;
+        }
+        return true; // Keep all non-broadcast messages
+      });
+      
+      console.log('Filtered messages:', filteredMessages);
+      setMessages(filteredMessages);
     } catch (e) {
       console.error('Failed to load session:', e); navigate('/chat');
     }
@@ -418,48 +533,81 @@ const ChatBot = () => {
                   {msg.role === 'user' ? (
                     <p>{msg.content}</p>
                   ) : (
+                    // Check if this is a meeting broadcast message
+                    (() => {
+                      const hasMeetingTimes = msg.metadata?.meetingTimes && msg.metadata?.meetingTimes.length > 0;
+                      const hasScholarText = msg.content.includes('Scholar') && msg.content.includes('has set available meeting times');
+                      const isMeetingBroadcast = hasMeetingTimes || hasScholarText;
+                      
+                      console.log('Message rendering check:', {
+                        msgId: msg._id || 'no-id',
+                        content: msg.content?.substring(0, 100) + '...',
+                        metadata: msg.metadata,
+                        hasMeetingTimes,
+                        hasScholarText,
+                        isMeetingBroadcast,
+                        userRole: user?.role
+                      });
+                      
+                      return isMeetingBroadcast;
+                    })() ? (
+                      // Show different components based on user role
+                      user?.role === 'scholar' ? (
+                        <ScholarMeetingNotification
+                          content={msg.content}
+                          scholarName={msg.metadata?.scholarName || 'Scholar'}
+                          meetingCount={msg.metadata?.meetingTimes?.length || 0}
+                        />
+                      ) : (
+                        <SimpleMeetingNotification
+                          scholarName={msg.metadata?.scholarName || 'Scholar'}
+                          meetingCount={msg.metadata?.meetingTimes?.length || 0}
+                        />
+                      )
+                    ) : (
                       <div className="prose prose-sm max-w-none dark:prose-invert">
-                      <ReactMarkdown 
-                        components={{
-                          h1: ({ children }) => <h1 className="text-xl font-bold mb-3 text-emerald-800 dark:text-emerald-300">{children}</h1>,
-                          h2: ({ children }) => <h2 className="text-lg font-bold mb-2 text-emerald-700 dark:text-emerald-400">{children}</h2>,
-                          h3: ({ children }) => <h3 className="text-md font-semibold mb-2 text-emerald-600 dark:text-emerald-500">{children}</h3>,
-                          strong: ({ children }) => <strong className="font-bold text-emerald-900 dark:text-emerald-200">{children}</strong>,
-                          em: ({ children }) => <em className="italic text-emerald-700 dark:text-emerald-400">{children}</em>,
-                          ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-2">{children}</ol>,
-                          li: ({ children }) => <li className="mb-1 leading-relaxed">{children}</li>,
-                          p: ({ children }) => <p className="mb-3 leading-relaxed text-gray-800 dark:text-gray-200">{children}</p>,
-                          blockquote: ({ children }) => <blockquote className="border-l-4 border-emerald-500 pl-4 italic my-3 text-gray-700 dark:text-gray-300">{children}</blockquote>,
-                          code: ({ children }) => <code className="bg-emerald-50 dark:bg-emerald-900 px-1 py-0.5 rounded text-emerald-800 dark:text-emerald-200">{children}</code>,
-                          a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline font-medium">{children}</a>,
-                        }}
-                      >
-                        {msg.content}
-                      </ReactMarkdown>
-                      {(() => {
-                        try {
-                          const urlMatch = (msg.content || '').match(/https?:\/\/[^\s]+/);
-                          if (urlMatch) {
-                            const href = urlMatch[0];
-                            return (
-                              <div className="mt-2">
-                                <a
-                                  href={href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-block bg-emerald-600 text-black px-3 py-1 rounded text-sm hover:bg-emerald-700"
-                                  style={{color: 'black', textDecoration: 'none'}}
-                                >
-                                  Open Link
-                                </a>
-                              </div>
-                            );
-                          }
-                        } catch {}
-                        return null;
-                      })()}
-                    </div>
+                        <ReactMarkdown 
+                          components={{
+                            h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 mt-3 text-emerald-800 dark:text-emerald-300 border-b-2 border-emerald-200 dark:border-emerald-700 pb-2">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-3 text-emerald-700 dark:text-emerald-400">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-lg font-semibold mb-2 mt-2 text-emerald-600 dark:text-emerald-500">{children}</h3>,
+                            strong: ({ children }) => <strong className="font-bold text-emerald-900 dark:text-emerald-200">{children}</strong>,
+                            em: ({ children }) => <em className="italic text-emerald-700 dark:text-emerald-400">{children}</em>,
+                            ul: ({ children }) => <ul className="list-disc pl-6 mb-3 space-y-1 text-gray-800 dark:text-gray-200">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 space-y-2 text-gray-800 dark:text-gray-200">{children}</ol>,
+                            li: ({ children }) => <li className="mb-1 leading-relaxed">{children}</li>,
+                            p: ({ children }) => <p className="mb-3 leading-relaxed text-gray-800 dark:text-gray-200">{children}</p>,
+                            blockquote: ({ children }) => <blockquote className="border-l-4 border-emerald-500 pl-4 italic my-3 text-gray-700 dark:text-gray-300 bg-emerald-50 dark:bg-emerald-900/20 py-2">{children}</blockquote>,
+                            code: ({ children }) => <code className="bg-emerald-100 dark:bg-emerald-900 px-2 py-1 rounded text-sm text-emerald-800 dark:text-emerald-200 font-mono">{children}</code>,
+                            a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline font-medium">{children}</a>,
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                        {(() => {
+                          try {
+                            const urlMatch = (msg.content || '').match(/https?:\/\/[^\s]+/);
+                            if (urlMatch) {
+                              const href = urlMatch[0];
+                              return (
+                                <div className="mt-2">
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-block bg-emerald-600 text-black px-3 py-1 rounded text-sm hover:bg-emerald-700"
+                                    style={{color: 'black', textDecoration: 'none'}}
+                                  >
+                                    Open Link
+                                  </a>
+                                </div>
+                              );
+                            }
+                          } catch {}
+                          return null;
+                        })()}
+                      </div>
+                    )
                   )}
                 </div>
               </div>

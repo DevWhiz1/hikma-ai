@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../../services/authService';
 import { getMyEnrollments } from '../../../services/scholarService';
+import { meetingService } from '../../../services/meetingService';
 import PaymentSummary from '../../shared/PaymentSummary/PaymentSummary';
+import PaymentHistory from '../../shared/PaymentHistory/PaymentHistory';
+import MeetingAccess from '../../shared/MeetingAccess';
 import { 
   ChatBubbleLeftRightIcon,
   CalendarIcon,
@@ -12,7 +15,9 @@ import {
   UserGroupIcon,
   ChevronRightIcon,
   ChartBarIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  VideoCameraIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 
 interface Enrollment {
@@ -32,43 +37,47 @@ const UserDashboard = () => {
   const user = authService.getUser();
   const navigate = useNavigate();
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [scheduledMeetings, setScheduledMeetings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user?.role === 'user') {
       loadEnrollments();
+    } else if (user?.role === 'scholar') {
+      navigate('/scholars/dashboard');
+    } else if (user?.role === 'admin') {
+      navigate('/admin');
+    } else {
+      setLoading(false);
     }
-  }, [user?.role]);
+  }, [user?.role, navigate]);
 
   const loadEnrollments = async () => {
     try {
       const enrollments = await getMyEnrollments();
       setEnrollments(enrollments || []);
+      
+      // Load scheduled meetings
+      try {
+        const response = await meetingService.getUserScheduledMeetings();
+        if (response.success) {
+          setScheduledMeetings(response.meetings || []);
+        }
+      } catch (error) {
+        console.error('Failed to load scheduled meetings:', error);
+      }
     } catch (error) {
       console.error('Failed to load enrollments:', error);
     }
   };
 
-  // Redirect scholars to their dashboard
-  if (user?.role === 'scholar') {
-    navigate('/scholars/dashboard');
+  // Show loading while redirecting
+  if (user?.role === 'scholar' || user?.role === 'admin') {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Redirecting to Scholar Dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect admins to their dashboard
-  if (user?.role === 'admin') {
-    navigate('/admin');
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Redirecting to Admin Dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-400">Redirecting...</p>
         </div>
       </div>
     );
@@ -92,12 +101,20 @@ const UserDashboard = () => {
       gradient: 'from-green-500 to-emerald-600'
     },
     {
-      icon: CalendarIcon,
+      icon: VideoCameraIcon,
+      title: 'Book Meeting Slots',
+      description: 'Your scholars have posted slots - book yours now!',
+      link: '/available-meetings',
+      color: 'blue',
+      gradient: 'from-blue-500 to-indigo-600'
+    },
+    {
+      icon: ClockIcon,
       title: 'Prayer Times',
       description: 'Never miss a prayer with accurate timings',
       link: '/prayer-times',
-      color: 'blue',
-      gradient: 'from-blue-500 to-cyan-600'
+      color: 'purple',
+      gradient: 'from-purple-500 to-pink-600'
     },
     {
       icon: GlobeAltIcon,
@@ -186,6 +203,41 @@ const UserDashboard = () => {
           </div>
         </div>
 
+        {/* Book Meetings Section */}
+        <div className="mb-12">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h2 className="text-3xl font-bold mb-4">Book Your Meeting Slots</h2>
+                <p className="text-xl mb-6 opacity-90">
+                  Your enrolled scholars have posted available meeting times. Book your preferred slots now!
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={() => navigate('/available-meetings')}
+                    className="px-8 py-4 bg-white text-blue-600 font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-lg flex items-center justify-center"
+                  >
+                    <VideoCameraIcon className="h-6 w-6 mr-2" />
+                    View Available Slots
+                  </button>
+                  <button
+                    onClick={() => navigate('/chat')}
+                    className="px-8 py-4 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg flex items-center justify-center"
+                  >
+                    <ChatBubbleLeftRightIcon className="h-6 w-6 mr-2" />
+                    Chat with Scholars
+                  </button>
+                </div>
+              </div>
+              <div className="hidden lg:block ml-8">
+                <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center">
+                  <VideoCameraIcon className="h-16 w-16 text-white" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* My Enrollments Section */}
         {enrollments.length > 0 && (
           <div className="mb-12">
@@ -204,7 +256,7 @@ const UserDashboard = () => {
                   <div className="p-6">
                     <div className="flex items-center space-x-4 mb-4">
                       <img
-                        src={enrollment.scholar.photoUrl || 'https://via.placeholder.com/60x60?text=Scholar'}
+                        src={enrollment.scholar.photoUrl || '/api/placeholder/60/60'}
                         alt={enrollment.scholar.user.name}
                         className="w-12 h-12 rounded-full object-cover border-2 border-emerald-200 dark:border-emerald-700"
                       />
@@ -286,21 +338,70 @@ const UserDashboard = () => {
         {/* Upcoming Classes Section */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Upcoming Classes</h2>
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="text-center py-12">
-              <CalendarIcon className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Upcoming Classes</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Schedule a meeting with your enrolled scholars to see upcoming classes here.
-              </p>
-              <button
-                onClick={() => navigate('/scholars')}
-                className="px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"
-              >
-                Schedule a Meeting
-              </button>
+          {scheduledMeetings.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {scheduledMeetings.map((meeting) => (
+                <div key={meeting.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-all duration-300">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
+                      <CalendarIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{meeting.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">with {meeting.scholar.name}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <ClockIcon className="h-4 w-4 mr-2" />
+                      {meeting.date} at {meeting.time}
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      Duration: {meeting.duration} minutes
+                    </div>
+                  </div>
+                  
+                  {meeting.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{meeting.description}</p>
+                  )}
+                  
+                  {meeting.meetingLink && (
+                    <div className="mt-4">
+                      <MeetingAccess 
+                        meetingId={meeting.id}
+                        onAccessGranted={() => {
+                          // Meeting access granted - user can join
+                          console.log('Meeting access granted');
+                        }}
+                        onAccessDenied={() => {
+                          // Meeting access denied - show appropriate message
+                          console.log('Meeting access denied');
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+              <div className="text-center py-12">
+                <CalendarIcon className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Upcoming Classes</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Schedule a meeting with your enrolled scholars to see upcoming classes here.
+                </p>
+                <button
+                  onClick={() => navigate('/scholars')}
+                  className="px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  Schedule a Meeting
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Call to Action */}

@@ -66,8 +66,8 @@ const EnhancedChatSystem: React.FC = () => {
       const enrollmentsData = await getMyEnrollments();
       setEnrollments(enrollmentsData || []);
 
-      // Mock chat sessions data
-      const mockSessions: ChatSession[] = [
+      // Generate real chat sessions from enrollment data
+      const realSessions: ChatSession[] = [
         {
           _id: 'ai-1',
           type: 'ai',
@@ -80,9 +80,9 @@ const EnhancedChatSystem: React.FC = () => {
           _id: `scholar-${enrollment.scholar._id}`,
           type: 'scholar' as const,
           title: `Chat with ${enrollment.scholar.user.name}`,
-          lastMessage: 'Thank you for your question. Let me provide you with a detailed answer.',
-          lastMessageAt: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-          unreadCount: Math.floor(Math.random() * 5),
+          lastMessage: 'Chat session available',
+          lastMessageAt: enrollment.updatedAt || enrollment.createdAt,
+          unreadCount: 0, // Could be enhanced with real unread count
           scholar: {
             name: enrollment.scholar.user.name,
             photoUrl: enrollment.scholar.user.photoUrl
@@ -90,7 +90,7 @@ const EnhancedChatSystem: React.FC = () => {
         }))
       ];
 
-      setChatSessions(mockSessions);
+      setChatSessions(realSessions);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {

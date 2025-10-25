@@ -10,7 +10,7 @@ import {
   CalendarIcon,
   AcademicCapIcon,
   ClockIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 import hikmahLogo from '../../../assets/logo.png';
 interface SidebarProps {
@@ -34,8 +34,6 @@ const baseNavigationItems = [
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) => {
   const location = useLocation();
-  
-  console.log('Sidebar isOpen:', isOpen);
   
   const handleClick = (id: string) => {
     setActiveTab(id);
@@ -63,6 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
     if (user?.role === 'admin') {
       items.push({ name: 'Admin', icon: BookOpenIcon, id: 'admin', path: '/admin' });
     }
+    
     
     return items;
   }, [user?.role]);

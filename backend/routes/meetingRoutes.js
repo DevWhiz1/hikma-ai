@@ -7,6 +7,7 @@ const {
   getUserChats, 
   sendMessage,
   getScholarDashboard,
+  getUserScheduledMeetings,
   requestReschedule,
   respondReschedule,
   cancelMeeting
@@ -38,5 +39,8 @@ router.post('/cancel-meeting', auth, cancelMeeting);
 
 // Scholar dashboard data
 router.get('/scholar/dashboard', auth, getScholarDashboard);
+
+// Get user's scheduled meetings
+router.get('/user/scheduled', auth, getUserScheduledMeetings);
 
 module.exports = router;

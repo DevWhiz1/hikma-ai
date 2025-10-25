@@ -8,6 +8,7 @@ const Enrollment = require('../models/Enrollment');
 const Scholar = require('../models/Scholar');
 const SensitiveLog = require('../models/SensitiveLog');
 const { filterMeetingLinks, filterContactInfo, detectAllLinks } = require('../middleware/messageFilter');
+const { emitMeetingRequest, emitMeetingScheduled, emitMeetingLinkSent } = require('../utils/socketEmitter');
 
 // Generate Jitsi meeting link
 const generateJitsiLink = () => {
@@ -115,6 +116,9 @@ const requestMeeting = async (req, res) => {
       }
     } catch {}
 
+    // Emit WebSocket event for meeting request
+    emitMeetingRequest(chat._id, req.user._id, scholarId);
+
     res.json({ 
       success: true, 
       chatId: chat._id, 
@@ -181,6 +185,9 @@ const scheduleMeeting = async (req, res) => {
     if (scholarDoc?.email) await notifyAdmin({ ...payload, toEmail: scholarDoc.email, force: true });
     if (studentDoc?.email) await notifyAdmin({ ...payload, toEmail: studentDoc.email, force: true });
   } catch {}
+
+    // Emit WebSocket event for meeting scheduled
+    emitMeetingScheduled(chat._id, scheduledTime);
 
     res.json({ success: true, messageId: message._id });
   } catch (error) {
@@ -542,6 +549,51 @@ const getScholarDashboard = async (req, res) => {
   }
 };
 
+// Get user's scheduled meetings
+const getUserScheduledMeetings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get all scheduled meetings for this user
+    const meetings = await Meeting.find({
+      studentId: userId,
+      status: { $in: ['scheduled', 'link_sent'] },
+      scheduledTime: { $gte: new Date() } // Only future meetings
+    })
+    .populate('scholarId', 'name email')
+    .populate('chatId')
+    .sort({ scheduledTime: 1 });
+
+    // Format the meetings for the frontend
+    const formattedMeetings = meetings.map(meeting => ({
+      id: meeting._id,
+      title: meeting.topic || 'Islamic Guidance Session',
+      scholar: {
+        name: meeting.scholarId?.name || 'Scholar',
+        photoUrl: null // You can add photoUrl to User model if needed
+      },
+      date: meeting.scheduledTime ? meeting.scheduledTime.toISOString().split('T')[0] : null,
+      time: meeting.scheduledTime ? meeting.scheduledTime.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      }) : null,
+      duration: meeting.duration || 60,
+      meetingLink: meeting.link,
+      status: meeting.status,
+      description: meeting.reason || 'Scheduled meeting with your scholar'
+    }));
+
+    res.json({
+      success: true,
+      meetings: formattedMeetings
+    });
+  } catch (error) {
+    console.error('Error getting user scheduled meetings:', error);
+    res.status(500).json({ error: 'Failed to get scheduled meetings' });
+  }
+};
+
 module.exports = {
   requestMeeting,
   scheduleMeeting,
@@ -549,6 +601,7 @@ module.exports = {
   getUserChats,
   sendMessage,
   getScholarDashboard,
+  getUserScheduledMeetings,
   generateJitsiLink,
   requestReschedule,
   respondReschedule,
