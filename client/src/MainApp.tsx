@@ -38,6 +38,15 @@ import ConflictResolverPage from './pages/scholar/ConflictResolverPage';
 import PersonalizationPage from './pages/scholar/PersonalizationPage';
 import AIAgentDashboardPage from './pages/scholar/AIAgentDashboardPage';
 import AvailableMeetingsPage from './pages/user/AvailableMeetingsPage';
+import AssignmentsPage from './pages/scholar/AssignmentsPage';
+import AssignmentCreatePage from './pages/scholar/AssignmentCreatePage';
+import AssignmentSubmissionsPage from './pages/scholar/AssignmentSubmissionsPage';
+import SubmissionsInboxPage from './pages/scholar/SubmissionsInboxPage';
+import TakeAssignmentPage from './pages/user/TakeAssignmentPage';
+import MySubmissionsPage from './pages/user/MySubmissionsPage';
+import AvailableAssignmentsPage from './pages/user/AvailableAssignmentsPage';
+import AvailableQuizzesPage from './pages/user/AvailableQuizzesPage';
+import AssignmentBuilderPage from './pages/scholar/AssignmentBuilderPage';
 
 interface MainAppProps {
   setIsAuthenticated: (value: boolean) => void;
@@ -163,6 +172,16 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
                   <Route path="/scholar/personalization" element={<PersonalizationPage />} />
                   <Route path="/scholar/ai-agent" element={<AIAgentDashboardPage />} />
                   <Route path="/available-meetings" element={<AvailableMeetingsPage />} />
+                  {/* Assignments */}
+                  <Route path="/quizzes" element={<AvailableQuizzesPage />} />
+                  <Route path="/assignments" element={<AvailableAssignmentsPage />} />
+                  <Route path="/scholar/assignments" element={<AssignmentsPage />} />
+                  <Route path="/scholar/assignments/new" element={<AssignmentCreatePage />} />
+                  <Route path="/scholar/assignments/:id/builder" element={<AssignmentBuilderPage />} />
+                  <Route path="/scholar/assignments/:id/submissions" element={<AssignmentSubmissionsPage />} />
+                  <Route path="/scholar/submissions" element={<SubmissionsInboxPage />} />
+                  <Route path="/assignments/:id/take" element={<TakeAssignmentPage />} />
+                  <Route path="/me/submissions" element={<MySubmissionsPage />} />
                   <Route path="/qibla" element={<QiblaFinder />} />
                   <Route path="/prayer-times" element={<PrayerTimesPage />} />
                   <Route path="/tasbih" element={<TasbihCounter />} />

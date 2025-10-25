@@ -117,6 +117,9 @@ app.use('/api/scholar-feedback', require('./routes/scholarFeedbackRoutes'));
 app.use('/api/smart-scheduler', require('./routes/smartSchedulerRoutes'));
 app.use('/api/enhanced-meetings', require('./routes/enhancedMeetingRoutes'));
 app.use('/api/ai-agent', require('./routes/aiAgentRoutes'));
+// Assignments & Submissions
+app.use('/api/assignments', require('./routes/assignmentRoutes'));
+app.use('/api/submissions', require('./routes/submissionRoutes'));
 
 // Upload endpoint (auth required)
 app.post('/api/upload/photo', auth, upload.single('photo'), (req, res) => {
