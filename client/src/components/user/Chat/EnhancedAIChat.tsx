@@ -10,9 +10,11 @@ import {
   HeartIcon
 } from '@heroicons/react/24/outline';
 import { enhancedChatService, ChatSession, ChatMessage } from '../../../services/enhancedChatService';
+import { ChatSession as BaseChatSession } from '../../../services/chatService';
 import { authService } from '../../../services/authService';
 import AIChatHistory from '../../shared/AIChatHistory';
 import socketService from '../../../services/socketService';
+import ReactMarkdown from 'react-markdown';
 
 const EnhancedAIChat = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -171,10 +173,10 @@ const EnhancedAIChat = () => {
     
     try {
       if (!activeSessionId) {
-        const { session } = await chatService.createSession();
-        activeSessionId = session._id;
+        const response = await enhancedChatService.createSession();
+        activeSessionId = response.session._id;
         skipNextLoad.current = true;
-        setCurrentSession(session);
+        setCurrentSession(response.session);
         setMessages([]);
         navigate(`/chat/ai/${activeSessionId}`);
         await loadSessions();
@@ -195,10 +197,10 @@ const EnhancedAIChat = () => {
       
       if (response.session) {
         setSessions(prev => {
-          const exists = prev.some(s => s._id === response.session._id);
-          return exists ? prev.map(s => s._id === response.session._id ? { ...s, ...response.session } : s) : [response.session, ...prev];
+          const exists = prev.some(s => s._id === response.session!._id);
+          return exists ? prev.map(s => s._id === response.session!._id ? { ...s, ...response.session! } : s) : [response.session!, ...prev];
         });
-        setCurrentSession(prev => prev && prev._id === response.session._id ? { ...prev, ...response.session } : prev);
+        setCurrentSession(prev => prev && prev._id === response.session!._id ? { ...prev, ...response.session! } : prev);
       } else if (activeSessionId) {
         setSessions(prev => prev.map(s => s._id === activeSessionId ? { ...s, lastActivity: new Date().toISOString() } : s));
       }
@@ -262,7 +264,10 @@ const EnhancedAIChat = () => {
           </div>
           
           <AIChatHistory
-            sessions={sessions}
+            sessions={sessions.map(session => ({
+              ...session,
+              messages: session.messages || []
+            })) as BaseChatSession[]}
             currentSessionId={currentSession?._id}
             onSelectSession={handleSelectSession}
             onNewChat={handleNewChat}
@@ -358,14 +363,181 @@ const EnhancedAIChat = () => {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  className={`max-w-[80%] rounded-lg p-4 ${
                     msg.role === 'user'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white'
+                      : 'bg-white border border-gray-300 dark:bg-gray-700 text-black dark:text-white'
                   }`}
                 >
+                  {msg.role === 'user' ? (
                   <p className="text-sm">{msg.content}</p>
-                  <div className="text-xs opacity-70 mt-1">
+                  ) : (
+                    <div className="prose prose-sm max-w-none dark:prose-invert">
+                      <ReactMarkdown 
+                        components={{
+                          h1: ({ children }) => (
+                            <h1 className="text-xl font-bold mb-4 text-emerald-800 dark:text-emerald-200 border-b border-emerald-200 dark:border-emerald-700 pb-2">
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="text-lg font-semibold mb-3 text-emerald-700 dark:text-emerald-300 mt-6 first:mt-0">
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="text-base font-semibold mb-2 text-emerald-600 dark:text-emerald-400 mt-4">
+                              {children}
+                            </h3>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-emerald-800 dark:text-emerald-200">
+                              {children}
+                            </strong>
+                          ),
+                          em: ({ children }) => (
+                            <em className="italic text-emerald-600 dark:text-emerald-400">
+                              {children}
+                            </em>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc pl-6 mb-4 space-y-2">
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal pl-6 mb-4 space-y-3">
+                              {children}
+                            </ol>
+                          ),
+                          blockquote: ({ children }) => (
+                            <blockquote className="border-l-4 border-emerald-500 pl-4 py-2 my-4 bg-emerald-50 dark:bg-emerald-900/20 italic text-emerald-800 dark:text-emerald-200">
+                              {children}
+                            </blockquote>
+                          ),
+                          // Custom component for quotes and hadiths
+                          p: ({ children }) => {
+                            const content = typeof children === 'string' ? children : '';
+                            // Check if this is a hadith or quote (contains Arabic text, Prophet's name, or specific patterns)
+                            if (content.includes('(ﷺ)') || content.includes('Allah\'s Messenger') || content.includes('Prophet') || 
+                                content.includes('Abu') || content.includes('Sahih') || content.includes('Bukhari') ||
+                                content.includes('Muslim') || content.includes('Tirmidhi') || content.includes('Ibn Majah') ||
+                                content.includes('"') && content.includes('said') || content.includes('narrated') ||
+                                content.includes('replied') || content.includes('emphasized')) {
+                              return (
+                                <div className="my-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border-l-6 border-emerald-500 shadow-sm">
+                                  <div className="flex items-start">
+                                    <div className="w-1 h-full bg-gradient-to-b from-emerald-400 to-teal-400 rounded-full mr-4 flex-shrink-0"></div>
+                                    <div className="flex-1">
+                                      <div className="text-emerald-800 dark:text-emerald-200 leading-relaxed">
+                                        {children}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return (
+                              <p className="mb-4 leading-relaxed text-gray-800 dark:text-gray-200">
+                                {children}
+                              </p>
+                            );
+                          },
+                          // Custom component for quoted text within paragraphs
+                          span: ({ children }) => {
+                            const content = typeof children === 'string' ? children : '';
+                            // Check if this is quoted text (starts and ends with quotes)
+                            if (content.startsWith('"') && content.endsWith('"') && content.length > 10) {
+                              return (
+                                <span className="inline-block px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 rounded-md border-l-3 border-emerald-400 italic">
+                                  {children}
+                                </span>
+                              );
+                            }
+                            return <span>{children}</span>;
+                          },
+                          code: ({ children }) => (
+                            <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono text-emerald-700 dark:text-emerald-300">
+                              {children}
+                            </code>
+                          ),
+                          pre: ({ children }) => (
+                            <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4">
+                              {children}
+                            </pre>
+                          ),
+                          a: ({ children, href }) => (
+                            <a 
+                              href={href} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline decoration-emerald-300 dark:decoration-emerald-600 hover:decoration-emerald-500 dark:hover:decoration-emerald-400 transition-colors"
+                            >
+                              {children}
+                            </a>
+                          ),
+                          // Custom component for sources section
+                          div: ({ children }) => {
+                            const content = typeof children === 'string' ? children : '';
+                            if (content.includes('📚 **Sources:**') || content.includes('Sources:') || content.includes('📚 Sources:')) {
+                              return (
+                                <div className="mt-8 p-6 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-900/30 dark:via-teal-900/20 dark:to-cyan-900/20 rounded-xl border-2 border-emerald-200 dark:border-emerald-700 shadow-lg">
+                                  <div className="flex items-center mb-4">
+                                    <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mr-3 shadow-md">
+                                      <span className="text-xl">📚</span>
+                                    </div>
+                                    <div>
+                                      <h4 className="text-lg font-bold text-emerald-800 dark:text-emerald-200">Sources & References</h4>
+                                      <p className="text-sm text-emerald-600 dark:text-emerald-400">Verified Islamic sources</p>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {children}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return <div>{children}</div>;
+                          },
+                          // Custom component for better list item styling
+                          li: ({ children }) => {
+                            const content = typeof children === 'string' ? children : '';
+                            // Check if this is a numbered list item with bold text (like "1. **Just Cause:**")
+                            if (content.includes('**') && content.includes(':**')) {
+                              return (
+                                <li className="mb-3 leading-relaxed">
+                                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border-l-4 border-emerald-500 shadow-sm">
+                                    {children}
+                                  </div>
+                                </li>
+                              );
+                            }
+                            // Check if this is a source item (contains bullet point and source name)
+                            if (content.includes('•') && (content.includes('Sunan') || content.includes('Sahih') || content.includes('Jami') || content.includes('Quran'))) {
+                              return (
+                                <li className="mb-2 leading-relaxed">
+                                  <div className="flex items-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+                                    <div className="w-2 h-2 bg-emerald-500 rounded-full mr-3 flex-shrink-0"></div>
+                                    <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                                      {children}
+                                    </span>
+                                  </div>
+                                </li>
+                              );
+                            }
+                            return (
+                              <li className="mb-2 leading-relaxed pl-2">
+                                {children}
+                              </li>
+                            );
+                          }
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+                  <div className="text-xs opacity-70 mt-2">
                     {new Date().toLocaleTimeString()}
                   </div>
                 </div>

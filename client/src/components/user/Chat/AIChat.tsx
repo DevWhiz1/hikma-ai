@@ -96,7 +96,7 @@ const AIChat = () => {
       if (sessionId === id) {
         navigate('/chat/ai');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete session:', error);
       if (error?.response?.status === 403) {
         alert('This chat cannot be deleted');
@@ -276,19 +276,111 @@ const AIChat = () => {
                   {msg.role === 'user' ? (
                     <p>{msg.content}</p>
                   ) : (
-                    <div className="prose prose-sm max-w-none dark:prose-invert [&_a]:text-black [&_a]:dark:text-emerald-400">
+                    <div className="prose prose-sm max-w-none dark:prose-invert">
                       <ReactMarkdown 
                         components={{
-                          h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-                          h2: ({ children }) => <h2 className="text-md font-semibold mb-2">{children}</h2>,
-                          h3: ({ children }) => <h3 className="text-sm font-semibold mb-1">{children}</h3>,
-                          strong: ({ children }) => <strong className="font-semibold text-emerald-700 dark:text-emerald-300">{children}</strong>,
-                          em: ({ children }) => <em className="italic text-emerald-600 dark:text-emerald-400">{children}</em>,
-                          ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                          ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                          li: ({ children }) => <li className="mb-1">{children}</li>,
-                          p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
-                          a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline">{children}</a>,
+                          h1: ({ children }) => (
+                            <h1 className="text-xl font-bold mb-4 text-emerald-800 dark:text-emerald-200 border-b border-emerald-200 dark:border-emerald-700 pb-2">
+                              {children}
+                            </h1>
+                          ),
+                          h2: ({ children }) => (
+                            <h2 className="text-lg font-semibold mb-3 text-emerald-700 dark:text-emerald-300 mt-6 first:mt-0">
+                              {children}
+                            </h2>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="text-base font-semibold mb-2 text-emerald-600 dark:text-emerald-400 mt-4">
+                              {children}
+                            </h3>
+                          ),
+                          strong: ({ children }) => (
+                            <strong className="font-semibold text-emerald-800 dark:text-emerald-200">
+                              {children}
+                            </strong>
+                          ),
+                          em: ({ children }) => (
+                            <em className="italic text-emerald-600 dark:text-emerald-400">
+                              {children}
+                            </em>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="list-disc pl-6 mb-4 space-y-2">
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="list-decimal pl-6 mb-4 space-y-3">
+                              {children}
+                            </ol>
+                          ),
+                          p: ({ children }) => (
+                            <p className="mb-4 leading-relaxed text-gray-800 dark:text-gray-200">
+                              {children}
+                            </p>
+                          ),
+                          blockquote: ({ children }) => (
+                            <blockquote className="border-l-4 border-emerald-500 pl-4 py-2 my-4 bg-emerald-50 dark:bg-emerald-900/20 italic text-emerald-800 dark:text-emerald-200">
+                              {children}
+                            </blockquote>
+                          ),
+                          code: ({ children }) => (
+                            <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono text-emerald-700 dark:text-emerald-300">
+                              {children}
+                            </code>
+                          ),
+                          pre: ({ children }) => (
+                            <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4">
+                              {children}
+                            </pre>
+                          ),
+                          a: ({ children, href }) => (
+                            <a 
+                              href={href} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 underline decoration-emerald-300 dark:decoration-emerald-600 hover:decoration-emerald-500 dark:hover:decoration-emerald-400 transition-colors"
+                            >
+                              {children}
+                            </a>
+                          ),
+                          // Custom component for sources section
+                          div: ({ children }) => {
+                            const content = typeof children === 'string' ? children : '';
+                            if (content.includes('📚 **Sources:**') || content.includes('Sources:')) {
+                              return (
+                                <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                                  <div className="flex items-center mb-3">
+                                    <span className="text-2xl mr-2">📚</span>
+                                    <h4 className="font-semibold text-emerald-800 dark:text-emerald-200">Sources & References</h4>
+                                  </div>
+                                  <div className="text-sm text-emerald-700 dark:text-emerald-300 space-y-1">
+                                    {children}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return <div>{children}</div>;
+                          },
+                          // Custom component for better list item styling
+                          li: ({ children }) => {
+                            const content = typeof children === 'string' ? children : '';
+                            // Check if this is a numbered list item with bold text (like "1. **Just Cause:**")
+                            if (content.includes('**') && content.includes(':**')) {
+                              return (
+                                <li className="mb-3 leading-relaxed">
+                                  <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border-l-4 border-emerald-500 shadow-sm">
+                                    {children}
+                                  </div>
+                                </li>
+                              );
+                            }
+                            return (
+                              <li className="mb-2 leading-relaxed pl-2">
+                                {children}
+                              </li>
+                            );
+                          }
                         }}
                       >
                         {msg.content}
