@@ -281,6 +281,9 @@ const cancelSubscription = async (req, res) => {
 
 // Create Stripe payment intent
 const createStripePaymentIntent = async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Stripe is not configured on the server.' });
+  }
   try {
     const { scholarId, amount, paymentType, description, sessionId, subscriptionId } = req.body;
     const userId = req.user.id;
@@ -339,6 +342,9 @@ const createStripePaymentIntent = async (req, res) => {
 
 // Confirm Stripe payment
 const confirmStripePayment = async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({ error: 'Stripe is not configured on the server.' });
+  }
   try {
     const { paymentIntentId } = req.body;
 
@@ -389,6 +395,9 @@ const confirmStripePayment = async (req, res) => {
 
 // Stripe webhook handler
 const handleStripeWebhook = async (req, res) => {
+  if (!stripe) {
+    return res.status(503).send('Stripe is not configured on the server.');
+  }
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
