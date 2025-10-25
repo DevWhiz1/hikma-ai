@@ -364,7 +364,7 @@ const ChatBot = () => {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-900/50 flex items-center justify-center mb-4">
                 <PaperAirplaneIcon className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">

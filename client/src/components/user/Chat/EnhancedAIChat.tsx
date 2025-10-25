@@ -239,9 +239,9 @@ const EnhancedAIChat = () => {
                 </button>
               )}
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 rounded-full flex items-center justify-center">
-                  <SparklesIcon className="h-6 w-6 text-emerald-600" />
-                </div>
+              <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/50 rounded-full flex items-center justify-center">
+                <SparklesIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
                 <div>
                   <h1 className="text-xl font-semibold text-gray-900 dark:text-white">AI Islamic Scholar</h1>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -271,8 +271,8 @@ const EnhancedAIChat = () => {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mb-6">
-                <SparklesIcon className="h-10 w-10 text-emerald-600" />
+              <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mb-6">
+                <SparklesIcon className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Ask Your Question</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md">
@@ -288,8 +288,8 @@ const EnhancedAIChat = () => {
                     className="p-4 text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
                   >
                     <div className="flex items-start space-x-3">
-                      <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/30 transition-colors">
-                        <item.icon className="h-5 w-5 text-emerald-600" />
+                      <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/50 rounded-lg flex items-center justify-center group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/70 transition-colors">
+                        <item.icon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-gray-900 dark:text-white mb-1">

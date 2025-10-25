@@ -712,3 +712,24 @@ html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-tea
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
 }
+
+/* Feedback button menu - force transparent background in light mode */
+html.light .feedback-menu-bg {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+html.light .feedback-menu-bg * {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+html.light .feedback-menu-item {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+html.light .feedback-menu-item:hover {
+  background-color: #d7ffec !important; /* emerald-50 equivalent */
+  background: #d7ffec !important;
+}

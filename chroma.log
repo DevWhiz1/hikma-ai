@@ -1,0 +1,19 @@
+[33mWARNING[0m:  [23-10-2025 21:03:09] chroma_server_nofile is not supported on Windows. chroma_server_nofile will not be set.
+[32mINFO[0m:     [23-10-2025 21:03:09] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [23-10-2025 21:03:09] Starting component System
+[36mDEBUG[0m:    [23-10-2025 21:03:09] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [23-10-2025 21:03:09] Starting component SqliteDB
+[36mDEBUG[0m:    [23-10-2025 21:03:09] Starting component QuotaEnforcer
+[36mDEBUG[0m:    [23-10-2025 21:03:09] Starting component Posthog
+[36mDEBUG[0m:    [23-10-2025 21:03:10] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [23-10-2025 21:03:10] Starting component SegmentAPI
+[31mERROR[0m:    [23-10-2025 21:03:10] Failed to send telemetry event ServerStartEvent: capture() takes 1 positional argument but 3 were given
+[32mINFO[0m:     [23-10-2025 21:03:10] Started server process [[36m15764[0m]
+[32mINFO[0m:     [23-10-2025 21:03:10] Waiting for application startup.
+[32mINFO[0m:     [23-10-2025 21:03:10] Application startup complete.
+[32mINFO[0m:     [23-10-2025 21:03:10] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [23-10-2025 21:03:16] ::1:58384 - "GET /api/v1/heartbeat HTTP/1.1" 200
+[32mINFO[0m:     [23-10-2025 21:03:26] ::1:58394 - "GET /api/v2/heartbeat HTTP/1.1" 404
+[32mINFO[0m:     [23-10-2025 21:03:45] ::1:58459 - "GET /api/v2/heartbeat HTTP/1.1" 404
+[32mINFO[0m:     [23-10-2025 21:04:03] ::1:58494 - "GET /api/v2/heartbeat HTTP/1.1" 404
+[32mINFO[0m:     [23-10-2025 21:04:24] ::1:58623 - "GET /api/v1/version HTTP/1.1" 200
