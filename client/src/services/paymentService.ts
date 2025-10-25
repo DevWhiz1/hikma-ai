@@ -172,6 +172,28 @@ class PaymentService {
       body: JSON.stringify({ reason }),
     });
   }
+
+  // Stripe payment methods
+  async createStripePaymentIntent(paymentData: {
+    scholarId: string;
+    amount: number;
+    paymentType: 'hourly' | 'monthly' | 'session' | 'subscription';
+    description: string;
+    sessionId?: string;
+    subscriptionId?: string;
+  }): Promise<{ success: boolean; clientSecret: string; paymentId: string }> {
+    return this.request('/payments/stripe/create-intent', {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+  }
+
+  async confirmStripePayment(paymentIntentId: string): Promise<{ success: boolean; status: string; payment?: Payment }> {
+    return this.request('/payments/stripe/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ paymentIntentId }),
+    });
+  }
 }
 
 export const paymentService = new PaymentService();

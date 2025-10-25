@@ -51,6 +51,9 @@ initializeSocket(io);
 app.use(cors());
 app.use(express.json());
 
+// Raw body parser for Stripe webhooks
+app.use('/api/payments/stripe/webhook', express.raw({ type: 'application/json' }));
+
 // Static uploads serving
 const uploadsDir = path.join(__dirname, 'uploads');
 try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir); } catch {}

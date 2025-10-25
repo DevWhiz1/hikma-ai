@@ -6,6 +6,8 @@ import { meetingService } from '../../../services/meetingService';
 import PaymentSummary from '../../shared/PaymentSummary/PaymentSummary';
 import PaymentHistory from '../../shared/PaymentHistory/PaymentHistory';
 import MeetingAccess from '../../shared/MeetingAccess';
+import PaymentButton from '../../payment/PaymentButton';
+import PaymentModal from '../../payment/PaymentModal';
 import { 
   ChatBubbleLeftRightIcon,
   CalendarIcon,
@@ -39,6 +41,8 @@ const UserDashboard = () => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [scheduledMeetings, setScheduledMeetings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedScholar, setSelectedScholar] = useState<Enrollment | null>(null);
 
   useEffect(() => {
     if (user?.role === 'user') {
@@ -303,6 +307,93 @@ const UserDashboard = () => {
           />
         </div>
 
+        {/* Sample Stripe Invoice Section */}
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Sample Payment Invoice</h2>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Test Stripe Integration
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {/* Invoice Header */}
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold">Sample Invoice</h3>
+                  <p className="text-emerald-100">Test Payment Integration</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-emerald-100">Invoice #</div>
+                  <div className="text-lg font-semibold">INV-2024-001</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Invoice Content */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Sample Scholar Info */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Scholar Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <img
+                        src="https://via.placeholder.com/50x50?text=SA"
+                        alt="Sample Scholar"
+                        className="w-12 h-12 rounded-full object-cover border-2 border-emerald-200"
+                      />
+                      <div>
+                        <div className="font-semibold text-gray-900 dark:text-white">Dr. Ahmed Al-Rashid</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">Islamic Scholar & Spiritual Guide</div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div>Specializations: Quran, Hadith, Islamic Law</div>
+                      <div>Experience: 15+ years</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Options */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Payment Options</h4>
+                  <div className="space-y-4">
+                    {/* Monthly Subscription */}
+                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">Monthly Subscription</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">15 sessions per month</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900 dark:text-white">$200.00</div>
+                        </div>
+                      </div>
+                      <PaymentButton
+                        scholarId="68e5280ba074526a5a37f9f9"
+                        scholarName="Dr. Ahmed Al-Rashid"
+                        amount={200}
+                        paymentType="monthly"
+                        description="Monthly subscription with 15 sessions"
+                        onPaymentSuccess={(payment) => {
+                          console.log('Payment successful:', payment);
+                          alert('Payment completed successfully!');
+                        }}
+                        className="w-full"
+                        variant="primary"
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
         {/* Features Grid */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Explore Our Features</h2>
@@ -426,6 +517,22 @@ const UserDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Payment Modal for Testing */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        scholarId="68e5280ba074526a5a37f9f9"
+        scholarName="Dr. Ahmed Al-Rashid"
+        amount={200}
+        paymentType="monthly"
+        description="Monthly subscription with 15 sessions"
+        onPaymentSuccess={(payment) => {
+          console.log('Payment successful:', payment);
+          alert('Payment completed successfully!');
+          setShowPaymentModal(false);
+        }}
+      />
     </div>
   );
 };
