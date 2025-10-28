@@ -20,6 +20,8 @@ const AssignmentSchema = new mongoose.Schema({
   kind: { type: String, enum: ['assignment', 'quiz'], default: 'assignment', index: true },
   scholar: { type: mongoose.Schema.Types.ObjectId, ref: 'Scholar' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  // Enrollment-based access control: only students in this enrollment can see/submit
+  enrollmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Enrollment', required: true, index: true },
   // Assignment deadline
   dueDate: { type: Date },
   // Quiz timing
@@ -44,5 +46,6 @@ const AssignmentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 AssignmentSchema.index({ createdBy: 1, status: 1, dueDate: -1 });
+AssignmentSchema.index({ enrollmentId: 1, status: 1, kind: 1 });
 
 module.exports = mongoose.model('Assignment', AssignmentSchema);

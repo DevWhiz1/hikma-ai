@@ -18,6 +18,7 @@ router.put('/:id', auth, ctrl.updateAssignment);
 
 // Listing and details
 router.get('/', auth, ctrl.listAssignments);
+router.get('/student/enrolled', auth, ctrl.getStudentAssignments); // 🚀 NEW: Student enrolled assignments
 router.get('/:id', auth, ctrl.getAssignment);
 
 module.exports = router;

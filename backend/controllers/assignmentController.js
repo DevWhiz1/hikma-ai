@@ -1,17 +1,37 @@
 const Assignment = require('../models/Assignment');
+const Enrollment = require('../models/Enrollment');
 const AgentActivity = require('../models/AgentActivity');
 const { runPythonAgent } = require('../utils/agentBridge');
+const NotificationService = require('../services/notificationService');
 
 // Create a draft assignment
 async function createAssignment(req, res) {
   try {
     const body = req.body || {};
+    
+    // Validate enrollmentId is provided
+    if (!body.enrollmentId) {
+      return res.status(400).json({ ok: false, error: 'enrollmentId is required' });
+    }
+
+    // Verify enrollment exists and belongs to this scholar
+    const enrollment = await Enrollment.findOne({
+      _id: body.enrollmentId,
+      scholar: req.user.scholarId || req.user._id,
+      isActive: true
+    });
+
+    if (!enrollment) {
+      return res.status(403).json({ ok: false, error: 'Invalid enrollment or you do not have access to this enrollment' });
+    }
+
     const doc = await Assignment.create({
       title: body.title,
       description: body.description,
       type: body.type || 'quiz',
       kind: body.kind || 'assignment',
       createdBy: req.user._id,
+      enrollmentId: body.enrollmentId,
       scholar: body.scholar || undefined,
       dueDate: body.dueDate || undefined,
       quizWindowStart: body.quizWindowStart || undefined,
@@ -104,6 +124,15 @@ async function publishAssignment(req, res) {
     }
     assignment.status = 'published';
     await assignment.save();
+
+    // 🚀 NEW: Send notifications when assignment/quiz is published
+    try {
+      await NotificationService.notifyAssignmentPublished(assignment);
+    } catch (notifErr) {
+      console.error('[publishAssignment] Notification failed:', notifErr.message);
+      // Don't fail the publish if notification fails
+    }
+
     res.json({ ok: true, assignment });
   } catch (e) {
     res.status(400).json({ ok: false, error: e.message });
@@ -144,6 +173,40 @@ async function listAssignments(req, res) {
   }
 }
 
+// 🚀 NEW: Get student's enrolled assignments (only assignments from their enrollments)
+async function getStudentAssignments(req, res) {
+  try {
+    // Find all active enrollments for this student
+    const enrollments = await Enrollment.find({
+      student: req.user._id,
+      isActive: true
+    }).select('_id');
+
+    const enrollmentIds = enrollments.map(e => e._id);
+
+    // Build query
+    const query = {
+      enrollmentId: { $in: enrollmentIds },
+      status: 'published'
+    };
+
+    // Optional: filter by kind (quiz or assignment)
+    if (req.query.kind) {
+      query.kind = req.query.kind;
+    }
+
+    const assignments = await Assignment.find(query)
+      .populate('createdBy', 'name')
+      .populate('enrollmentId')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ ok: true, assignments });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+}
+
 // Get assignment detail (students can view if published, owners always can)
 async function getAssignment(req, res) {
   const { id } = req.params;
@@ -166,6 +229,7 @@ module.exports = {
   publishAssignment,
   closeAssignment,
   listAssignments,
+  getStudentAssignments,
   getAssignment,
   updateAssignment,
   addQuestion,

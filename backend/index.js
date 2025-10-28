@@ -48,6 +48,10 @@ const io = socketIo(server, {
 const { initializeSocket } = require('./utils/socketEmitter');
 initializeSocket(io);
 
+// 🚀 NEW: Initialize NotificationService with socket.io
+const NotificationService = require('./services/notificationService');
+NotificationService.io = io;
+
 app.use(cors());
 app.use(express.json());
 
@@ -120,6 +124,8 @@ app.use('/api/ai-agent', require('./routes/aiAgentRoutes'));
 // Assignments & Submissions
 app.use('/api/assignments', require('./routes/assignmentRoutes'));
 app.use('/api/submissions', require('./routes/submissionRoutes'));
+// Notifications
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // Upload endpoint (auth required)
 app.post('/api/upload/photo', auth, upload.single('photo'), (req, res) => {
@@ -304,7 +310,21 @@ io.on('connection', (socket) => {
   // Join user to their personal room
   socket.on('join-user-room', (userId) => {
     socket.join(`user-${userId}`);
-    console.log(`User ${userId} joined their room`);
+    console.log(`User ${userId} joined their notification room`);
+  });
+
+  // 🚀 NEW: Mark notification as read via socket
+  socket.on('mark-notification-read', async (notificationId) => {
+    try {
+      const Notification = require('./models/Notification');
+      await Notification.findByIdAndUpdate(notificationId, {
+        read: true,
+        readAt: new Date()
+      });
+      console.log(`Notification ${notificationId} marked as read`);
+    } catch (error) {
+      console.error('Error marking notification as read:', error.message);
+    }
   });
 
   // Join chat room

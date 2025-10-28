@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { assignmentService } from '../../services/assignmentService';
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+type Enrollment = {
+  _id: string;
+  student: { _id: string; name: string; email: string };
+  scholar: any;
+  isActive: boolean;
+};
 
 const AssignmentCreatePage: React.FC = () => {
   const [title, setTitle] = useState('');
@@ -18,11 +28,35 @@ const AssignmentCreatePage: React.FC = () => {
   const [durationMinutes, setDurationMinutes] = useState<number | ''>('');
   const [quizWindowStart, setQuizWindowStart] = useState<string>('');
   const [quizWindowEnd, setQuizWindowEnd] = useState<string>('');
+  const [enrollmentId, setEnrollmentId] = useState<string>(''); // 🚀 NEW
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]); // 🚀 NEW
+  const [loading, setLoading] = useState(true); // 🚀 NEW
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
+  // 🚀 NEW: Fetch enrollments on mount
+  useEffect(() => {
+    const fetchEnrollments = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_URL}/scholars/enrollments`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.enrollments) {
+          setEnrollments(res.data.enrollments.filter((e: Enrollment) => e.isActive));
+        }
+      } catch (err) {
+        console.error('Failed to fetch enrollments:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEnrollments();
+  }, []);
+
   const handleCreate = async () => {
     if (!title.trim()) return alert('Title required');
+    if (!enrollmentId) return alert('Please select a student/enrollment'); // 🚀 NEW
     setSaving(true);
     try {
       const res = await assignmentService.create({
@@ -30,6 +64,7 @@ const AssignmentCreatePage: React.FC = () => {
         description,
         type: 'quiz',
         kind,
+        enrollmentId, // 🚀 NEW
         dueDate: kind === 'assignment' ? (dueDate || undefined) as any : undefined,
         durationMinutes: kind === 'quiz' ? (durationMinutes || undefined as any) : undefined,
         quizWindowStart: kind === 'quiz' ? (quizWindowStart || undefined) as any : undefined,
@@ -51,8 +86,8 @@ const AssignmentCreatePage: React.FC = () => {
       } else {
         navigate('/scholar/assignments');
       }
-    } catch (e) {
-      alert('Failed to create assignment');
+    } catch (e: any) {
+      alert(e?.response?.data?.error || 'Failed to create assignment');
     } finally {
       setSaving(false);
     }
@@ -61,14 +96,38 @@ const AssignmentCreatePage: React.FC = () => {
   return (
     <div className="p-6 max-w-2xl">
       <h1 className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 mb-4">New Assignment</h1>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Type</label>
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2"><input type="radio" name="kind" checked={kind==='assignment'} onChange={() => setKind('assignment')} /> Assignment (deadline)</label>
-            <label className="flex items-center gap-2"><input type="radio" name="kind" checked={kind==='quiz'} onChange={() => setKind('quiz')} /> Quiz (timed)</label>
+      {loading ? (
+        <div className="text-center py-8">Loading enrollments...</div>
+      ) : (
+        <div className="space-y-4">
+          {/* 🚀 NEW: Enrollment Selector */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Assign To Student/Enrollment *</label>
+            <select 
+              value={enrollmentId} 
+              onChange={e => setEnrollmentId(e.target.value)} 
+              className="w-full border rounded px-3 py-2 bg-white dark:bg-gray-900"
+              required
+            >
+              <option value="">-- Select Student --</option>
+              {enrollments.map(e => (
+                <option key={e._id} value={e._id}>
+                  {e.student?.name || 'Unknown'} ({e.student?.email || ''})
+                </option>
+              ))}
+            </select>
+            {enrollments.length === 0 && (
+              <p className="text-sm text-gray-500 mt-1">No active enrollments found. Students must enroll with you first.</p>
+            )}
           </div>
-        </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">Type</label>
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2"><input type="radio" name="kind" checked={kind==='assignment'} onChange={() => setKind('assignment')} /> Assignment (deadline)</label>
+              <label className="flex items-center gap-2"><input type="radio" name="kind" checked={kind==='quiz'} onChange={() => setKind('quiz')} /> Quiz (timed)</label>
+            </div>
+          </div>
         <div>
           <label className="block text-sm font-medium mb-1">Title</label>
           <input value={title} onChange={e => setTitle(e.target.value)} className="w-full border rounded px-3 py-2 bg-white dark:bg-gray-900" />
@@ -160,7 +219,8 @@ const AssignmentCreatePage: React.FC = () => {
           <button onClick={handleCreate} disabled={saving} className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-60">{saving ? 'Creating...' : (kind === 'quiz' ? 'Create Quiz & Generate' : 'Create Assignment & Generate')}</button>
           <button onClick={() => navigate('/scholar/assignments')} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded">Cancel</button>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

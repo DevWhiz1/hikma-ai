@@ -72,6 +72,12 @@ export const assignmentService = {
     const res = await axios.get(`${API_URL}/assignments`);
     return res.data as { ok: boolean; assignments: Assignment[] };
   },
+  // 🚀 NEW: Get assignments for student based on enrollments
+  async getStudentAssignments(kind?: 'assignment' | 'quiz') {
+    const params = kind ? { kind } : {};
+    const res = await axios.get(`${API_URL}/assignments/student/enrolled`, { params });
+    return res.data as { ok: boolean; assignments: Assignment[] };
+  },
   async get(id: string) {
     const res = await axios.get(`${API_URL}/assignments/${id}`);
     return res.data as { ok: boolean; assignment: Assignment };

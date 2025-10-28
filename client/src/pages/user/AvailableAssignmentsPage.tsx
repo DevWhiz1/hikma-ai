@@ -10,9 +10,9 @@ const AvailableAssignmentsPage: React.FC = () => {
     async function load() {
       setLoading(true);
       try {
-  const res = await assignmentService.list();
-  const items = (res.assignments || []).filter(a => a.kind !== 'quiz');
-  setItems(items);
+        // 🚀 UPDATED: Use enrollment-filtered endpoint
+        const res = await assignmentService.getStudentAssignments('assignment');
+        setItems(res.assignments || []);
       } finally { setLoading(false); }
     }
     load();

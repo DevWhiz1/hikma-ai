@@ -2,6 +2,7 @@ import React from 'react';
 import { Bars3Icon, MoonIcon, SunIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { authService } from '../../services/authService';
 import WebSocketStatus from './WebSocketStatus';
+import NotificationBell from './NotificationBell'; // 🚀 NEW
 
 interface TopBarProps {
   toggleSidebar: () => void;
@@ -33,6 +34,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMo
       </div>
       <div className="flex items-center space-x-4">
         <WebSocketStatus />
+        <NotificationBell /> {/* 🚀 NEW: Notification Bell */}
         {user && (
           <span className="text-sm text-gray-700 dark:text-gray-300">
             Welcome, {user.name}
