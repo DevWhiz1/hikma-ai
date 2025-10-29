@@ -56,9 +56,10 @@ const ChatBot = () => {
       // BlueJeans
       /https?:\/\/(?:bluejeans\.com\/)/i,
       
-      // Jitsi (external)
+      // Jitsi (external and custom domain)
       /https?:\/\/(?:meet\.jit\.si\/)/i,
       /https?:\/\/(?:[a-z0-9-]+\.jitsi\.meet\/)/i,
+      /https?:\/\/(?:hikmameet\.live\/)/i,
       
       // Discord
       /https?:\/\/(?:discord\.gg\/)/i,
