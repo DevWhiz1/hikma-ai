@@ -1,25 +1,14 @@
 #!/usr/bin/env python
-import sys, json, os, time, importlib
+import sys, json, os, time
 
-USE_GEMINI = False
-TRY_CREW = False
-Agent = Task = Crew = None
+# Import CrewAI components
 try:
-    import google.generativeai as genai
-    USE_GEMINI = True
-except Exception:
-    pass
-
-try:
-    if os.getenv('CREWAI_ENABLED', '').lower() in ('1', 'true', 'yes'):
-        crew_mod = importlib.import_module('crewai')
-        Agent = getattr(crew_mod, 'Agent', None)
-        Task = getattr(crew_mod, 'Task', None)
-        Crew = getattr(crew_mod, 'Crew', None)
-        if Agent and Task and Crew:
-            TRY_CREW = True
-except Exception:
-    pass
+    from crewai import Agent, Task, Crew
+    CREWAI_AVAILABLE = True
+except ImportError as e:
+    CREWAI_AVAILABLE = False
+    print(json.dumps({"error": f"CrewAI not installed: {e}"}))
+    sys.exit(1)
 
 
 def main():
@@ -40,64 +29,101 @@ def main():
     total = 0
     feedback = ''
 
-    # Try CrewAI first if enabled
-    if TRY_CREW and Agent and Task and Crew:
-        try:
-            instruction = (
-                "You are a fair grader. Given questions and student's answers, return ONLY a JSON object "
-                "with keys: perQuestion (array of {questionId, score (0-10), feedback}), totalScore (0-100 number), feedback (string)."
-            )
-            grader = Agent(name='AssignmentGrader', role='Grader', goal='Produce JSON grading', verbose=False)
-            desc = instruction + "\nQuestions: " + json.dumps(questions) + "\nAnswers: " + json.dumps(answers)
-            task = Task(description=desc, agent=grader)
-            crew = Crew(agents=[grader], tasks=[task])
-            result = crew.kickoff()
-            text = str(result)
-            s = text.find('{')
-            e = text.rfind('}')
-            if s != -1 and e != -1:
-                data = json.loads(text[s:e+1])
-                per_question = data.get('perQuestion') or []
-                total = data.get('totalScore') or 0
-                feedback = data.get('feedback') or 'AI grading completed.'
-        except Exception:
-            pass
+    # Use CrewAI for grading
+    if not CREWAI_AVAILABLE:
+        print(json.dumps({"error": "CrewAI is required but not available"}))
+        return
 
-    if not per_question and USE_GEMINI and os.getenv('GEMINI_API_KEY'):
-        try:
-            genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-            model = genai.GenerativeModel(model_name)
-            # Build a grading prompt
-            prompt = {
-                'instruction': 'Grade the submission fairly and return JSON with scoring per question (0-10) and overall percent 0-100.',
-                'questions': questions,
-                'answers': answers,
-            }
-            resp = model.generate_content(json.dumps(prompt))
-            text = resp.text or ''
-            # Try parse JSON
-            start_idx = text.find('{')
-            end_idx = text.rfind('}')
-            if start_idx != -1 and end_idx != -1:
-                data = json.loads(text[start_idx:end_idx+1])
-                per_question = data.get('perQuestion') or []
-                total = data.get('totalScore') or 0
-                feedback = data.get('feedback') or 'AI grading completed.'
-            else:
-                feedback = 'AI grading completed.'
-        except Exception as e:
-            feedback = 'Fallback grading due to AI error.'
-    else:
-        feedback = 'Mock grading (Gemini not configured).'
+    try:
+        # Detailed grading instruction
+        instruction = f"""You are an expert academic grader. Grade this student's submission carefully and fairly.
 
+CRITICAL GRADING RULES:
+1. For MCQ (Multiple Choice) questions: 
+   - Award 10 points ONLY if the selectedOption matches the correctOption exactly
+   - Award 0 points for any incorrect answer
+   - Compare the student's selectedOption with the question's correctOption field
+
+2. For True/False questions:
+   - Award 10 points ONLY if the selectedOption matches the correctAnswer exactly
+   - Award 0 points for incorrect answers
+
+3. For Short Answer questions:
+   - Award 0-10 points based on accuracy and completeness
+   - Be strict - give 0 for completely wrong answers
+   - Partial credit only for partially correct answers
+
+4. For Essay questions:
+   - Award 0-10 points based on depth, accuracy, relevance, and coherence
+   - Consider both content quality and understanding demonstrated
+
+5. DO NOT give points just because an answer exists - it MUST be CORRECT to earn points
+
+Questions with Correct Answers:
+{json.dumps(questions, indent=2)}
+
+Student's Submitted Answers:
+{json.dumps(answers, indent=2)}
+
+IMPORTANT: Return ONLY a valid JSON object with this EXACT structure (no markdown, no code blocks, no additional text):
+{{
+  "perQuestion": [
+    {{"questionId": "the_question_id", "score": 0-10, "feedback": "Explanation of why this score was given"}},
+    ...for each question...
+  ],
+  "totalScore": 0-100,
+  "feedback": "Overall assessment of the submission"
+}}
+
+Be accurate and strict. Wrong answers must receive 0 points."""
+
+        # Create the grading agent
+        grader = Agent(
+            name='AssignmentGrader',
+            role='Expert Academic Grader',
+            goal='Accurately grade student submissions and provide detailed feedback',
+            backstory='You are an experienced educator who grades fairly and accurately, never awarding points for incorrect answers.',
+            verbose=False,
+            allow_delegation=False
+        )
+        
+        # Create the grading task
+        task = Task(
+            description=instruction,
+            agent=grader,
+            expected_output='A JSON object with perQuestion array, totalScore, and feedback'
+        )
+        
+        # Execute the crew
+        crew = Crew(
+            agents=[grader],
+            tasks=[task],
+            verbose=False
+        )
+        
+        result = crew.kickoff()
+        text = str(result)
+        
+        # Extract JSON from result
+        s = text.find('{')
+        e = text.rfind('}')
+        if s != -1 and e != -1:
+            json_str = text[s:e+1]
+            data = json.loads(json_str)
+            per_question = data.get('perQuestion') or []
+            total = data.get('totalScore') or 0
+            feedback = data.get('feedback') or 'AI grading completed.'
+        else:
+            raise ValueError("CrewAI did not return valid JSON format")
+            
+    except Exception as e:
+        print(json.dumps({"error": f"CrewAI grading failed: {str(e)}"}))
+        return
+
+    # Validate results
     if not per_question:
-        # Heuristic mock: give full score if answer exists
-        for q in questions:
-            qid = q.get('_id') or q.get('id')
-            ans = next((a for a in answers if str(a.get('questionId')) == str(qid)), None)
-            score = 10 if ans and (ans.get('answerText') or ans.get('selectedOption') is not None) else 0
-            per_question.append({ 'questionId': qid, 'score': score, 'feedback': 'Answered' if score else 'No answer' })
-        total = round(100 * sum(p['score'] for p in per_question) / (10 * max(1, len(per_question))), 2)
+        print(json.dumps({"error": "No grading results produced by CrewAI"}))
+        return
 
     out = {
         'perQuestion': per_question,

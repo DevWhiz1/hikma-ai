@@ -57,35 +57,43 @@ const AssignmentCreatePage: React.FC = () => {
   const handleCreate = async () => {
     if (!title.trim()) return alert('Title required');
     if (!enrollmentId) return alert('Please select a student/enrollment'); // 🚀 NEW
+    
     setSaving(true);
     try {
-      const res = await assignmentService.create({
-        title,
-        description,
-        type: 'quiz',
-        kind,
-        enrollmentId, // 🚀 NEW
-        dueDate: kind === 'assignment' ? (dueDate || undefined) as any : undefined,
-        durationMinutes: kind === 'quiz' ? (durationMinutes || undefined as any) : undefined,
-        quizWindowStart: kind === 'quiz' ? (quizWindowStart || undefined) as any : undefined,
-        quizWindowEnd: kind === 'quiz' ? (quizWindowEnd || undefined) as any : undefined,
-        aiSpec: { 
-          topic: topic || title, 
-          numQuestions, 
-          difficulty,
-          mcqCount: mode === 'all-mcq' ? numQuestions : (mcqCount || undefined),
-          trueFalseCount: mode === 'all-mcq' ? 0 : (tfCount || undefined),
-          shortAnswerCount: mode === 'all-mcq' ? 0 : (shortCount || undefined),
-          essayCount: mode === 'all-mcq' ? 0 : (essayCount || undefined),
+      // If "all" is selected, create one assignment per enrollment
+      const enrollmentsToProcess = enrollmentId === 'all' 
+        ? enrollments.map(e => e._id) 
+        : [enrollmentId];
+      
+      for (const currentEnrollmentId of enrollmentsToProcess) {
+        const res = await assignmentService.create({
+          title,
+          description,
+          type: 'quiz',
+          kind,
+          enrollmentId: currentEnrollmentId, // 🚀 NEW
+          dueDate: kind === 'assignment' ? (dueDate || undefined) as any : undefined,
+          durationMinutes: kind === 'quiz' ? (durationMinutes || undefined as any) : undefined,
+          quizWindowStart: kind === 'quiz' ? (quizWindowStart || undefined) as any : undefined,
+          quizWindowEnd: kind === 'quiz' ? (quizWindowEnd || undefined) as any : undefined,
+          aiSpec: { 
+            topic: topic || title, 
+            numQuestions, 
+            difficulty,
+            mcqCount: mode === 'all-mcq' ? numQuestions : (mcqCount || undefined),
+            trueFalseCount: mode === 'all-mcq' ? 0 : (tfCount || undefined),
+            shortAnswerCount: mode === 'all-mcq' ? 0 : (shortCount || undefined),
+            essayCount: mode === 'all-mcq' ? 0 : (essayCount || undefined),
+          }
+        } as any);
+        
+        const id = res.assignment?._id;
+        if (id) {
+          await assignmentService.generate(id);
         }
-      } as any);
-      const id = res.assignment?._id;
-      if (id) {
-        await assignmentService.generate(id);
-        navigate('/scholar/assignments');
-      } else {
-        navigate('/scholar/assignments');
       }
+      
+      navigate('/scholar/assignments');
     } catch (e: any) {
       alert(e?.response?.data?.error || 'Failed to create assignment');
     } finally {
@@ -110,6 +118,7 @@ const AssignmentCreatePage: React.FC = () => {
               required
             >
               <option value="">-- Select Student --</option>
+              <option value="all">📢 All Students ({enrollments.length})</option>
               {enrollments.map(e => (
                 <option key={e._id} value={e._id}>
                   {e.student?.name || 'Unknown'} ({e.student?.email || ''})

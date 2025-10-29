@@ -14,10 +14,17 @@ async function createAssignment(req, res) {
       return res.status(400).json({ ok: false, error: 'enrollmentId is required' });
     }
 
+    // Find the scholar document for this user
+    const Scholar = require('../models/Scholar');
+    const scholar = await Scholar.findOne({ user: req.user._id });
+    if (!scholar) {
+      return res.status(403).json({ ok: false, error: 'You must be a scholar to create assignments' });
+    }
+
     // Verify enrollment exists and belongs to this scholar
     const enrollment = await Enrollment.findOne({
       _id: body.enrollmentId,
-      scholar: req.user.scholarId || req.user._id,
+      scholar: scholar._id,
       isActive: true
     });
 

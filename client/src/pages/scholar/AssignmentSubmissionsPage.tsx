@@ -9,6 +9,7 @@ const AssignmentSubmissionsPage: React.FC = () => {
   const [busy, setBusy] = useState<string | null>(null);
   const [manual, setManual] = useState<Record<string, { totalScore?: string; feedback?: string; perQuestion?: Record<string, { score?: string; feedback?: string }> }>>({});
   const [gradingMode, setGradingMode] = useState<'ai' | 'manual'>('ai');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = async () => {
     if (!id) return;
@@ -122,14 +123,31 @@ const AssignmentSubmissionsPage: React.FC = () => {
         </div>
       </div>
       <div className="space-y-3">
-        {items.map(s => (
-          <div key={s._id} className="rounded border p-4 bg-white dark:bg-gray-900">
+        {items.map(s => {
+          const isExpanded = expandedId === s._id;
+          const hasAIGrades = s.status === 'graded' && (s as any).aiGrading?.perQuestion?.length > 0;
+          
+          return (
+            <div key={s._id} className="rounded border p-4 bg-white dark:bg-gray-900">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="flex-1">
                 <div className="font-medium">Student: {s.student}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Status: {s.status}{typeof s.grade === 'number' ? ` • Grade: ${s.grade}` : ''}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Status: <span className="capitalize font-semibold">{s.status}</span>
+                  {typeof s.grade === 'number' && (
+                    <span className="ml-3 text-emerald-600 dark:text-emerald-400 font-bold">Grade: {s.grade}%</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
+                {hasAIGrades && (
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : s._id)}
+                    className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    {isExpanded ? 'Hide Grades' : 'View Grades'}
+                  </button>
+                )}
                 {gradingMode === 'ai' && (
                   <button onClick={() => handleGrade(s._id)} disabled={busy === s._id || s.status === 'graded'}
                     className={`px-3 py-2 text-sm rounded ${s.status==='graded' ? 'bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700'} disabled:opacity-60`}>
@@ -138,7 +156,63 @@ const AssignmentSubmissionsPage: React.FC = () => {
                 )}
               </div>
             </div>
-            {s.feedback && <div className="mt-2 text-sm">{s.feedback}</div>}
+            {s.feedback && (
+              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                <div className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-1">Overall Feedback:</div>
+                <div className="text-sm text-blue-800 dark:text-blue-300">{s.feedback}</div>
+              </div>
+            )}
+            
+            {/* AI Grading Details */}
+            {isExpanded && hasAIGrades && assignment && (
+              <div className="mt-4 border-t pt-4">
+                <h3 className="font-semibold text-lg mb-3">AI Grading Breakdown:</h3>
+                <div className="space-y-3">
+                  {((s as any).aiGrading?.perQuestion || []).map((pq: any, idx: number) => {
+                    const question = assignment.questions?.find((q: any) => String(q._id) === String(pq.questionId));
+                    const answer = getAnswerFor(s, pq.questionId);
+                    const scorePercent = Math.round((pq.score / 10) * 100);
+                    const scoreColor = pq.score >= 7 ? 'text-green-600 dark:text-green-400' : 
+                                      pq.score >= 5 ? 'text-yellow-600 dark:text-yellow-400' : 
+                                      'text-red-600 dark:text-red-400';
+                    
+                    return (
+                      <div key={pq.questionId || idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded border">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="font-medium text-sm mb-1">
+                              Q{idx + 1}: {question?.prompt || 'Question'}
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              Student Answer: {answer?.answerText || answer?.selectedOption || 'No answer'}
+                            </div>
+                          </div>
+                          <div className={`ml-4 text-lg font-bold ${scoreColor}`}>
+                            {pq.score}/10
+                            <div className="text-xs font-normal text-gray-500">
+                              ({scorePercent}%)
+                            </div>
+                          </div>
+                        </div>
+                        {pq.feedback && (
+                          <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded text-xs">
+                            <span className="font-semibold">AI Feedback:</span> {pq.feedback}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {(s as any).aiGrading?.reasoning && (
+                  <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded border border-indigo-200 dark:border-indigo-800">
+                    <div className="text-sm font-medium text-indigo-900 dark:text-indigo-200 mb-1">AI Overall Assessment:</div>
+                    <div className="text-sm text-indigo-800 dark:text-indigo-300">{(s as any).aiGrading.reasoning}</div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Per-question manual grading */}
             {gradingMode === 'manual' && assignment && assignment.questions?.length > 0 && (
               <div className="mt-4 space-y-3">
@@ -171,7 +245,8 @@ const AssignmentSubmissionsPage: React.FC = () => {
             </div>
             )}
           </div>
-        ))}
+          );
+        })}
         {items.length === 0 && <div className="text-gray-600 dark:text-gray-400">No submissions yet.</div>}
       </div>
     </div>
