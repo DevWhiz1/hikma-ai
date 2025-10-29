@@ -54,6 +54,9 @@ export const uploadPhoto = (file: File) => {
   return axios.post(`${API_ROOT}/upload/photo`, form, { headers: { ...authHeader() } }).then(r => r.data);
 };
 
+export const getMyEnrolledStudents = () =>
+  axios.get(`${API}/enrolled-students`, { headers: authHeader() }).then(r => r.data);
+
 export const startDirectChat = (scholarId: string) =>
   axios.post(`${API}/start-chat`, { scholarId }, { headers: authHeader() }).then(r => r.data);
 

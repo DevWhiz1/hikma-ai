@@ -10,12 +10,13 @@ const SensitiveLog = require('../models/SensitiveLog');
 const { filterMeetingLinks, filterContactInfo, detectAllLinks } = require('../middleware/messageFilter');
 const { emitMeetingRequest, emitMeetingScheduled, emitMeetingLinkSent } = require('../utils/socketEmitter');
 
-// Generate Jitsi meeting link
+// Generate Jitsi meeting link using custom domain
 const generateJitsiLink = () => {
   const room = crypto.randomBytes(6).toString('hex');
+  const jitsiDomain = process.env.JITSI_DOMAIN || 'hikmameet.live';
   return {
     roomId: room,
-    link: `https://meet.jit.si/HikmaAI-${room}`
+    link: `https://${jitsiDomain}/HikmaAI-${room}`
   };
 };
 
@@ -521,26 +522,51 @@ const getScholarDashboard = async (req, res) => {
   try {
     const scholarId = req.user.id;
 
-    // Enrolled students approximated from chats
-    const chats = await Chat.find({ scholarId, isActive: true })
-      .populate('studentId', 'name email')
-      .sort({ lastActivity: -1 });
+    // Get enrolled students from Enrollment model
+    const Enrollment = require('../models/Enrollment');
+    const User = require('../models/User');
+    
+    // First get the scholar document to get the scholar ID
+    const Scholar = require('../models/Scholar');
+    const scholarDoc = await Scholar.findOne({ user: scholarId });
+    
+    if (!scholarDoc) {
+      return res.json({ enrolledStudents: [], requested: [], scheduled: [], linkSent: [] });
+    }
 
-    const enrolledStudents = chats.map(c => ({
-      chatId: c._id,
-      student: c.studentId,
-      lastActivity: c.lastActivity
+    // Get enrollments for this scholar
+    const enrollments = await Enrollment.find({ 
+      scholar: scholarDoc._id, 
+      isActive: true 
+    })
+      .populate('student', 'name email')
+      .populate('studentSession', 'lastActivity')
+      .sort({ createdAt: -1 });
+
+    const enrolledStudents = enrollments.map(enrollment => ({
+      chatId: enrollment.studentSession?._id || enrollment._id,
+      student: enrollment.student,
+      lastActivity: enrollment.studentSession?.lastActivity || enrollment.createdAt
     }));
 
     // Meetings grouped by status
-  const meetings = await Meeting.find({ scholarId })
+    const meetings = await Meeting.find({ scholarId })
       .populate('studentId', 'name email')
       .populate('chatId', '_id')
       .sort({ updatedAt: -1 });
 
-  const requested = meetings.filter(m => m.status === 'requested');
-  const scheduled = meetings.filter(m => m.status === 'scheduled');
-  const linkSent = meetings.filter(m => m.status === 'link_sent');
+    const requested = meetings.filter(m => m.status === 'requested');
+    const scheduled = meetings.filter(m => m.status === 'scheduled');
+    const linkSent = meetings.filter(m => m.status === 'link_sent');
+
+    // Debug: Log scholar dashboard data (remove in production)
+    console.log('Scholar dashboard data:', {
+      scholarId,
+      scholarDocId: scholarDoc._id,
+      enrollmentsCount: enrollments.length,
+      enrolledStudentsCount: enrolledStudents.length,
+      meetingsCount: meetings.length
+    });
 
     res.json({ enrolledStudents, requested, scheduled, linkSent });
   } catch (error) {

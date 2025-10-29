@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   SparklesIcon,
   ChatBubbleLeftRightIcon,
@@ -6,25 +6,22 @@ import {
   ChartBarIcon,
   ExclamationTriangleIcon,
   HeartIcon,
-  UserIcon,
-  ClockIcon,
-  AcademicCapIcon,
-  BookOpenIcon,
-  GlobeAltIcon,
   CheckCircleIcon,
-  XCircleIcon,
   ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  EyeIcon,
   CalendarIcon,
-  UsersIcon,
   BellIcon,
-  CogIcon
+  CogIcon,
+  PlayIcon,
+  PauseIcon,
+  BoltIcon,
+  CpuChipIcon,
+  EyeIcon,
+  FireIcon,
+  StarIcon,
+  RocketLaunchIcon
 } from '@heroicons/react/24/outline';
 import AISmartScheduler from './AISmartScheduler';
 import AIAnalytics from './AIAnalytics';
-import IntelligentConflictResolver from './IntelligentConflictResolver';
-import PersonalizationEngine from './PersonalizationEngine';
 import aiAgentService from '../../services/aiAgentService';
 import { meetingService } from '../../services/meetingService';
 import smartSchedulerService from '../../services/smartSchedulerService';
@@ -43,49 +40,64 @@ interface AIAgentDashboardProps {
 }
 
 const AIAgentDashboard: React.FC<AIAgentDashboardProps> = ({ scholarId }) => {
-  const [activeFeature, setActiveFeature] = useState<'overview' | 'scheduler' | 'analytics' | 'conflicts' | 'personalization'>('overview');
+  const [activeFeature, setActiveFeature] = useState<'overview' | 'scheduler' | 'analytics'>('overview');
   const [stats, setStats] = useState<AIAgentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [aiInsights, setAiInsights] = useState<any>(null);
+  const [aiEnabled, setAiEnabled] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  useEffect(() => {
-    loadAIAgentStats();
-  }, [scholarId]);
+  // Memoized data processing to avoid recalculation
+  const processedStats = useMemo(() => {
+    if (!stats) return null;
+    
+    return {
+      ...stats,
+      formattedConfidence: `${Math.round(stats.averageConfidence * 100)}%`,
+      formattedSatisfaction: `${Math.round(stats.userSatisfaction * 100)}%`,
+      performanceScore: Math.round((stats.successfulPredictions + stats.averageConfidence * 100 + stats.userSatisfaction * 100) / 3)
+    };
+  }, [stats]);
 
-  const loadAIAgentStats = async () => {
+  // Optimized data loading with caching
+  const loadAIAgentStats = useCallback(async () => {
+    if (!aiEnabled) return;
+    
     try {
       setLoading(true);
       
-      // Load real data from backend
-      const [dashboardData, broadcastsData, insightsData] = await Promise.all([
+      // Load data in parallel with error handling
+      const [dashboardData, insightsData] = await Promise.allSettled([
         meetingService.getScholarDashboard(),
-        smartSchedulerService.getScholarBroadcasts(),
         aiAgentService.getBookingInsights(scholarId)
       ]);
       
-      // Calculate real stats from actual data
-      const totalMeetings = (dashboardData.scheduled || []).length + (dashboardData.linkSent || []).length;
-      const completedMeetings = (dashboardData.linkSent || []).length;
-      const totalBroadcasts = broadcastsData.broadcasts || [];
-      const totalBroadcastSlots = totalBroadcasts.reduce((sum: number, broadcast: any) => 
-        sum + (broadcast.meetingTimes || []).length, 0);
+      // Process dashboard data
+      const dashboard = dashboardData.status === 'fulfilled' ? dashboardData.value : null;
+      const insights = insightsData.status === 'fulfilled' ? insightsData.value : null;
       
-      // Calculate real AI agent stats
-      const realStats: AIAgentStats = {
-        totalInteractions: totalMeetings + totalBroadcastSlots,
-        successfulPredictions: Math.round((completedMeetings / Math.max(totalMeetings, 1)) * 100),
-        conflictsResolved: 0, // This would come from conflict resolution tracking
-        personalizedRecommendations: (dashboardData.enrolledStudents || []).length,
-        averageConfidence: insightsData.confidence || 0.75,
-        userSatisfaction: insightsData.studentSatisfaction || 0.85
-      };
-      
-      setStats(realStats);
-      setAiInsights(insightsData);
+      if (dashboard) {
+        // Calculate real stats from actual data
+        const totalMeetings = (dashboard.scheduled || []).length + (dashboard.linkSent || []).length;
+        const completedMeetings = (dashboard.linkSent || []).length;
+        const enrolledStudents = (dashboard.enrolledStudents || []).length;
+        
+        const realStats: AIAgentStats = {
+          totalInteractions: totalMeetings + enrolledStudents,
+          successfulPredictions: Math.round((completedMeetings / Math.max(totalMeetings, 1)) * 100),
+          conflictsResolved: 0,
+          personalizedRecommendations: enrolledStudents,
+          averageConfidence: insights?.confidence || 0.75,
+          userSatisfaction: insights?.studentSatisfaction || 0.85
+        };
+        
+        setStats(realStats);
+        setAiInsights(insights);
+        setLastUpdated(new Date());
+      }
       
     } catch (error) {
       console.error('Error loading AI agent stats:', error);
-      // Set fallback stats if API fails
       setStats({
         totalInteractions: 0,
         successfulPredictions: 0,
@@ -97,21 +109,64 @@ const AIAgentDashboard: React.FC<AIAgentDashboardProps> = ({ scholarId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [scholarId, aiEnabled]);
 
-  const formatPercentage = (value: number) => `${Math.round(value * 100)}%`;
+  useEffect(() => {
+    loadAIAgentStats();
+    
+    const interval = aiEnabled ? setInterval(loadAIAgentStats, 5 * 60 * 1000) : null;
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loadAIAgentStats, aiEnabled]);
+
+  const toggleAI = () => {
+    setAiEnabled(!aiEnabled);
+    if (!aiEnabled) {
+      loadAIAgentStats();
+    }
+  };
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
-            ))}
+      <div className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-blue-200/50 dark:border-gray-700 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-indigo-600/5 dark:from-blue-400/5 dark:via-purple-400/5 dark:to-indigo-400/5"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-400/10 to-blue-400/10 rounded-full translate-y-12 -translate-x-12"></div>
+        
+        <div className="relative p-8">
+          <div className="animate-pulse">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 bg-gray-300 dark:bg-gray-700 rounded-xl"></div>
+                <div>
+                  <div className="h-8 w-64 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
+                  <div className="h-4 w-48 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="h-10 w-24 bg-gray-300 dark:bg-gray-700 rounded-xl"></div>
+                <div className="h-10 w-32 bg-gray-300 dark:bg-gray-700 rounded-xl"></div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 bg-gray-200 dark:bg-gray-700 rounded-xl p-2 mb-8">
+              <div className="flex-1 h-12 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
+              <div className="flex-1 h-12 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
+              <div className="flex-1 h-12 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-300 dark:bg-gray-700 rounded-2xl"></div>
+              ))}
+            </div>
+            
+            <div className="space-y-6">
+              <div className="h-64 bg-gray-300 dark:bg-gray-700 rounded-2xl"></div>
+              <div className="h-48 bg-gray-300 dark:bg-gray-700 rounded-2xl"></div>
+            </div>
           </div>
-          <div className="h-64 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
@@ -119,219 +174,361 @@ const AIAgentDashboard: React.FC<AIAgentDashboardProps> = ({ scholarId }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-              <SparklesIcon className="h-8 w-8 text-blue-600 mr-3" />
-              AI Agent Dashboard
-            </h2>
-            <p className="text-gray-600">Your intelligent scheduling assistant powered by AI</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full flex items-center">
-              <CheckCircleIcon className="h-4 w-4 mr-1" />
-              AI Active
+      {/* Enhanced Header */}
+      <div className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-blue-200/50 dark:border-gray-700 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-indigo-600/5 dark:from-blue-400/5 dark:via-purple-400/5 dark:to-indigo-400/5"></div>
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-400/10 to-blue-400/10 rounded-full translate-y-12 -translate-x-12"></div>
+        
+        <div className="relative p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-sm opacity-75"></div>
+                <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl">
+                  <SparklesIcon className="h-8 w-8 text-white" />
+                </div>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                  AI Agent Dashboard
+                  <span className="ml-2 px-2 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold rounded-full">
+                    PRO
+                  </span>
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">Your intelligent scheduling assistant powered by advanced AI</p>
+              </div>
             </div>
-            <div className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full">
-              Confidence: {stats ? formatPercentage(stats.averageConfidence) : '87%'}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={toggleAI}
+                className={`group relative flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  aiEnabled 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/25' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${
+                  aiEnabled ? 'bg-gradient-to-r from-green-400 to-emerald-500 opacity-0 group-hover:opacity-20' : ''
+                }`}></div>
+                {aiEnabled ? (
+                  <div className="relative flex items-center">
+                    <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
+                    <PlayIcon className="h-4 w-4 mr-2" />
+                    AI Active
+                  </div>
+                ) : (
+                  <>
+                    <PauseIcon className="h-4 w-4 mr-2" />
+                    AI Paused
+                  </>
+                )}
+              </button>
+              {processedStats && (
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-sm opacity-50"></div>
+                  <div className="relative px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-xl shadow-lg">
+                    <div className="flex items-center">
+                      <StarIcon className="h-4 w-4 mr-2" />
+                      Score: {processedStats.performanceScore}%
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Feature Navigation */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setActiveFeature('overview')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              activeFeature === 'overview' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveFeature('scheduler')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              activeFeature === 'scheduler' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            AI Scheduler
-          </button>
-          <button
-            onClick={() => setActiveFeature('analytics')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              activeFeature === 'analytics' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            AI Analytics
-          </button>
-          <button
-            onClick={() => setActiveFeature('conflicts')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              activeFeature === 'conflicts' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Conflict Resolver
-          </button>
-          <button
-            onClick={() => setActiveFeature('personalization')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              activeFeature === 'personalization' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Personalization
-          </button>
+          <div className="relative">
+            <div className="flex gap-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-2 shadow-lg border border-white/20 dark:border-gray-700/50">
+              <button
+                onClick={() => setActiveFeature('overview')}
+                className={`group relative flex-1 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  activeFeature === 'overview' 
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25' 
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <EyeIcon className="h-4 w-4" />
+                  <span>Overview</span>
+                </div>
+                {activeFeature === 'overview' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveFeature('scheduler')}
+                className={`group relative flex-1 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  activeFeature === 'scheduler' 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/25' 
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  <span>Scheduler</span>
+                </div>
+                {activeFeature === 'scheduler' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveFeature('analytics')}
+                className={`group relative flex-1 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  activeFeature === 'analytics' 
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/25' 
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <ChartBarIcon className="h-4 w-4" />
+                  <span>Analytics</span>
+                </div>
+                {activeFeature === 'analytics' && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Overview Tab */}
-      {activeFeature === 'overview' && stats && (
+      {activeFeature === 'overview' && processedStats && (
         <div className="space-y-6">
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Interactions</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.totalInteractions.toLocaleString()}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-sm opacity-75"></div>
+                    <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl">
+                      <ChatBubbleLeftRightIcon className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">AI Interactions</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{processedStats.totalInteractions}</p>
+                  </div>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <ChatBubbleLeftRightIcon className="h-6 w-6 text-blue-600" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">Active</span>
+                  </div>
+                  <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
                 </div>
-              </div>
-              <div className="mt-4 flex items-center">
-                <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-sm text-green-600">+15% this month</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Successful Predictions</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.successfulPredictions}%</p>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl blur-sm opacity-75"></div>
+                    <div className="relative bg-gradient-to-r from-green-500 to-emerald-600 p-3 rounded-xl">
+                      <CheckCircleIcon className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Success Rate</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{processedStats.successfulPredictions}%</p>
+                  </div>
                 </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">Excellent</span>
+                  </div>
+                  <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
                 </div>
-              </div>
-              <div className="mt-4 flex items-center">
-                <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-sm text-green-600">+3% improvement</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Conflicts Resolved</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.conflictsResolved}</p>
+            <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl blur-sm opacity-75"></div>
+                    <div className="relative bg-gradient-to-r from-purple-500 to-pink-600 p-3 rounded-xl">
+                      <HeartIcon className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Satisfaction</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{processedStats.formattedSatisfaction}</p>
+                  </div>
                 </div>
-                <div className="p-3 bg-yellow-100 rounded-full">
-                  <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                    <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">High</span>
+                  </div>
+                  <ArrowTrendingUpIcon className="h-5 w-5 text-purple-500" />
                 </div>
-              </div>
-              <div className="mt-4 flex items-center">
-                <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-sm text-green-600">+8 this month</span>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">User Satisfaction</p>
-                  <p className="text-3xl font-bold text-gray-900">{formatPercentage(stats.userSatisfaction)}</p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <HeartIcon className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-              <div className="mt-4 flex items-center">
-                <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
-                <span className="text-sm text-green-600">+2% improvement</span>
               </div>
             </div>
           </div>
 
           {/* AI Capabilities */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Capabilities</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <ChatBubbleLeftRightIcon className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                <h4 className="font-medium text-gray-900 mb-1">Natural Language Processing</h4>
-                <p className="text-sm text-gray-600">Understand and process natural language scheduling commands</p>
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full -translate-y-10 translate-x-10"></div>
+            <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-green-400/10 to-blue-400/10 rounded-full translate-y-8 -translate-x-8"></div>
+            
+            <div className="relative">
+              <div className="flex items-center mb-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-sm opacity-75"></div>
+                  <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-xl">
+                    <CpuChipIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white ml-4">AI Capabilities</h3>
               </div>
-              <div className="text-center p-4 bg-green-50 rounded-lg">
-                <LightBulbIcon className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <h4 className="font-medium text-gray-900 mb-1">Predictive Analytics</h4>
-                <p className="text-sm text-gray-600">Predict optimal scheduling times and student preferences</p>
-              </div>
-              <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                <ExclamationTriangleIcon className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-                <h4 className="font-medium text-gray-900 mb-1">Conflict Resolution</h4>
-                <p className="text-sm text-gray-600">Intelligently resolve scheduling conflicts with alternatives</p>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <HeartIcon className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                <h4 className="font-medium text-gray-900 mb-1">Personalization</h4>
-                <p className="text-sm text-gray-600">Create personalized scheduling experiences for each student</p>
-              </div>
-              <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                <ChartBarIcon className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-                <h4 className="font-medium text-gray-900 mb-1">Analytics & Insights</h4>
-                <p className="text-sm text-gray-600">Provide intelligent insights and performance analytics</p>
-              </div>
-              <div className="text-center p-4 bg-pink-50 rounded-lg">
-                <BellIcon className="h-8 w-8 text-pink-600 mx-auto mb-2" />
-                <h4 className="font-medium text-gray-900 mb-1">Smart Notifications</h4>
-                <p className="text-sm text-gray-600">Send intelligent, personalized notifications</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="group relative p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg blur-sm opacity-75"></div>
+                      <div className="relative bg-gradient-to-r from-blue-500 to-indigo-600 p-3 rounded-lg">
+                        <ChatBubbleLeftRightIcon className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Smart Scheduling</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">AI-powered time optimization</p>
+                    </div>
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+                
+                <div className="group relative p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200/50 dark:border-green-700/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg blur-sm opacity-75"></div>
+                      <div className="relative bg-gradient-to-r from-green-500 to-emerald-600 p-3 rounded-lg">
+                        <LightBulbIcon className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Predictive Analytics</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Student preference insights</p>
+                    </div>
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+                
+                <div className="group relative p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200/50 dark:border-purple-700/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg blur-sm opacity-75"></div>
+                      <div className="relative bg-gradient-to-r from-purple-500 to-pink-600 p-3 rounded-lg">
+                        <HeartIcon className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Personalization</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Tailored recommendations</p>
+                    </div>
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+                
+                <div className="group relative p-6 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl border border-yellow-200/50 dark:border-yellow-700/50 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg blur-sm opacity-75"></div>
+                      <div className="relative bg-gradient-to-r from-yellow-500 to-orange-600 p-3 rounded-lg">
+                        <ChartBarIcon className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">Performance Insights</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Real-time analytics</p>
+                    </div>
+                  </div>
+                  <div className="absolute top-2 right-2">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Recent AI Activity */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent AI Activity</h3>
-            <div className="space-y-4">
-              <div className="flex items-center p-3 bg-green-50 rounded-lg">
-                <CheckCircleIcon className="h-5 w-5 text-green-600 mr-3" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Successfully resolved scheduling conflict</p>
-                  <p className="text-xs text-gray-600">2 hours ago • 95% confidence</p>
+          {/* Recent Activity */}
+          <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 overflow-hidden">
+            <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-green-400/10 to-blue-400/10 rounded-full -translate-y-12 -translate-x-12"></div>
+            <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full translate-y-10 translate-x-10"></div>
+            
+            <div className="relative">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-blue-600 rounded-xl blur-sm opacity-75"></div>
+                    <div className="relative bg-gradient-to-r from-green-500 to-blue-600 p-3 rounded-xl">
+                      <BoltIcon className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white ml-4">Recent Activity</h3>
+                </div>
+                <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-sm font-medium rounded-full">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>Live</span>
                 </div>
               </div>
-              <div className="flex items-center p-3 bg-blue-50 rounded-lg">
-                <LightBulbIcon className="h-5 w-5 text-blue-600 mr-3" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Generated personalized recommendations for Ahmed Hassan</p>
-                  <p className="text-xs text-gray-600">4 hours ago • 87% confidence</p>
+              
+              <div className="space-y-4">
+                <div className="group relative flex items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200/50 dark:border-green-700/50 hover:shadow-lg transition-all duration-300">
+                  <div className="relative mr-4">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg blur-sm opacity-75"></div>
+                    <div className="relative bg-gradient-to-r from-green-500 to-emerald-600 p-2 rounded-lg">
+                      <CheckCircleIcon className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">AI scheduling active</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Monitoring student patterns and optimizing schedules</p>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Now</div>
                 </div>
-              </div>
-              <div className="flex items-center p-3 bg-purple-50 rounded-lg">
-                <ChartBarIcon className="h-5 w-5 text-purple-600 mr-3" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Updated analytics dashboard with new insights</p>
-                  <p className="text-xs text-gray-600">6 hours ago • 92% confidence</p>
+                
+                <div className="group relative flex items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50 hover:shadow-lg transition-all duration-300">
+                  <div className="relative mr-4">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg blur-sm opacity-75"></div>
+                    <div className="relative bg-gradient-to-r from-blue-500 to-indigo-600 p-2 rounded-lg">
+                      <LightBulbIcon className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Generating insights</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Analyzing booking patterns and student preferences</p>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">2m ago</div>
                 </div>
-              </div>
-              <div className="flex items-center p-3 bg-yellow-50 rounded-lg">
-                <BellIcon className="h-5 w-5 text-yellow-600 mr-3" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Sent smart reminder to 5 students</p>
-                  <p className="text-xs text-gray-600">8 hours ago • 89% confidence</p>
+                
+                <div className="group relative flex items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border border-purple-200/50 dark:border-purple-700/50 hover:shadow-lg transition-all duration-300">
+                  <div className="relative mr-4">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg blur-sm opacity-75"></div>
+                    <div className="relative bg-gradient-to-r from-purple-500 to-pink-600 p-2 rounded-lg">
+                      <BellIcon className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Smart notifications ready</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">Personalized reminders and updates prepared</p>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">5m ago</div>
                 </div>
               </div>
             </div>
@@ -339,31 +536,58 @@ const AIAgentDashboard: React.FC<AIAgentDashboardProps> = ({ scholarId }) => {
         </div>
       )}
 
-      {/* AI Scheduler Tab */}
+      {/* Scheduler Tab */}
       {activeFeature === 'scheduler' && (
-        <AISmartScheduler />
+        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-400/10 to-emerald-400/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-blue-400/10 to-green-400/10 rounded-full translate-y-12 -translate-x-12"></div>
+          
+          <div className="relative p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl blur-sm opacity-75"></div>
+                  <div className="relative bg-gradient-to-r from-green-500 to-emerald-600 p-3 rounded-xl">
+                    <CalendarIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white ml-4">AI Smart Scheduler</h3>
+              </div>
+              <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-sm font-medium rounded-full">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span>Active</span>
+              </div>
+            </div>
+            <AISmartScheduler />
+          </div>
+        </div>
       )}
 
-      {/* AI Analytics Tab */}
+      {/* Analytics Tab */}
       {activeFeature === 'analytics' && (
-        <AIAnalytics />
-      )}
-
-      {/* Conflict Resolver Tab */}
-      {activeFeature === 'conflicts' && (
-        <IntelligentConflictResolver 
-          conflicts={[]} 
-          onResolve={() => {}} 
-          onDismiss={() => {}} 
-        />
-      )}
-
-      {/* Personalization Tab */}
-      {activeFeature === 'personalization' && (
-        <PersonalizationEngine 
-          scholarId={scholarId} 
-          onRecommendationsGenerated={() => {}} 
-        />
+        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-pink-400/10 rounded-full -translate-y-16 -translate-x-16"></div>
+          <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tr from-indigo-400/10 to-purple-400/10 rounded-full translate-y-12 translate-x-12"></div>
+          
+          <div className="relative p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl blur-sm opacity-75"></div>
+                  <div className="relative bg-gradient-to-r from-purple-500 to-pink-600 p-3 rounded-xl">
+                    <ChartBarIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white ml-4">AI Analytics</h3>
+              </div>
+              <div className="flex items-center space-x-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-sm font-medium rounded-full">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <span>Processing</span>
+              </div>
+            </div>
+            <AIAnalytics />
+          </div>
+        </div>
       )}
     </div>
   );

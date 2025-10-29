@@ -278,6 +278,48 @@ async function startDirectChat(req, res) {
   } catch (e) { res.status(500).json({ message: e.message }); }
 }
 
-module.exports = { applyScholar, listScholars, enrollScholar, leaveFeedback, myEnrollments, unenroll, getMyScholarProfile, updateMyScholarProfile, deleteMyScholarProfile, startDirectChat };
+async function getMyEnrolledStudents(req, res) {
+  try {
+    const scholarId = req.user.id;
+    
+    // Get the scholar document
+    const Scholar = require('../models/Scholar');
+    const scholarDoc = await Scholar.findOne({ user: scholarId });
+    
+    if (!scholarDoc) {
+      return res.json([]);
+    }
+
+    // Get enrollments for this scholar
+    const enrollments = await Enrollment.find({ 
+      scholar: scholarDoc._id, 
+      isActive: true 
+    })
+      .populate('student', 'name email')
+      .populate('studentSession', 'lastActivity')
+      .sort({ createdAt: -1 });
+
+    const enrolledStudents = enrollments.map(enrollment => ({
+      chatId: enrollment.studentSession?._id || enrollment._id,
+      student: enrollment.student,
+      lastActivity: enrollment.studentSession?.lastActivity || enrollment.createdAt
+    }));
+
+    // Debug: Log scholar enrolled students (remove in production)
+    console.log('Scholar enrolled students:', {
+      scholarId,
+      scholarDocId: scholarDoc._id,
+      enrollmentsCount: enrollments.length,
+      enrolledStudentsCount: enrolledStudents.length
+    });
+
+    res.json(enrolledStudents);
+  } catch (error) {
+    console.error('Error getting enrolled students:', error);
+    res.status(500).json({ error: 'Failed to get enrolled students' });
+  }
+}
+
+module.exports = { applyScholar, listScholars, enrollScholar, leaveFeedback, myEnrollments, unenroll, getMyScholarProfile, updateMyScholarProfile, deleteMyScholarProfile, startDirectChat, getMyEnrolledStudents };
 
 
