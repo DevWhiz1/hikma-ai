@@ -117,6 +117,7 @@ app.use('/api/scholar-feedback', require('./routes/scholarFeedbackRoutes'));
 app.use('/api/smart-scheduler', require('./routes/smartSchedulerRoutes'));
 app.use('/api/enhanced-meetings', require('./routes/enhancedMeetingRoutes'));
 app.use('/api/ai-agent', require('./routes/aiAgentRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // Upload endpoint (auth required)
 app.post('/api/upload/photo', auth, upload.single('photo'), (req, res) => {
@@ -474,4 +475,24 @@ const port = process.env.PORT || 5000;
     process.exit(1);
   }
 })();
+
+// Smart Notify Cron (every 5 minutes): evaluate due rules across scholars
+cron.schedule('*/5 * * * *', async () => {
+  try {
+    const NotificationRule = require('./models/NotificationRule');
+    const rules = await NotificationRule.find({ isActive: true }).select('scholarUserId').lean();
+    const uniqueScholars = Array.from(new Set(rules.map(r => String(r.scholarUserId))));
+    if (uniqueScholars.length === 0) return;
+    // For now, run all rules via internal controller to avoid auth for cron
+    const controller = require('./controllers/notificationRuleController');
+    for (const scholarUserId of uniqueScholars) {
+      // Fake req/res objects to call runDueRules internally for each scholar
+      const req = { user: { _id: scholarUserId } };
+      const res = { json: () => {} };
+      await controller.runDueRules(req, res);
+    }
+  } catch (e) {
+    console.warn('SmartNotify cron error:', e?.message || e);
+  }
+});
 

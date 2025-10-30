@@ -135,19 +135,39 @@ const requestMeeting = async (req, res) => {
 // Schedule a meeting
 const scheduleMeeting = async (req, res) => {
   try {
-    const { chatId, scheduledTime } = req.body;
+    const { chatId, scheduledTime, studentId } = req.body;
     const scholarId = req.user.id;
 
-    // Find the chat and verify scholar is participant
-    const chat = await Chat.findById(chatId);
-    if (!chat || chat.scholarId.toString() !== scholarId) {
-      return res.status(404).json({ error: 'Chat not found or unauthorized' });
+    let chat;
+    
+    // If studentId is provided (scheduling with enrolled student), find or create Chat
+    if (studentId) {
+      chat = await Chat.findOne({ studentId, scholarId });
+      if (!chat) {
+        // Create a new Chat for this student-scholar pair
+        chat = new Chat({ studentId, scholarId });
+        await chat.save();
+      }
+    } else if (chatId) {
+      // Find the chat by ID and verify scholar is participant
+      chat = await Chat.findById(chatId);
+      if (!chat || chat.scholarId.toString() !== scholarId) {
+        return res.status(404).json({ error: 'Chat not found or unauthorized' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Either chatId or studentId is required' });
     }
 
     // Upsert or update meeting with scheduled time
     const meeting = await Meeting.findOneAndUpdate(
-      { chatId, scholarId },
-      { $set: { scheduledTime: new Date(scheduledTime), status: 'scheduled' } },
+      { chatId: chat._id, scholarId },
+      { 
+        $set: { 
+          scheduledTime: new Date(scheduledTime), 
+          status: 'scheduled',
+          studentId: chat.studentId
+        } 
+      },
       { new: true, upsert: true }
     );
 

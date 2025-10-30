@@ -89,6 +89,14 @@ async function enrollScholar(req, res) {
           existing.scholarSession = scholarSession._id;
         }
         await existing.save();
+        
+        // Increment scholar's totalStudents count when re-activating
+        try {
+          await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: 1 } });
+        } catch (err) {
+          console.warn('Failed to update totalStudents on re-activation:', err.message);
+        }
+        
         return res.json({ success: true, enrollment: existing, studentSessionId: existing.studentSession, scholarSessionId: existing.scholarSession });
       }
       return res.status(400).json({ message: 'Already enrolled' });
@@ -127,6 +135,13 @@ async function enrollScholar(req, res) {
       });
     } catch {}
 
+    // Increment scholar's totalStudents count
+    try {
+      await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: 1 } });
+    } catch (err) {
+      console.warn('Failed to update totalStudents:', err.message);
+    }
+
     res.json({ success: true, enrollment, studentSessionId: studentSession._id, scholarSessionId: scholarSession._id });
   } catch (e) {
     res.status(500).json({ message: e.message });
@@ -148,18 +163,20 @@ async function leaveFeedback(req, res) {
 
 async function myEnrollments(req, res) {
   try {
-    // Prefer denormalized list for performance if present
-    const User = require('../models/User');
-    const u = await User.findById(req.user._id).select('enrolledScholars').lean();
-    if (u && Array.isArray(u.enrolledScholars) && u.enrolledScholars.length) {
-      const mapped = u.enrolledScholars.map(es => ({ scholar: { _id: es.scholar, user: { name: es.name } } }));
-      return res.json(mapped);
-    }
-    // Fallback to live lookup from enrollments
-    const list = await Enrollment.find({ student: req.user._id })
+    console.log('User requesting enrollments:', req.user._id);
+    
+    // Always query the Enrollment model for accurate data
+    const list = await Enrollment.find({ student: req.user._id, isActive: true })
       .populate({ path: 'scholar', populate: { path: 'user', select: 'name email _id' } })
-      .select('scholar studentSession')
+      .select('scholar studentSession createdAt')
       .lean();
+    
+    console.log('Found enrollments for user:', {
+      userId: req.user._id,
+      enrollmentCount: list.length,
+      enrollments: list.map(e => ({ scholarId: e?.scholar?._id, scholarName: e?.scholar?.user?.name }))
+    });
+    
     // Backfill user's enrolledScholars for future fast loads
     try {
       const entries = list
@@ -168,12 +185,18 @@ async function myEnrollments(req, res) {
       if (entries.length) {
         const User = require('../models/User');
         await User.findByIdAndUpdate(req.user._id, {
-          $addToSet: { enrolledScholars: { $each: entries } }
+          enrolledScholars: entries // Replace instead of addToSet to ensure accuracy
         });
       }
-    } catch {}
+    } catch (backfillErr) {
+      console.warn('Backfill failed:', backfillErr.message);
+    }
+    
     res.json(list);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) { 
+    console.error('Error fetching enrollments:', e);
+    res.status(500).json({ message: e.message }); 
+  }
 }
 
 async function unenroll(req, res) {
@@ -183,6 +206,14 @@ async function unenroll(req, res) {
     if (!enr) return res.status(404).json({ message: 'Not enrolled' });
     enr.isActive = false; // soft-unenroll; retain sessions
     await enr.save();
+    
+    // Decrement scholar's totalStudents count
+    try {
+      await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: -1 } });
+    } catch (err) {
+      console.warn('Failed to update totalStudents on unenroll:', err.message);
+    }
+    
     res.json({ success: true });
   } catch (e) { res.status(500).json({ message: e.message }); }
 }

@@ -19,6 +19,7 @@ import {
 import { meetingService } from '../../services/meetingService';
 import { authService } from '../../services/authService';
 import { getMyScholarProfile, getMyEnrolledStudents } from '../../services/scholarService';
+import notificationService from '../../services/notificationService';
 
 interface DashboardData {
   enrolledStudents: any[];
@@ -55,6 +56,11 @@ const ScholarDashboard = () => {
   const [schedulingMeeting, setSchedulingMeeting] = useState<string | null>(null);
   const [scheduledTime, setScheduledTime] = useState('');
   const [selectedEnrolledChatId, setSelectedEnrolledChatId] = useState<string | null>(null);
+  // Smart notification state
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [notifyAudience, setNotifyAudience] = useState<'all'|'selected'>('all');
+  const [notifyText, setNotifyText] = useState('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
   // Check if user is a scholar
   if (user?.role !== 'scholar') {
@@ -249,23 +255,7 @@ const ScholarDashboard = () => {
         {/* Quick Actions - Most Important */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => navigate('/scholar/smart-scheduler')}
-              className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 text-left group"
-            >
-              <div className="flex items-center mb-3">
-                <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-900/70 transition-colors">
-                  <CalendarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="ml-4">
-                  <span className="font-semibold text-gray-900 dark:text-white">Schedule Meeting</span>
-                  <p className="text-sm text-blue-600 dark:text-blue-400">Create new meeting</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Schedule a meeting with your students</p>
-            </button>
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
               onClick={() => navigate('/chat/scholar')}
               className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 text-left group"
@@ -283,19 +273,19 @@ const ScholarDashboard = () => {
             </button>
             
             <button
-              onClick={() => navigate('/scholar/broadcast-management')}
-              className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 text-left group"
+              onClick={() => navigate('/scholar/scheduler')}
+              className="p-6 bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 shadow-lg transition-all duration-200 text-left group"
             >
               <div className="flex items-center mb-3">
-                <div className="p-3 bg-purple-100 dark:bg-purple-900/50 rounded-lg group-hover:bg-purple-200 dark:group-hover:bg-purple-900/70 transition-colors">
-                  <VideoCameraIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                <div className="p-3 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                  <CalendarIcon className="h-6 w-6 text-white" />
                 </div>
                 <div className="ml-4">
-                  <span className="font-semibold text-gray-900 dark:text-white">Broadcast</span>
-                  <p className="text-sm text-purple-600 dark:text-purple-400">Manage broadcasts</p>
+                  <span className="font-semibold text-white">Smart Scheduler</span>
+                  <p className="text-sm text-white/80">AI-Powered</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Create meeting broadcasts for students</p>
+              <p className="text-sm text-white/90">Schedule meetings & create broadcasts</p>
             </button>
           </div>
         </div>
@@ -461,6 +451,105 @@ const ScholarDashboard = () => {
             </div>
           </div>
 
+          {/* Scheduled Meetings Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Scheduled Meetings</h3>
+                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full">
+                  {data.scheduled.length + data.linkSent.length}
+                </span>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {(data.scheduled.length > 0 || data.linkSent.length > 0) ? (
+                <div className="p-6">
+                  {[...data.scheduled, ...data.linkSent].map((meeting: any) => (
+                    <div key={meeting._id} className="mb-4 last:mb-0 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 dark:text-green-400 font-semibold text-sm">
+                              {meeting.studentId?.name?.charAt(0) || 'S'}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-white">
+                              {meeting.studentId?.name || 'Student'}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              {new Date(meeting.scheduledTime).toLocaleString()}
+                            </div>
+                            {meeting.reason && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Reason: {meeting.reason}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          meeting.status === 'link_sent' 
+                            ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300'
+                            : 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300'
+                        }`}>
+                          {meeting.status === 'link_sent' ? 'Ready' : 'Scheduled'}
+                        </span>
+                      </div>
+                      
+                      <div className="mt-2 flex gap-1.5">
+                        {meeting.link && (
+                          <>
+                            <a
+                              href={meeting.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 px-3 py-1.5 bg-green-600 text-white text-xs text-center rounded hover:bg-green-700 transition-colors font-medium"
+                            >
+                              Join
+                            </a>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(meeting.link);
+                                alert('Link copied!');
+                              }}
+                              className="px-3 py-1.5 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors font-medium"
+                            >
+                              Copy
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Cancel this meeting?')) return;
+                            try {
+                              await meetingService.cancelMeeting(meeting.chatId._id || meeting.chatId);
+                              alert('Cancelled');
+                              loadData();
+                            } catch (err) {
+                              console.error('Cancel failed:', err);
+                              alert('Failed to cancel');
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors font-medium"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <CalendarIcon className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-1">No Scheduled Meetings</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Schedule meetings with your enrolled students.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Quick Stats */}
@@ -536,54 +625,31 @@ const ScholarDashboard = () => {
         {/* Additional Tools */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Additional Tools</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            <button
-              onClick={() => navigate('/scholar/smart-scheduler')}
-              className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 text-center group"
-            >
-              <CalendarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Scheduler</span>
-            </button>
-            
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <button
               onClick={() => navigate('/scholar/feedback')}
               className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 text-center group"
             >
               <StarIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Feedback</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Student Feedback</span>
             </button>
-            
             <button
-              onClick={() => navigate('/scholar/scheduler-analytics')}
+              onClick={() => navigate('/scholar/smart-notify')}
               className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 text-center group"
             >
-              <ChartBarIcon className="h-6 w-6 text-purple-600 dark:text-purple-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Analytics</span>
+              <BellIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Smart Notify</span>
             </button>
-            
-            <button
-              onClick={() => navigate('/scholar/ai-agent')}
-              className="p-4 bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-center group shadow-lg"
-            >
-              <SparklesIcon className="h-6 w-6 text-white mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-white">AI Agent</span>
-            </button>
-            
-            <button
-              onClick={() => navigate('/scholar/recurring-meetings')}
-              className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 text-center group"
-            >
-              <ClockIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Recurring</span>
-            </button>
-            
+
             <button
               onClick={() => navigate('/scholars/profile/edit')}
               className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 text-center group"
             >
-              <PencilIcon className="h-6 w-6 text-gray-600 dark:text-gray-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium text-gray-900 dark:text-white">Profile</span>
+              <PencilIcon className="h-6 w-6 text-blue-600 dark:text-blue-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">Edit Profile</span>
             </button>
+
+            
           </div>
         </div>
 
@@ -609,10 +675,17 @@ const ScholarDashboard = () => {
                     onClick={async () => {
                       if (!scheduledTime) return;
                       try {
-                        await meetingService.scheduleMeeting(selectedEnrolledChatId, scheduledTime);
+                        // Find the enrolled student to get the student user ID
+                        const enrolledStudent = data.enrolledStudents.find((s: any) => s.chatId === selectedEnrolledChatId);
+                        if (!enrolledStudent || !enrolledStudent.student?._id) {
+                          alert('Student not found');
+                          return;
+                        }
+                        await meetingService.scheduleMeeting(enrolledStudent.student._id, scheduledTime, true);
                         setScheduledTime('');
                         setSelectedEnrolledChatId(null);
                         loadData();
+                        alert('Meeting scheduled successfully!');
                       } catch (err) {
                         console.error('Schedule failed:', err);
                         alert('Failed to schedule meeting');
@@ -625,6 +698,93 @@ const ScholarDashboard = () => {
                   </button>
                   <button
                     onClick={() => { setSelectedEnrolledChatId(null); setScheduledTime(''); }}
+                    className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {notifyOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-lg w-full mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Smart Notification</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Audience</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <input type="radio" name="aud" checked={notifyAudience==='all'} onChange={()=>setNotifyAudience('all')} />
+                      All enrolled students
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <input type="radio" name="aud" checked={notifyAudience==='selected'} onChange={()=>setNotifyAudience('selected')} />
+                      Selected students
+                    </label>
+                  </div>
+                </div>
+
+                {notifyAudience === 'selected' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select students</label>
+                    <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded">
+                      {data.enrolledStudents.map((s: any) => (
+                        <label key={s.student?._id} className="flex items-center gap-2 p-2 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                          <input
+                            type="checkbox"
+                            checked={selectedStudentIds.includes(s.student?._id)}
+                            onChange={(e) => {
+                              const id = s.student?._id;
+                              if (!id) return;
+                              setSelectedStudentIds(prev => e.target.checked ? [...prev, id] : prev.filter(x => x !== id));
+                            }}
+                          />
+                          <span>{s.student?.name || 'Student'}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message</label>
+                  <textarea
+                    rows={4}
+                    value={notifyText}
+                    onChange={(e)=>setNotifyText(e.target.value)}
+                    placeholder="Type your announcement or reminder..."
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white dark:bg-gray-800"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={async ()=>{
+                      if (!notifyText.trim()) { alert('Please enter a message'); return; }
+                      try {
+                        const payload = notifyAudience === 'all'
+                          ? { text: notifyText.trim(), audience: 'all' as const }
+                          : { text: notifyText.trim(), audience: 'selected' as const, studentIds: selectedStudentIds };
+                        await notificationService.sendSmart(payload);
+                        alert('Notification sent');
+                        setNotifyOpen(false);
+                        setNotifyText('');
+                        setSelectedStudentIds([]);
+                        setNotifyAudience('all');
+                      } catch (e) {
+                        console.error(e);
+                        alert('Failed to send notification');
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  >
+                    Send
+                  </button>
+                  <button
+                    onClick={()=>{ setNotifyOpen(false); setNotifyText(''); setSelectedStudentIds([]); setNotifyAudience('all'); }}
                     className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
                   >
                     Cancel
