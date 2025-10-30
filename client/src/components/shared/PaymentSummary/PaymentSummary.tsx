@@ -98,9 +98,9 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
               {isPositiveChange ? (
                 <ArrowUpIcon className="h-4 w-4 text-emerald-600 mr-1" />
               ) : (
-                <ArrowDownIcon className="h-4 w-4 text-lime-600 mr-1" />
+                <ArrowDownIcon className="h-4 w-4 text-emerald-600 mr-1" />
               )}
-              <span className={`text-sm font-medium ${isPositiveChange ? 'text-emerald-600' : 'text-lime-600'}`}>
+              <span className="text-sm font-medium text-emerald-600">
                 {Math.abs(monthlyChange)}%
               </span>
             </div>
@@ -148,7 +148,7 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
 
         <div>
           <div className="flex items-center mb-2">
-            <CalendarIcon className="h-6 w-6 text-teal-600 mr-2" />
+            <CalendarIcon className="h-6 w-6 text-emerald-600 mr-2" />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {isScholar ? 'This Month' : 'This Month'}
             </span>
@@ -161,9 +161,9 @@ const PaymentSummary: React.FC<PaymentSummaryProps> = ({
               {isPositiveChange ? (
                 <ArrowUpIcon className="h-4 w-4 text-emerald-600 mr-1" />
               ) : (
-                <ArrowDownIcon className="h-4 w-4 text-lime-600 mr-1" />
+                <ArrowDownIcon className="h-4 w-4 text-emerald-600 mr-1" />
               )}
-              <span className={`text-sm font-medium ${isPositiveChange ? 'text-emerald-600' : 'text-lime-600'}`}>
+              <span className="text-sm font-medium text-emerald-600">
                 {Math.abs(monthlyChange)}%
               </span>
             </div>

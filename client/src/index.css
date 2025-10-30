@@ -151,6 +151,19 @@ html.light .feedback-floating button *,
 html.light .feedback-floating svg {
   color: #ffffff !important;
 }
+
+/* Ensure 'View Profile' outline button text is emerald in light mode */
+html.light .view-profile-btn,
+html.light .view-profile-btn *,
+html.light button.view-profile-btn,
+html.light button.view-profile-btn * {
+  color: #10B981 !important;
+}
+
+/* Stronger fix: Force emerald text on the label element, bypassing inherited white */
+html.light .view-profile-btn .view-profile-label {
+  color: #10B981 !important;
+}
 html.light .bg-blue-600,
 html.light .bg-emerald-600,
 html.light .bg-purple-600,
@@ -450,6 +463,16 @@ html.light [class*="Icon"].text-purple-400 {
 /* If you need white icons inside a specific gradient, add a wrapper class and target it explicitly. */
 
 /* Avoid forcing white icons in dark mode globally; scope where needed */
+
+/* Keep Explore Our Features icons white in both modes */
+html.light .feature-icon,
+html.light .feature-icon *,
+html.light .feature-icon svg,
+html.dark .feature-icon,
+html.dark .feature-icon *,
+html.dark .feature-icon svg {
+  color: #ffffff !important;
+}
 
 /* Sidebar hover and active states - Light Mode */
 html.light .sidebar a:hover,

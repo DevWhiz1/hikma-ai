@@ -286,9 +286,9 @@ const UserDashboard = () => {
                       <Button
                         onClick={() => navigate('/scholars')}
                         variant="outline"
-                        className="flex-1 text-sm font-medium"
+                        className="flex-1 text-sm font-medium border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-gray-800 view-profile-btn"
                       >
-                        View Profile
+                        <span className="view-profile-label">View Profile</span>
                       </Button>
                     </div>
                   </div>
@@ -319,7 +319,7 @@ const UserDashboard = () => {
                   className="group block"
                 >
                   <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 h-full">
-                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${feature.gradient} mb-4 shadow-lg`}>
+                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${feature.gradient} mb-4 shadow-lg feature-icon`}>
                       <IconComponent className="h-6 w-6 text-white" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
