@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { assignmentService, Assignment, Question } from '../../services/assignmentService';
+import ConfirmationModal from '../../components/shared/ConfirmationModal';
 
 const emptyQ: Question = { type: 'mcq', prompt: '', options: ['', '', '', ''], answer: 0 } as any;
 
@@ -13,6 +14,9 @@ const AssignmentBuilderPage: React.FC = () => {
   const [regenerating, setRegenerating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; confirmColor?: 'emerald' | 'red' | 'orange' | 'blue'; icon?: string }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,38 +82,54 @@ const AssignmentBuilderPage: React.FC = () => {
     }
   };
 
-  const deleteQuestion = async (qid: string) => {
+  const deleteQuestion = (qid: string) => {
     if (!id) return;
-    if (!confirm('Are you sure you want to delete this question?')) return;
-    
-    setSaving(qid);
-    try {
-      await assignmentService.deleteQuestion(id, qid);
-      await reloadAssignment();
-    } catch (err: any) {
-      alert(err?.response?.data?.error || 'Failed to delete question');
-    } finally {
-      setSaving(null);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Question',
+      message: 'Are you sure you want to delete this question?',
+      confirmColor: 'red',
+      icon: '🗑️',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        setSaving(qid);
+        try {
+          await assignmentService.deleteQuestion(id, qid);
+          await reloadAssignment();
+        } catch (err: any) {
+          alert(err?.response?.data?.error || 'Failed to delete question');
+        } finally {
+          setSaving(null);
+        }
+      }
+    });
   };
 
-  const handleRegenerateAI = async () => {
+  const handleRegenerateAI = () => {
     if (!id) return;
-    if (!confirm('This will replace all existing questions with AI-generated ones. Continue?')) return;
-    
-    setRegenerating(true);
-    try {
-      await assignmentService.generate(id);
-      await reloadAssignment();
-      alert('✅ Questions regenerated successfully!\n\nReview the AI-generated questions and make any necessary edits before publishing.');
-    } catch (err: any) {
-      alert(err?.response?.data?.error || 'AI generation failed. Check your Python environment and API keys.');
-    } finally {
-      setRegenerating(false);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Regenerate Questions',
+      message: 'This will replace all existing questions with AI-generated ones. Continue?',
+      confirmColor: 'blue',
+      icon: '🤖',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        setRegenerating(true);
+        try {
+          await assignmentService.generate(id);
+          await reloadAssignment();
+          alert('✅ Questions regenerated successfully!\n\nReview the AI-generated questions and make any necessary edits before publishing.');
+        } catch (err: any) {
+          alert(err?.response?.data?.error || 'AI generation failed. Check your Python environment and API keys.');
+        } finally {
+          setRegenerating(false);
+        }
+      }
+    });
   };
 
-  const handlePublish = async () => {
+  const handlePublish = () => {
     if (!id) return;
     if (!assignment?.questions || assignment.questions.length === 0) {
       alert('⚠️ Please add at least one question before publishing');
@@ -117,31 +137,50 @@ const AssignmentBuilderPage: React.FC = () => {
     }
     
     const isQuiz = assignment.kind === 'quiz';
-    if (!confirm(`Publish this ${isQuiz ? 'quiz' : 'assignment'}? All target students will be notified and can ${isQuiz ? 'start taking' : 'access'} it.`)) return;
-    
-    setPublishing(true);
-    try {
-      await assignmentService.publish(id);
-      await reloadAssignment();
-      alert(`✅ ${isQuiz ? 'Quiz' : 'Assignment'} published successfully!\n\nAll students have been notified and can now ${isQuiz ? 'start the quiz' : 'view and submit the assignment'}.`);
-    } catch (err: any) {
-      alert(`❌ Failed to publish: ${err?.response?.data?.error || 'Unknown error'}`);
-    } finally {
-      setPublishing(false);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: `Publish ${isQuiz ? 'Quiz' : 'Assignment'}`,
+      message: `Publish this ${isQuiz ? 'quiz' : 'assignment'}? All target students will be notified and can ${isQuiz ? 'start taking' : 'access'} it.`,
+      confirmColor: 'emerald',
+      icon: '📢',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        setPublishing(true);
+        try {
+          await assignmentService.publish(id);
+          await reloadAssignment();
+          alert(`✅ ${isQuiz ? 'Quiz' : 'Assignment'} published successfully!\n\nAll students have been notified and can now ${isQuiz ? 'start the quiz' : 'view and submit the assignment'}.`);
+        } catch (err: any) {
+          alert(`❌ Failed to publish: ${err?.response?.data?.error || 'Unknown error'}`);
+        } finally {
+          setPublishing(false);
+        }
+      }
+    });
   };
 
-  const handleClose = async () => {
+  const handleCloseClick = () => {
+    setShowCloseModal(true);
+  };
+
+  const handleCloseConfirm = async () => {
     if (!id) return;
-    if (!confirm('Close this assignment? Students will no longer be able to submit.')) return;
     
+    setShowCloseModal(false);
+    setClosing(true);
     try {
       await assignmentService.close(id);
       await reloadAssignment();
-      alert('🔒 Assignment closed successfully\n\nStudents will no longer be able to submit this assignment.');
+      // Success - assignment will be updated in the UI
     } catch (err: any) {
       alert(err?.response?.data?.error || 'Failed to close assignment');
+    } finally {
+      setClosing(false);
     }
+  };
+
+  const handleCloseCancel = () => {
+    setShowCloseModal(false);
   };
 
   if (loading) {
@@ -176,7 +215,68 @@ const AssignmentBuilderPage: React.FC = () => {
   const questionCount = assignment.questions?.length || 0;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <>
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+        confirmColor={confirmModal.confirmColor || 'emerald'}
+        icon={confirmModal.icon}
+      />
+
+      {/* Close Assignment Confirmation Modal */}
+      {showCloseModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            onClick={handleCloseCancel}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
+                  <span className="text-2xl">🔒</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Close Assignment?
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    This action cannot be undone
+                  </p>
+                </div>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-6">
+                Are you sure you want to close this assignment? Students will no longer be able to submit their work once it's closed.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCloseConfirm}
+                  disabled={closing}
+                  className="flex-1 px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors font-medium"
+                >
+                  {closing ? 'Closing...' : 'Yes, Close Assignment'}
+                </button>
+                <button
+                  onClick={handleCloseCancel}
+                  disabled={closing}
+                  className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -230,10 +330,11 @@ const AssignmentBuilderPage: React.FC = () => {
             )}
             {isPublished && !isClosed && (
               <button
-                onClick={handleClose}
-                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                onClick={handleCloseClick}
+                disabled={closing}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors"
               >
-                🔒 Close Assignment
+                {closing ? 'Closing...' : '🔒 Close Assignment'}
               </button>
             )}
           </div>
@@ -618,6 +719,7 @@ const AssignmentBuilderPage: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

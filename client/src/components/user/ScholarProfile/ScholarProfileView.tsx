@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getScholars, enrollScholar, getMyEnrollments, startDirectChat } from '../../../services/scholarService';
 import { meetingService } from '../../../services/meetingService';
+import MeetingRequestModal from '../../shared/MeetingRequestModal';
 import { 
   UserIcon,
   AcademicCapIcon,
@@ -41,6 +42,7 @@ const ScholarProfileView = () => {
   const [loading, setLoading] = useState(true);
   const [enrolled, setEnrolled] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -119,16 +121,32 @@ const ScholarProfileView = () => {
     }
   };
 
-  const handleScheduleMeeting = async () => {
+  const handleScheduleMeeting = () => {
+    if (!scholar) return;
+    setShowMeetingModal(true);
+  };
+
+  const handleMeetingSubmit = async (data: { reason: string; preferredDate?: string; preferredTime?: string; notes?: string }) => {
     if (!scholar) return;
     
     try {
-      const reason = prompt('Reason for meeting (optional):') || '';
-      await meetingService.requestMeeting(scholar.user._id, reason.trim() || undefined);
+      // Combine reason and notes if both exist
+      const reasonText = [data.reason, data.notes].filter(Boolean).join(' | ') || undefined;
+      await meetingService.requestMeeting(scholar.user._id, reasonText);
       alert('Meeting request sent successfully!');
+      // Navigate to chat after successful request
+      try {
+        const res = await startDirectChat(scholar._id);
+        const sessionId = res?.studentSessionId;
+        if (sessionId) {
+          navigate(`/chat/${sessionId}`);
+        }
+      } catch (error) {
+        console.error('Failed to navigate to chat:', error);
+      }
     } catch (error) {
       console.error('Failed to request meeting:', error);
-      alert('Failed to request meeting. Please try again.');
+      throw error; // Re-throw to let modal handle error state
     }
   };
 
@@ -162,7 +180,14 @@ const ScholarProfileView = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20">
+    <>
+      <MeetingRequestModal
+        isOpen={showMeetingModal}
+        scholarName={scholar?.user?.name}
+        onClose={() => setShowMeetingModal(false)}
+        onSubmit={handleMeetingSubmit}
+      />
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20">
       <div className="px-6 py-8 max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -336,6 +361,7 @@ const ScholarProfileView = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

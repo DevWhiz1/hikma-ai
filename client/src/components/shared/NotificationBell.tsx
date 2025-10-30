@@ -11,6 +11,7 @@ const NotificationBell: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
   const navigate = useNavigate();
 
   // Initialize socket.io for real-time notifications
@@ -53,9 +54,19 @@ const NotificationBell: React.FC = () => {
     fetchNotifications();
     fetchUnreadCount();
 
-    // Request browser notification permission
-    if (typeof window !== 'undefined' && 'Notification' in window && window.Notification.permission === 'default') {
-      window.Notification.requestPermission();
+    // Check if we need to show permission modal (but don't auto-request)
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const permission = window.Notification.permission;
+      const hasAskedBefore = localStorage.getItem('notification-permission-asked');
+      
+      // Show modal if permission is default and we haven't asked before
+      if (permission === 'default' && !hasAskedBefore) {
+        // Show modal after a short delay to avoid showing immediately on page load
+        const timer = setTimeout(() => {
+          setShowPermissionModal(true);
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
     }
   }, []);
 
@@ -110,7 +121,12 @@ const NotificationBell: React.FC = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true, readAt: new Date().toISOString() })));
+      // Optimistically mark all as read and ensure no unread remain visible
+      setNotifications(prev =>
+        prev
+          .map(n => ({ ...n, read: true, readAt: new Date().toISOString() }))
+          .filter(n => n.read)
+      );
       setUnreadCount(0);
     } catch (err) {
       console.error('Failed to mark all as read:', err);
@@ -159,22 +175,94 @@ const NotificationBell: React.FC = () => {
     return notifDate.toLocaleDateString();
   };
 
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setShowDropdown(!showDropdown)}
-        className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        aria-label="Notifications"
-      >
-        <BellIcon className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-      </button>
+  const handleRequestPermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      return;
+    }
 
-      {showDropdown && (
+    try {
+      const permission = await window.Notification.requestPermission();
+      localStorage.setItem('notification-permission-asked', 'true');
+      setShowPermissionModal(false);
+      
+      if (permission === 'granted') {
+        // Optional: Show a success message or notification
+        console.log('Notification permission granted');
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+    }
+  };
+
+  const handleDeclinePermission = () => {
+    localStorage.setItem('notification-permission-asked', 'true');
+    setShowPermissionModal(false);
+  };
+
+  return (
+    <>
+      {/* Custom Notification Permission Modal */}
+      {showPermissionModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            onClick={handleDeclinePermission}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
+                  <BellIcon className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Enable Notifications
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Stay updated with important updates
+                  </p>
+                </div>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 mb-6">
+                Allow Hikmah AI to send you browser notifications so you never miss important messages, assignments, or meeting updates.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleRequestPermission}
+                  className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+                >
+                  Allow Notifications
+                </button>
+                <button
+                  onClick={handleDeclinePermission}
+                  className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
+                >
+                  Not Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="relative">
+        <button
+          onClick={() => setShowDropdown(!showDropdown)}
+          className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          aria-label="Notifications"
+        >
+          <BellIcon className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
+
+        {showDropdown && (
         <>
           {/* Backdrop */}
           <div
@@ -263,7 +351,8 @@ const NotificationBell: React.FC = () => {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

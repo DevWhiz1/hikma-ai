@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { meetingService } from '../../../services/meetingService';
 import { useAuth } from '../../../hooks/useAuth';
+import MeetingRequestModal from '../../shared/MeetingRequestModal';
 
 interface Message {
   _id: string;
@@ -50,6 +51,8 @@ const MeetingChat: React.FC<MeetingChatProps> = ({ chatId, onClose }) => {
   const [showMeetingLinkWarning, setShowMeetingLinkWarning] = useState(false);
   const [showContactWarning, setShowContactWarning] = useState(false);
   const [showLinkWarning, setShowLinkWarning] = useState(false);
+  const [showMeetingRequestModal, setShowMeetingRequestModal] = useState(false);
+  const [meetingRequestScholarId, setMeetingRequestScholarId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
@@ -229,15 +232,24 @@ const MeetingChat: React.FC<MeetingChatProps> = ({ chatId, onClose }) => {
     }
   };
 
-  const handleRequestMeeting = async () => {
+  const handleRequestMeeting = () => {
     if (!chat) return;
+    const scholarId = user?.role === 'scholar' ? chat.studentId._id : chat.scholarId._id;
+    setMeetingRequestScholarId(scholarId);
+    setShowMeetingRequestModal(true);
+  };
 
+  const handleMeetingRequestSubmit = async (data: { reason: string; preferredDate?: string; preferredTime?: string; notes?: string }) => {
+    if (!meetingRequestScholarId) return;
+    
     try {
-      const scholarId = user?.role === 'scholar' ? chat.studentId._id : chat.scholarId._id;
-      await meetingService.requestMeeting(scholarId);
+      // Combine reason and notes if both exist
+      const reasonText = [data.reason, data.notes].filter(Boolean).join(' | ') || undefined;
+      await meetingService.requestMeeting(meetingRequestScholarId, reasonText);
       loadMessages();
     } catch (error) {
       console.error('Error requesting meeting:', error);
+      throw error;
     }
   };
 
@@ -257,11 +269,77 @@ const MeetingChat: React.FC<MeetingChatProps> = ({ chatId, onClose }) => {
   };
 
   const formatMessage = (message: Message) => {
-    const isBot = typeof message.text === 'string' && message.text.startsWith('Hikma:');
+    const isBot = typeof message.text === 'string' && (message.text.startsWith('Hikma:') || message.text.startsWith('HikmaBot:'));
     const isOwnMessage = !isBot && (message.sender._id === user?.id);
     const isMeetingRequest = message.type === 'meeting_request';
     const isMeetingScheduled = message.type === 'meeting_scheduled';
     const isMeetingLink = message.type === 'meeting_link';
+
+    // Extract meeting link from metadata or message text
+    const getMeetingLink = () => {
+      // First check metadata
+      if (message.metadata?.meetingLink) {
+        return message.metadata.meetingLink;
+      }
+      if (message.metadata?.meetLink) {
+        return message.metadata.meetLink;
+      }
+      // Extract Jitsi/Hikma meet links from text
+      if (message.text) {
+        const urlRegex = /https?:\/\/[^\s<>"']+/g;
+        const matches = message.text.match(urlRegex);
+        if (matches) {
+          const meetingLink = matches.find(url => 
+            url.includes('hikmameet.live') || 
+            url.includes('jitsi') || 
+            url.includes('/meet') ||
+            (url.includes('https://') && url.includes('meet'))
+          );
+          if (meetingLink) {
+            // Clean up the URL (remove trailing punctuation)
+            return meetingLink.replace(/[.,;:!?]+$/, '');
+          }
+        }
+      }
+      return null;
+    };
+
+    const meetingLink = getMeetingLink();
+
+    // Get final link - prioritize metadata, then extracted from text
+    const finalLink = message.metadata?.meetingLink || message.metadata?.meetLink || meetingLink;
+
+    // For meeting_link type messages, always show button and remove link from text
+    // For other messages, only show button if link is detected
+    const shouldShowButton = isMeetingLink || !!finalLink;
+
+    // Remove meeting link URL from text - clean up the message
+    let displayText = message.text || '';
+    if (finalLink) {
+      // Remove the full URL (handle both with and without trailing characters)
+      const urlPattern = finalLink.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      displayText = displayText.replace(new RegExp(urlPattern + '[.,;:!?\\s]*', 'gi'), '');
+      
+      // Remove common phrases that come before/after links
+      displayText = displayText
+        .replace(/Join here:\s*/i, '')
+        .replace(/Meeting link:\s*/i, '')
+        .replace(/meeting link:\s*/i, '')
+        .replace(/\.\s*Meeting link/i, '.')
+        .replace(/meeting is scheduled!\s*/i, 'meeting is scheduled!')
+        .replace(/Your meeting has started!\s*/i, 'Your meeting has started!')
+        .replace(/is ready!\s*/i, 'is ready!')
+        .replace(/\s{2,}/g, ' ') // Replace multiple spaces with single space
+        .trim();
+    }
+
+    // For meeting_link type messages, always prioritize clean message
+    if (isMeetingLink && finalLink) {
+      // Only show text if it's meaningful after cleaning
+      if (!displayText || displayText.length < 10) {
+        displayText = 'Your meeting link is ready!';
+      }
+    }
 
     return (
       <div
@@ -269,7 +347,7 @@ const MeetingChat: React.FC<MeetingChatProps> = ({ chatId, onClose }) => {
         className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4`}
       >
         <div
-          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+          className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
             isBot
               ? 'bg-gray-100 text-gray-900 border border-gray-300'
               : isOwnMessage
@@ -280,23 +358,28 @@ const MeetingChat: React.FC<MeetingChatProps> = ({ chatId, onClose }) => {
           <div className="text-sm font-medium mb-1">
             {isBot ? 'Hikma' : message.sender.name}
           </div>
-          <div className="text-sm">
-            {message.text}
-          </div>
-          {isMeetingLink && message.metadata?.meetingLink && (
-            <div className="mt-2">
+          {displayText && displayText.trim() && (
+            <div className="text-sm mb-2">
+              {displayText}
+            </div>
+          )}
+          {shouldShowButton && finalLink && (
+            <div className="mt-3">
               <a
-                href={message.metadata.meetingLink}
+                href={finalLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+                className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95 w-full"
               >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
                 Join Meeting
               </a>
             </div>
           )}
-          <div className="text-xs opacity-70 mt-1">
-            {new Date(message.timestamp).toLocaleString()}
+          <div className="text-xs opacity-70 mt-2">
+            {new Date(message.timestamp || message.createdAt || Date.now()).toLocaleString()}
           </div>
         </div>
       </div>
@@ -420,8 +503,20 @@ const MeetingChat: React.FC<MeetingChatProps> = ({ chatId, onClose }) => {
 
   const otherUser = user?.role === 'scholar' ? chat.studentId : chat.scholarId;
 
+  const scholarName = chat ? (user?.role === 'scholar' ? chat.studentId.name : chat.scholarId.name) : undefined;
+
   return (
-    <div className="flex flex-col h-full">
+    <>
+      <MeetingRequestModal
+        isOpen={showMeetingRequestModal}
+        scholarName={scholarName}
+        onClose={() => {
+          setShowMeetingRequestModal(false);
+          setMeetingRequestScholarId(null);
+        }}
+        onSubmit={handleMeetingRequestSubmit}
+      />
+      <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div>
@@ -538,6 +633,7 @@ const MeetingChat: React.FC<MeetingChatProps> = ({ chatId, onClose }) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

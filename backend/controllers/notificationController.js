@@ -1,4 +1,5 @@
 const Notification = require('../models/Notification');
+const mongoose = require('mongoose');
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const Enrollment = require('../models/Enrollment');
@@ -11,7 +12,8 @@ async function getMyNotifications(req, res) {
   try {
     const { page = 1, limit = 50, unreadOnly = false } = req.query;
 
-    const query = { userId: req.user._id };
+    const userId = new mongoose.Types.ObjectId(String(req.user._id));
+    const query = { userId };
     if (unreadOnly === 'true') {
       query.read = false;
     }
@@ -23,7 +25,11 @@ async function getMyNotifications(req, res) {
       .lean();
 
     const total = await Notification.countDocuments(query);
-    const unreadCount = await Notification.countDocuments({ userId: req.user._id, read: false });
+    // Treat missing read field as unread to be safe
+    const unreadCount = await Notification.countDocuments({
+      userId,
+      read: { $ne: true }
+    });
 
     res.json({
       ok: true,
@@ -44,10 +50,11 @@ async function getMyNotifications(req, res) {
 async function markAsRead(req, res) {
   try {
     const { id } = req.params;
+    const userId = new mongoose.Types.ObjectId(String(req.user._id));
 
     const notification = await Notification.findOne({
       _id: id,
-      userId: req.user._id
+      userId
     });
 
     if (!notification) {
@@ -67,14 +74,48 @@ async function markAsRead(req, res) {
 // Mark all notifications as read
 async function markAllAsRead(req, res) {
   try {
-    await Notification.updateMany(
-      { userId: req.user._id, read: false },
-      { $set: { read: true, readAt: new Date() } }
+    // Ensure req.user exists
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ ok: false, error: 'User not authenticated' });
+    }
+
+    // Safely convert to ObjectId - handle both string and ObjectId inputs
+    let userId;
+    try {
+      if (req.user._id instanceof mongoose.Types.ObjectId) {
+        userId = req.user._id;
+      } else {
+        userId = new mongoose.Types.ObjectId(String(req.user._id));
+      }
+    } catch (castError) {
+      console.error('Error casting userId to ObjectId:', castError);
+      console.error('req.user._id:', req.user._id, 'type:', typeof req.user._id);
+      return res.status(400).json({ ok: false, error: 'Invalid user ID format' });
+    }
+
+    // Use updateMany with proper query
+    const result = await Notification.updateMany(
+      { 
+        userId: userId,
+        $or: [
+          { read: { $ne: true } },
+          { read: { $exists: false } }
+        ]
+      },
+      { 
+        $set: { 
+          read: true, 
+          readAt: new Date() 
+        } 
+      }
     );
 
-    res.json({ ok: true, message: 'All notifications marked as read' });
+    res.json({ ok: true, message: 'All notifications marked as read', modified: result.modifiedCount || 0 });
   } catch (error) {
-    res.status(500).json({ ok: false, error: error.message });
+    console.error('markAllAsRead error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('req.user:', req.user ? { _id: req.user._id, id: req.user.id } : 'null');
+    res.status(500).json({ ok: false, error: error.message || 'Internal server error' });
   }
 }
 
@@ -82,10 +123,11 @@ async function markAllAsRead(req, res) {
 async function deleteNotification(req, res) {
   try {
     const { id } = req.params;
+    const userId = new mongoose.Types.ObjectId(String(req.user._id));
 
     const result = await Notification.deleteOne({
       _id: id,
-      userId: req.user._id
+      userId
     });
 
     if (result.deletedCount === 0) {
@@ -101,9 +143,11 @@ async function deleteNotification(req, res) {
 // Get unread count
 async function getUnreadCount(req, res) {
   try {
+    // Count any document not explicitly marked as read=true as unread
+    const userId = new mongoose.Types.ObjectId(String(req.user._id));
     const count = await Notification.countDocuments({
-      userId: req.user._id,
-      read: false
+      userId,
+      read: { $ne: true }
     });
 
     res.json({ ok: true, unreadCount: count });

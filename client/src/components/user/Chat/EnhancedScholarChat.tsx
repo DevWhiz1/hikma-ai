@@ -536,27 +536,81 @@ const EnhancedScholarChat = () => {
               )}
             </div>
           ) : (
-            messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+            messages.map((msg, index) => {
+              // Extract meeting link from message content
+              const extractMeetingLink = (content: string): string | null => {
+                const urlRegex = /https?:\/\/[^\s<>"']+/g;
+                const matches = content.match(urlRegex);
+                if (matches) {
+                  const meetingLink = matches.find(url => 
+                    url.includes('hikmameet.live') || 
+                    url.includes('jitsi') || 
+                    url.includes('/meet') ||
+                    (url.includes('https://') && url.includes('meet'))
+                  );
+                  if (meetingLink) {
+                    return meetingLink.replace(/[.,;:!?]+$/, '');
+                  }
+                }
+                return null;
+              };
+
+              const meetingLink = extractMeetingLink(msg.content);
+              
+              // Remove meeting link from displayed text
+              let displayText = msg.content;
+              if (meetingLink) {
+                const urlPattern = meetingLink.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                displayText = displayText
+                  .replace(new RegExp(urlPattern + '[.,;:!?\\s]*', 'gi'), '')
+                  .replace(/Join here:\s*/i, '')
+                  .replace(/Meeting link:\s*/i, '')
+                  .replace(/meeting link:\s*/i, '')
+                  .replace(/Your meeting has started!\s*/i, 'Your meeting has started!')
+                  .replace(/Your meeting is scheduled!\s*/i, 'Your meeting is scheduled!')
+                  .replace(/\s{2,}/g, ' ')
+                  .trim();
+              }
+
+              return (
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    msg.role === 'user'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  }`}
+                  key={index}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p className="text-sm">{msg.content}</p>
-                  {msg.timestamp && (
-                    <div className="text-xs opacity-70 mt-1">
-                      {new Date(msg.timestamp).toLocaleTimeString()}
-                    </div>
-                  )}
+                  <div
+                    className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
+                      msg.role === 'user'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    {displayText && displayText.trim() && (
+                      <p className="text-sm mb-2">{displayText}</p>
+                    )}
+                    {meetingLink && (
+                      <div className="mt-2">
+                        <a
+                          href={meetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 active:scale-95 w-full"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Join Meeting
+                        </a>
+                      </div>
+                    )}
+                    {msg.timestamp && (
+                      <div className="text-xs opacity-70 mt-2">
+                        {new Date(msg.timestamp).toLocaleTimeString()}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           {(otherTyping || isLoading) && (
             <div className="flex justify-start">

@@ -11,11 +11,11 @@ router.get('/', auth, ctrl.getMyNotifications);
 // Get unread count
 router.get('/unread-count', auth, ctrl.getUnreadCount);
 
+// Mark all notifications as read (must be before param route to avoid capturing 'all' as :id)
+router.put('/all/read', auth, ctrl.markAllAsRead);
+
 // Mark single notification as read
 router.put('/:id/read', auth, ctrl.markAsRead);
-
-// Mark all notifications as read
-router.put('/all/read', auth, ctrl.markAllAsRead);
 
 // Delete notification
 router.delete('/:id', auth, ctrl.deleteNotification);
