@@ -126,6 +126,24 @@ const sendAIMessage = async (req, res) => {
     session.lastActivity = new Date();
     await session.save();
 
+    // Emit realtime event to this chat room and update user session list
+    try {
+      const { emitNewMessage, emitSessionUpdate } = require('../utils/socketEmitter');
+      emitNewMessage(session._id, {
+        text: cleanMessage,
+        senderId: String(userId),
+        timestamp: new Date()
+      });
+      emitSessionUpdate(req.user._id, session._id, {
+        _id: session._id,
+        title: session.title,
+        lastActivity: session.lastActivity,
+        messages: session.messages
+      });
+    } catch (e) {
+      console.warn('Socket emit failed (scholar message):', e?.message || e);
+    }
+
     res.json({
       success: true,
       session: {
@@ -211,6 +229,14 @@ const sendScholarMessage = async (req, res) => {
             },
             $set: { lastActivity: new Date() }
           });
+          try {
+            const { emitNewMessage } = require('../utils/socketEmitter');
+            emitNewMessage(counterpartId, {
+              text: cleanMessage,
+              senderId: String(userId),
+              timestamp: new Date()
+            });
+          } catch {}
         }
       }
     } catch (mirrorError) {
@@ -274,12 +300,12 @@ const startDirectChat = async (req, res) => {
     // Create or get existing sessions
     let studentSession, scholarSession;
 
+    // Ensure sessions exist; recreate if missing or inactive
     if (enrollment.studentSession && enrollment.scholarSession) {
-      // Use existing sessions
       studentSession = await ChatSession.findById(enrollment.studentSession);
       scholarSession = await ChatSession.findById(enrollment.scholarSession);
-    } else {
-      // Create new sessions
+    }
+    if (!studentSession || studentSession.isActive === false) {
       studentSession = await ChatSession.create({
         user: userId,
         title: `Chat with ${scholar.user.name} (Scholar)`,
@@ -287,7 +313,9 @@ const startDirectChat = async (req, res) => {
         kind: 'direct',
         isActive: true
       });
-
+      enrollment.studentSession = studentSession._id;
+    }
+    if (!scholarSession || scholarSession.isActive === false) {
       scholarSession = await ChatSession.create({
         user: scholar.user._id,
         title: `Chat with ${req.user.name} (Student)`,
@@ -295,12 +323,9 @@ const startDirectChat = async (req, res) => {
         kind: 'direct',
         isActive: true
       });
-
-      // Update enrollment with session IDs
-      enrollment.studentSession = studentSession._id;
       enrollment.scholarSession = scholarSession._id;
-      await enrollment.save();
     }
+    await enrollment.save();
 
     // Update last activity
     studentSession.lastActivity = new Date();
