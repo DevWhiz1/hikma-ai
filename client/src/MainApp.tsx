@@ -27,16 +27,9 @@ import BroadcastManagement from './components/scholar/BroadcastManagement';
 import { authService } from './services/authService';
 
 // Enhanced Feature Pages
-import SmartSchedulerPage from './pages/scholar/SmartSchedulerPage';
-import AISmartSchedulerPage from './pages/scholar/AISmartSchedulerPage';
+import UnifiedSchedulerPage from './pages/scholar/UnifiedSchedulerPage';
 import BroadcastManagementPage from './pages/scholar/BroadcastManagementPage';
-import SchedulerAnalyticsPage from './pages/scholar/SchedulerAnalyticsPage';
-import AIAnalyticsPage from './pages/scholar/AIAnalyticsPage';
-import RecurringMeetingsPage from './pages/scholar/RecurringMeetingsPage';
-import SmartNotificationsPage from './pages/scholar/SmartNotificationsPage';
-import ConflictResolverPage from './pages/scholar/ConflictResolverPage';
-import PersonalizationPage from './pages/scholar/PersonalizationPage';
-import AIAgentDashboardPage from './pages/scholar/AIAgentDashboardPage';
+import SmartNotifyManagerPage from './pages/scholar/SmartNotifyManagerPage';
 import AvailableMeetingsPage from './pages/user/AvailableMeetingsPage';
 
 interface MainAppProps {
@@ -152,16 +145,12 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
                   <Route path="/scholars/dashboard" element={<ScholarDashboard />} />
                   <Route path="/scholar/feedback" element={<ScholarFeedbackManagement />} />
                   {/* Enhanced Feature Pages */}
-                  <Route path="/scholar/smart-scheduler" element={<SmartSchedulerPage />} />
-                  <Route path="/scholar/ai-smart-scheduler" element={<AISmartSchedulerPage />} />
+                  <Route path="/scholar/scheduler" element={<UnifiedSchedulerPage />} />
+                  <Route path="/scholar/smart-scheduler" element={<UnifiedSchedulerPage />} />
+                  <Route path="/scholar/ai-smart-scheduler" element={<UnifiedSchedulerPage />} />
+                  <Route path="/scholar/ai-agent" element={<UnifiedSchedulerPage />} />
                   <Route path="/scholar/broadcast-management" element={<BroadcastManagementPage />} />
-                  <Route path="/scholar/scheduler-analytics" element={<SchedulerAnalyticsPage />} />
-                  <Route path="/scholar/ai-analytics" element={<AIAnalyticsPage />} />
-                  <Route path="/scholar/recurring-meetings" element={<RecurringMeetingsPage />} />
-                  <Route path="/scholar/smart-notifications" element={<SmartNotificationsPage />} />
-                  <Route path="/scholar/conflict-resolver" element={<ConflictResolverPage />} />
-                  <Route path="/scholar/personalization" element={<PersonalizationPage />} />
-                  <Route path="/scholar/ai-agent" element={<AIAgentDashboardPage />} />
+                  <Route path="/scholar/smart-notify" element={<SmartNotifyManagerPage />} />
                   <Route path="/available-meetings" element={<AvailableMeetingsPage />} />
                   <Route path="/qibla" element={<QiblaFinder />} />
                   <Route path="/prayer-times" element={<PrayerTimesPage />} />

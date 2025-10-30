@@ -24,11 +24,12 @@ export const meetingService = {
   },
 
   // Schedule a meeting (scholar only)
-  scheduleMeeting: async (chatId: string, scheduledTime: string) => {
-    const response = await axios.post(`${API_URL}/meetings/schedule-meeting`, {
-      chatId,
-      scheduledTime
-    }, getAuthHeaders());
+  scheduleMeeting: async (chatIdOrStudentId: string, scheduledTime: string, isStudentId = false) => {
+    const payload = isStudentId 
+      ? { studentId: chatIdOrStudentId, scheduledTime }
+      : { chatId: chatIdOrStudentId, scheduledTime };
+      
+    const response = await axios.post(`${API_URL}/meetings/schedule-meeting`, payload, getAuthHeaders());
     return response.data;
   },
 
