@@ -31,9 +31,11 @@ html.light .bg-gray-100 { background-color: var(--color-surface) !important; }
 html.light .navbar,
 html.light .topbar,
 html.light .header,
-html.light [class*="top-"],
-html.light [class*="sticky"],
-html.light [class*="fixed"] {
+html.light .top-0,
+html.light .sticky,
+html.light .fixed,
+html.light [data-role="navbar"],
+html.light [data-navbar="true"] {
   background-color: #FFFFFF !important;
 }
 html.light .text-gray-900 { color: var(--color-text) !important; }
@@ -127,6 +129,28 @@ html.light .bg-gray-100 .text-black { color: #000000 !important; }
 html.light button[class*="bg-"]:not([class*="bg-white"]):not([class*="bg-gray-100"]):not([class*="bg-transparent"]) {
   color: #ffffff !important;
 }
+/* Ensure icons inside colored buttons stay white in light mode */
+html.light button[class*="bg-"]:not([class*="bg-white"]):not([class*="bg-gray-100"]):not([class*="bg-transparent"]) svg {
+  color: #ffffff !important;
+}
+
+/* Exception: Filters button should be emerald, not forced white */
+html.light .filter-toggle-btn,
+html.light .filter-toggle-btn *,
+html.light .filter-toggle-btn svg {
+  color: #10B981 !important;
+}
+/* Ensure Filters text stays emerald even against button text overrides */
+html.light .filter-toggle-btn .filter-toggle-label {
+  color: #10B981 !important;
+}
+
+/* Ensure floating feedback icon stays white regardless */
+html.light .feedback-floating button,
+html.light .feedback-floating button *,
+html.light .feedback-floating svg {
+  color: #ffffff !important;
+}
 html.light .bg-blue-600,
 html.light .bg-emerald-600,
 html.light .bg-purple-600,
@@ -155,6 +179,14 @@ html.light [class*="sticky"] *,
 html.light [class*="top-0"] *,
 html.light .flex.items-center.justify-between * {
   color: #1F2937 !important;
+}
+
+/* Exception: keep Payment Tracking refresh button/icon white in light mode */
+html.light .payment-refresh-btn,
+html.light .payment-refresh-btn *,
+html.light .flex.items-center.justify-between .payment-refresh-btn,
+html.light .flex.items-center.justify-between .payment-refresh-btn * {
+  color: #ffffff !important;
 }
 
 /* Make Hikmah AI logo green and constant in both light and dark modes */
@@ -414,35 +446,10 @@ html.light [class*="Icon"].text-purple-400 {
 }
 
 /* Make Explore Our Features icons white and constant */
-html.light .bg-gradient-to-r svg,
-html.light .bg-gradient-to-r [class*="Icon"],
-html.light .bg-gradient-to-r .h-6,
-html.light .bg-gradient-to-r .w-6,
-html.light .bg-gradient-to-r .h-5,
-html.light .bg-gradient-to-r .w-5,
-html.light [class*="gradient"] svg,
-html.light [class*="gradient"] [class*="Icon"],
-html.light [class*="gradient"] .h-6,
-html.light [class*="gradient"] .w-6,
-html.light [class*="gradient"] .h-5,
-html.light [class*="gradient"] .w-5 {
-  color: #ffffff !important;
-}
+/* Scoped only to CTA hero gradients; avoid forcing white on all gradients */
+/* If you need white icons inside a specific gradient, add a wrapper class and target it explicitly. */
 
-html.dark .bg-gradient-to-r svg,
-html.dark .bg-gradient-to-r [class*="Icon"],
-html.dark .bg-gradient-to-r .h-6,
-html.dark .bg-gradient-to-r .w-6,
-html.dark .bg-gradient-to-r .h-5,
-html.dark .bg-gradient-to-r .w-5,
-html.dark [class*="gradient"] svg,
-html.dark [class*="gradient"] [class*="Icon"],
-html.dark [class*="gradient"] .h-6,
-html.dark [class*="gradient"] .w-6,
-html.dark [class*="gradient"] .h-5,
-html.dark [class*="gradient"] .w-5 {
-  color: #ffffff !important;
-}
+/* Avoid forcing white icons in dark mode globally; scope where needed */
 
 /* Sidebar hover and active states - Light Mode */
 html.light .sidebar a:hover,
