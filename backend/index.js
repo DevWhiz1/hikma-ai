@@ -328,6 +328,18 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Typing indicators
+  socket.on('typing', (data) => {
+    try {
+      const { chatId, userId, isTyping } = data || {};
+      if (!chatId) return;
+      // Broadcast to others in the same chat room
+      socket.to(`chat-${chatId}`).emit('typing', { chatId, userId, isTyping });
+    } catch (error) {
+      console.error('Socket typing error:', error);
+    }
+  });
+
   // Handle meeting request
   socket.on('meeting-request', (data) => {
     const { chatId, studentId, scholarId } = data;
@@ -389,11 +401,11 @@ cron.schedule('* * * * *', async () => {
       meeting.status = 'link_sent';
       await meeting.save();
 
-      // Create meeting link message (system: Hikma)
+      // Create meeting link message (system: HikmaBot)
       const message = new Message({
         sender: meeting.scholarId,
         chatId: meeting.chatId,
-        text: `Hikma: Your meeting has started! Join here: ${link}`,
+        text: `HikmaBot: Your meeting has started! Join here: ${link}`,
         type: 'meeting_link',
         metadata: { meetingLink: link, roomId }
       });
@@ -422,7 +434,7 @@ cron.schedule('* * * * *', async () => {
                     const scholarProfile = await Scholar.findOne({ user: meeting.scholarId }).select('_id user');
                     if (scholarProfile) {
                       const enrollment = await Enrollment.findOne({ student: meeting.studentId, scholar: scholarProfile._id }).lean();
-                      const text = `Hikma: Your meeting has started! Join here: ${link}`;
+                      const text = `HikmaBot: Your meeting has started! Join here: ${link}`;
                       if (enrollment?.studentSession) {
                         await ChatSession.findByIdAndUpdate(enrollment.studentSession, { $push: { messages: { role: 'assistant', content: text } }, $set: { lastActivity: new Date() } });
                       }

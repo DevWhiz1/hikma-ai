@@ -289,7 +289,7 @@ async function startDirectChat(req, res) {
       // Notify scholar that the student started a chat
       try {
         await ChatSession.findByIdAndUpdate(enrollment.scholarSession, {
-          $push: { messages: { role: 'assistant', content: 'Student started a new chat with you.' } },
+          $push: { messages: { role: 'assistant', content: 'HikmaBot: Student started a new chat with you.' } },
           $set: { lastActivity: new Date() }
         });
       } catch {}
@@ -360,28 +360,36 @@ async function startDirectChatWithStudent(req, res) {
 
     const scholarDoc = await Scholar.findOne({ user: req.user._id }).populate('user', 'name');
     if (!scholarDoc) return res.status(404).json({ message: 'Scholar profile not found' });
+    const studentUser = await require('../models/User').findById(studentId).select('name');
 
     let enrollment = await Enrollment.findOne({ student: studentId, scholar: scholarDoc._id });
     if (!enrollment) {
-      const studentSession = await ChatSession.create({ user: studentId, title: `Chat with ${scholarDoc.user?.name || 'Scholar'} (Scholar)`, messages: [], kind: 'direct' });
-      const scholarSession = await ChatSession.create({ user: req.user._id, title: `Chat with (Student)`, messages: [], kind: 'direct' });
+      const studentSession = await ChatSession.create({ user: studentId, title: `Chat with ${scholarDoc.user?.name || 'Scholar'} (Scholar)`, messages: [], kind: 'direct', isActive: true });
+      const scholarSession = await ChatSession.create({ user: req.user._id, title: `Chat with ${studentUser?.name || 'Student'} (Student)`, messages: [], kind: 'direct', isActive: true });
       enrollment = await Enrollment.create({ student: studentId, scholar: scholarDoc._id, studentSession: studentSession._id, scholarSession: scholarSession._id });
     } else {
-      if (!enrollment.studentSession || !enrollment.scholarSession) {
-        // Backfill any missing sessions
-        if (!enrollment.studentSession) {
-          const studentSession = await ChatSession.create({ user: studentId, title: `Chat with ${scholarDoc.user?.name || 'Scholar'} (Scholar)`, messages: [], kind: 'direct' });
-          enrollment.studentSession = studentSession._id;
-        }
-        if (!enrollment.scholarSession) {
-          const scholarSession = await ChatSession.create({ user: req.user._id, title: `Chat with (Student)`, messages: [], kind: 'direct' });
-          enrollment.scholarSession = scholarSession._id;
-        }
-        await enrollment.save();
-      }
+    // Ensure referenced sessions actually exist and are active; recreate if missing/inactive
+    const existingStudentSession = enrollment.studentSession ? await ChatSession.findById(enrollment.studentSession) : null;
+    const existingScholarSession = enrollment.scholarSession ? await ChatSession.findById(enrollment.scholarSession) : null;
+
+    if (!existingStudentSession || existingStudentSession.isActive === false) {
+      const studentSession = await ChatSession.create({ user: studentId, title: `Chat with ${scholarDoc.user?.name || 'Scholar'} (Scholar)`, messages: [], kind: 'direct', isActive: true });
+      enrollment.studentSession = studentSession._id;
+    }
+    if (!existingScholarSession || existingScholarSession.isActive === false) {
+      const scholarSession = await ChatSession.create({ user: req.user._id, title: `Chat with ${studentUser?.name || 'Student'} (Student)`, messages: [], kind: 'direct', isActive: true });
+      enrollment.scholarSession = scholarSession._id;
+    }
+    await enrollment.save();
     }
 
-    return res.json({ success: true, scholarSessionId: enrollment.scholarSession });
+    // Touch lastActivity on both sides
+    try {
+      if (enrollment.studentSession) await ChatSession.findByIdAndUpdate(enrollment.studentSession, { $set: { lastActivity: new Date() } });
+      if (enrollment.scholarSession) await ChatSession.findByIdAndUpdate(enrollment.scholarSession, { $set: { lastActivity: new Date() } });
+    } catch {}
+
+    return res.json({ success: true, scholarSessionId: enrollment.scholarSession, studentSessionId: enrollment.studentSession });
   } catch (e) {
     console.error('startDirectChatWithStudent error:', e);
     res.status(500).json({ message: e.message });

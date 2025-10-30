@@ -75,7 +75,7 @@ const requestMeeting = async (req, res) => {
     const message = new Message({
       sender: studentId,
       chatId: chat._id,
-      text: `Hikma: ${req.user.name} requested a meeting.${reason ? ` Reason: ${reason}` : ''}`,
+      text: `HikmaBot: ${req.user.name} requested a meeting.${reason ? ` Reason: ${reason}` : ''}`,
       type: 'meeting_request'
     });
     await message.save();
@@ -175,7 +175,7 @@ const scheduleMeeting = async (req, res) => {
   const message = new Message({
     sender: scholarId,
     chatId: chat._id,
-    text: `Hikma: Meeting scheduled for ${new Date(scheduledTime).toLocaleString()}.`,
+    text: `HikmaBot: Meeting scheduled for ${new Date(scheduledTime).toLocaleString()}.`,
     type: 'meeting_scheduled',
     metadata: { scheduledTime: new Date(scheduledTime) }
   });
@@ -238,7 +238,7 @@ const requestReschedule = async (req, res) => {
     const msg = new Message({
       sender: userId,
       chatId,
-      text: `Hikma: Reschedule requested.${proposedTime ? ` Proposed: ${new Date(proposedTime).toLocaleString()}` : ''}${note ? ` Note: ${note}` : ''}`,
+      text: `HikmaBot: Reschedule requested.${proposedTime ? ` Proposed: ${new Date(proposedTime).toLocaleString()}` : ''}${note ? ` Note: ${note}` : ''}`,
       type: 'text'
     });
     await msg.save();
@@ -300,7 +300,7 @@ const respondReschedule = async (req, res) => {
     if (decision === 'reject') {
       reqItem.status = 'rejected';
       await meeting.save();
-      const msg = new Message({ sender: scholarId, chatId, text: 'Hikma: Reschedule request was rejected.', type: 'text' });
+      const msg = new Message({ sender: scholarId, chatId, text: 'HikmaBot: Reschedule request was rejected.', type: 'text' });
       await msg.save();
       chat.messages.push(msg._id);
       chat.lastActivity = new Date();
@@ -335,7 +335,7 @@ const respondReschedule = async (req, res) => {
     const msg = new Message({
       sender: scholarId,
       chatId,
-      text: `Hikma: Meeting rescheduled to ${new Date(finalTime).toLocaleString()}.`,
+      text: `HikmaBot: Meeting rescheduled to ${new Date(finalTime).toLocaleString()}.`,
       type: 'meeting_scheduled',
       metadata: { scheduledTime: finalTime }
     });
@@ -399,7 +399,7 @@ const cancelMeeting = async (req, res) => {
       }
     } catch {}
 
-    const msg = new Message({ sender: scholarId, chatId, text: 'Hikma: Meeting was cancelled by the scholar.', type: 'text' });
+    const msg = new Message({ sender: scholarId, chatId, text: 'HikmaBot: Meeting was cancelled by the scholar.', type: 'text' });
     await msg.save();
     chat.messages.push(msg._id);
     chat.lastActivity = new Date();
