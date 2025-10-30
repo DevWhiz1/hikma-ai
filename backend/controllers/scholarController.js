@@ -13,12 +13,13 @@ async function applyScholar(req, res) {
       experienceYears,
       qualifications,
       demoVideoUrl,
-      photoUrl
+      photoUrl,
+      hourlyRate
     } = req.body || {};
 
     function isNonEmptyString(v) { return typeof v === 'string' && v.trim().length > 0; }
     function isNonEmptyArray(a) { return Array.isArray(a) && a.filter(s => isNonEmptyString(s)).length > 0; }
-    const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]{11}(&.*)?$/i;
+    const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]{11}([?&].*)?$/i;
 
     if (!isNonEmptyString(bio)
       || !isNonEmptyArray(specializations)
@@ -42,6 +43,7 @@ async function applyScholar(req, res) {
       qualifications: qualifications.trim(),
       demoVideoUrl: String(demoVideoUrl).trim(),
       photoUrl: String(photoUrl).trim(),
+      hourlyRate: typeof hourlyRate === 'number' && !isNaN(hourlyRate) ? hourlyRate : 0,
       approved: false
     });
     res.json({ success: true, scholar });
@@ -89,6 +91,8 @@ async function enrollScholar(req, res) {
           existing.scholarSession = scholarSession._id;
         }
         await existing.save();
+        // Increment scholar's totalStudents when reactivating enrollment
+        try { await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: 1 } }); } catch {}
         return res.json({ success: true, enrollment: existing, studentSessionId: existing.studentSession, scholarSessionId: existing.scholarSession });
       }
       return res.status(400).json({ message: 'Already enrolled' });
@@ -117,6 +121,9 @@ async function enrollScholar(req, res) {
       studentSession: studentSession._id,
       scholarSession: scholarSession._id
     });
+
+    // Increment scholar's totalStudents on first-time enrollment
+    try { await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: 1 } }); } catch {}
 
     // Update user's enrolledScholars list with denormalized name for quick sidebar display
     try {
@@ -201,7 +208,7 @@ async function updateMyScholarProfile(req, res) {
     if (!s) return res.status(404).json({ message: 'Scholar profile not found' });
     if (!s.approved) return res.status(403).json({ message: 'Profile editing allowed after approval only' });
 
-    const allowed = ['bio', 'specializations', 'languages', 'experienceYears', 'qualifications', 'demoVideoUrl', 'photoUrl'];
+    const allowed = ['bio', 'specializations', 'languages', 'experienceYears', 'qualifications', 'demoVideoUrl', 'photoUrl', 'hourlyRate'];
     const update = {};
     for (const k of allowed) {
       if (k in req.body) update[k] = req.body[k];
@@ -211,6 +218,11 @@ async function updateMyScholarProfile(req, res) {
       if (update.demoVideoUrl && !ytRegex.test(String(update.demoVideoUrl))) {
         return res.status(400).json({ message: 'Demo video must be a valid YouTube URL' });
       }
+    }
+
+    if ('hourlyRate' in update) {
+      const n = Number(update.hourlyRate);
+      update.hourlyRate = Number.isFinite(n) && n >= 0 ? n : 0;
     }
 
     const saved = await Scholar.findByIdAndUpdate(s._id, update, { new: true });
