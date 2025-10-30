@@ -1,7 +1,8 @@
 import React from 'react';
-import { Bars3Icon, MoonIcon, SunIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { authService } from '../../services/authService';
 import WebSocketStatus from './WebSocketStatus';
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface TopBarProps {
   toggleSidebar: () => void;
@@ -38,19 +39,7 @@ const TopBar: React.FC<TopBarProps> = ({ toggleSidebar, isDarkMode, toggleDarkMo
             Welcome, {user.name}
           </span>
         )}
-        <button
-          onClick={toggleDarkMode}
-          title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="relative p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-gray-700 focus:outline-none transition"
-        >
-          <span className={`block transform transition-transform duration-500 ${isDarkMode ? 'rotate-180' : 'rotate-0'}`}>
-            {isDarkMode ? (
-              <SunIcon className="h-5 w-5 text-emerald-600" />
-            ) : (
-              <MoonIcon className="h-5 w-5 text-gray-600" />
-            )}
-          </span>
-        </button>
+        <ThemeToggle />
         <button
           onClick={onLogout}
           className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-gray-700 focus:outline-none"

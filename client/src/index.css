@@ -105,7 +105,7 @@ html.light a:hover { color: var(--color-accent); text-decoration: underline; }
 html.light hr, html.light .divider { border-color: var(--color-accent) !important; }
 
 /* Headings and text */
-html.light h1, html.light h2 { color: var(--color-sidebar); }
+html.light h1, html.light h2 { color: #111827 !important; }
 html.light h3, html.light .subheading { color: var(--color-secondary); }
 html.light body, html.light p, html.light li { color: var(--color-text); }
 
@@ -732,4 +732,92 @@ html.light .feedback-menu-item {
 html.light .feedback-menu-item:hover {
   background-color: #d7ffec !important; /* emerald-50 equivalent */
   background: #d7ffec !important;
+}
+
+
+
+@layer base {
+  :root {
+    --background: 156 33% 97%; /* minty soft background #F5FAF8 */
+    --foreground: 0 0% 4%;
+    --card: 156 45% 94%; /* surface light #E9F7F1 */
+    --card-foreground: 0 0% 10%;
+    --popover: 156 45% 94%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 158 64% 46%; /* emerald 500 #10B981 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 156 33% 92%;
+    --secondary-foreground: 158 64% 30%;
+    --muted: 156 20% 90%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 156 40% 88%;
+    --accent-foreground: 158 64% 35%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 156 20% 85%;
+    --input: 156 20% 85%;
+    --ring: 164 94% 31%; /* emerald 600 #059669 */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 162 20% 7%; /* dark slate/emerald #0E1412 */
+    --foreground: 0 0% 96%;
+    --card: 162 14% 13%; /* surface dark #1C2623 */
+    --card-foreground: 0 0% 96%;
+    --popover: 162 14% 13%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 158 64% 46%; /* emerald 500 */
+    --primary-foreground: 162 20% 7%;
+    --secondary: 162 10% 18%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 162 10% 18%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 162 12% 20%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 162 10% 22%;
+    --input: 162 10% 22%;
+    --ring: 158 64% 46%;
+    --chart-1: 158 64% 46%;
+    --chart-2: 156 33% 60%;
+    --chart-3: 162 12% 32%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  button,
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  input,
+  textarea,
+  select,
+  [role="switch"],
+  [role="checkbox"] {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    border-radius: 1rem; /* rounded-xl */
+  }
+
+  a {
+    @apply text-emerald-600 hover:underline;
+  }
 }

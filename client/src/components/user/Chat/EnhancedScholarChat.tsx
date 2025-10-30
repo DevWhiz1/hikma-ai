@@ -19,6 +19,10 @@ import { authService } from '../../../services/authService';
 import ScholarChatHistory from '../../shared/ScholarChatHistory';
 import ScholarImage from '../../shared/ScholarImage';
 import socketService from '../../../services/socketService';
+import { Card, CardHeader } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface Scholar {
   _id: string;
@@ -308,8 +312,8 @@ const EnhancedScholarChat = () => {
     <div className="relative flex h-full w-full">
       {/* Chat History Sidebar */}
       {showHistory && (
-        <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <Card className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 rounded-none rounded-tr-xl rounded-br-xl">
+          <CardHeader className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Scholar Chats</h2>
               <button
@@ -319,14 +323,14 @@ const EnhancedScholarChat = () => {
                 <ArrowPathIcon className="h-5 w-5" />
               </button>
             </div>
-            <button
+            <Button
               onClick={handleNewChat}
-              className="w-full flex items-center justify-center px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+              className="w-full justify-center font-medium"
             >
               <UserGroupIcon className="h-5 w-5 mr-2" />
               New Scholar Chat
-            </button>
-          </div>
+            </Button>
+          </CardHeader>
           
           <ScholarChatHistory
             sessions={sessions}
@@ -335,7 +339,7 @@ const EnhancedScholarChat = () => {
             onNewChat={handleNewChat}
             onDeleteSession={handleDeleteSession}
           />
-        </div>
+        </Card>
       )}
 
       {/* Main Chat Area */}
@@ -434,7 +438,8 @@ const EnhancedScholarChat = () => {
         )}
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mb-4">
@@ -514,26 +519,23 @@ const EnhancedScholarChat = () => {
             </div>
           )}
           <div ref={messagesEndRef} />
-        </div>
+          </div>
+        </ScrollArea>
 
         {/* Message Input */}
         <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
           <form onSubmit={handleSubmit} className="flex items-center space-x-3">
-            <input
+            <Input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={selectedScholar ? `Message ${selectedScholar.user.name}...` : 'Select a scholar to start chatting...'}
               disabled={!selectedScholar}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <button
-              type="submit"
-              disabled={!message.trim() || isLoading || !selectedScholar}
-              className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
+            <Button type="submit" size="icon" disabled={!message.trim() || isLoading || !selectedScholar}>
               <PaperAirplaneIcon className="h-5 w-5" />
-            </button>
+            </Button>
           </form>
         </div>
       </div>
@@ -541,7 +543,7 @@ const EnhancedScholarChat = () => {
       {/* Scholar Picker Modal */}
       {showScholarPicker && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+          <Card className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">Select a Scholar</h3>
@@ -589,19 +591,19 @@ const EnhancedScholarChat = () => {
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
                     You need to enroll with a scholar first to start chatting.
                   </p>
-                  <button
+                  <Button
                     onClick={() => {
                       setShowScholarPicker(false);
                       navigate('/scholars');
                     }}
-                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    className="px-4"
                   >
                     Browse Scholars
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>
