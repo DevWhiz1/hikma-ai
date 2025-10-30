@@ -60,4 +60,7 @@ export const getMyEnrolledStudents = () =>
 export const startDirectChat = (scholarId: string) =>
   axios.post(`${API}/start-chat`, { scholarId }, { headers: authHeader() }).then(r => r.data);
 
+export const startChatWithStudent = (studentId: string) =>
+  axios.post(`${API}/start-chat-with-student`, { studentId }, { headers: authHeader() }).then(r => r.data);
+
 

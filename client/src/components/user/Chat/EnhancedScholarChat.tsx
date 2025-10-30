@@ -14,7 +14,7 @@ import {
   SparklesIcon
 } from '@heroicons/react/24/outline';
 import { enhancedChatService, ChatSession, ChatMessage } from '../../../services/enhancedChatService';
-import { startDirectChat, getMyEnrollments, getScholars } from '../../../services/scholarService';
+import { startDirectChat, getMyEnrollments, getScholars, getMyEnrolledStudents, startChatWithStudent } from '../../../services/scholarService';
 import { authService } from '../../../services/authService';
 import ScholarChatHistory from '../../shared/ScholarChatHistory';
 import ScholarImage from '../../shared/ScholarImage';
@@ -46,6 +46,8 @@ const EnhancedScholarChat = () => {
   const [showHistory, setShowHistory] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 768) ? false : true);
   const [showScholarPicker, setShowScholarPicker] = useState(false);
   const [scholarOptions, setScholarOptions] = useState<Scholar[]>([]);
+  const [studentOptions, setStudentOptions] = useState<{ id: string; name: string; studentId: string }[]>([]);
+  const [search, setSearch] = useState('');
   const [selectedScholar, setSelectedScholar] = useState<Scholar | null>(null);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
@@ -172,11 +174,19 @@ const EnhancedScholarChat = () => {
 
   const loadScholarOptions = async () => {
     try {
-      const enrollments = await getMyEnrollments();
-      const scholars = await getScholars();
-      const enrolledScholarIds = enrollments?.map(e => e.scholar._id) || [];
-      const enrolledScholars = scholars?.filter(s => enrolledScholarIds.includes(s._id)) || [];
-      setScholarOptions(enrolledScholars);
+      if (user?.role === 'scholar') {
+        const students = await getMyEnrolledStudents();
+        const opts = Array.isArray(students)
+          ? students.map((e:any) => ({ id: e?.chatId, name: e?.student?.name || 'Student', studentId: e?.student?._id })).filter((o:any) => o.id && o.studentId)
+          : [];
+        setStudentOptions(opts);
+      } else {
+        const enrollments = await getMyEnrollments();
+        const scholars = await getScholars();
+        const enrolledScholarIds = enrollments?.map((e:any) => e.scholar._id) || [];
+        const enrolledScholars = scholars?.filter((s:any) => enrolledScholarIds.includes(s._id)) || [];
+        setScholarOptions(enrolledScholars);
+      }
     } catch (error) {
       console.error('Failed to load scholar options:', error);
     }
@@ -209,12 +219,20 @@ const EnhancedScholarChat = () => {
   };
 
   const handleNewChat = async () => {
-    if (scholarOptions.length === 0) {
-      alert('You need to enroll with a scholar first to start chatting.');
-      navigate('/scholars');
-      return;
+    if (user?.role === 'scholar') {
+      if (studentOptions.length === 0) {
+        alert('You have no enrolled students yet.');
+        return;
+      }
+      setShowScholarPicker(true);
+    } else {
+      if (scholarOptions.length === 0) {
+        alert('You need to enroll with a scholar first to start chatting.');
+        navigate('/scholars');
+        return;
+      }
+      setShowScholarPicker(true);
     }
-    setShowScholarPicker(true);
   };
 
   const pickScholar = async (scholar: Scholar) => {
@@ -231,6 +249,24 @@ const EnhancedScholarChat = () => {
     } catch (error) {
       console.error('Failed to start scholar chat:', error);
       alert('Failed to start chat with scholar. Please try again.');
+    }
+  };
+
+  const pickStudent = async (student: { id: string; name: string }) => {
+    try {
+      setShowScholarPicker(false);
+      if (student.studentId) {
+        const res = await startChatWithStudent(student.studentId);
+        const sid = res?.scholarSessionId || student.id;
+        if (sid) {
+          skipNextLoad.current = true;
+          navigate(`/chat/scholar/${sid}`);
+          await loadSessions();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to open student chat:', error);
+      alert('Failed to open chat. Please try again.');
     }
   };
 
@@ -324,7 +360,7 @@ const EnhancedScholarChat = () => {
               className="w-full flex items-center justify-center px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
             >
               <UserGroupIcon className="h-5 w-5 mr-2" />
-              New Scholar Chat
+              New Chat
             </button>
           </div>
           
@@ -543,46 +579,74 @@ const EnhancedScholarChat = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Select a Scholar</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">{user?.role === 'scholar' ? 'Select a Student' : 'Select a Scholar'}</h3>
                 <button
                   onClick={() => setShowScholarPicker(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  aria-label="Close"
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white"
                 >
-                  <ArrowPathIcon className="h-6 w-6" />
+                  ✕
                 </button>
               </div>
 
-              <div className="space-y-3">
-                {scholarOptions.map((scholar) => (
-                  <button
-                    key={scholar._id}
-                    onClick={() => pickScholar(scholar)}
-                    className="w-full flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <ScholarImage
-                      src={scholar.photoUrl}
-                      alt={scholar.user.name}
-                      className="h-8 w-8 rounded-full object-cover mr-3"
-                    />
-                    <div className="flex-1 text-left">
-                      <h4 className="font-semibold text-gray-900 dark:text-white">{scholar.user.name}</h4>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div className="flex items-center">
-                          <div className={`w-2 h-2 rounded-full mr-2 ${scholar.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                          {scholar.isActive ? 'Online' : 'Offline'}
-                        </div>
-                        <div className="flex items-center">
-                          <SparklesIcon className="h-4 w-4 mr-1" />
-                          {scholar.averageRating.toFixed(1)} rating
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
               </div>
 
-              {scholarOptions.length === 0 && (
+              <div className="space-y-3">
+                {user?.role === 'scholar'
+                  ? (
+                    studentOptions.filter(s => s.name.toLowerCase().includes(search.toLowerCase())).map((student) => (
+                      <button
+                        key={student.id}
+                        onClick={() => pickStudent(student)}
+                        className="w-full flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <UserIcon className="h-8 w-8 rounded-full mr-3 text-gray-500" />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-semibold text-gray-900 dark:text-white">{student.name}</h4>
+                        </div>
+                      </button>
+                    ))
+                  )
+                  : (
+                    scholarOptions.filter(s => s.user.name.toLowerCase().includes(search.toLowerCase())).map((scholar) => (
+                      <button
+                        key={scholar._id}
+                        onClick={() => pickScholar(scholar)}
+                        className="w-full flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <ScholarImage
+                          src={scholar.photoUrl}
+                          alt={scholar.user.name}
+                          className="h-8 w-8 rounded-full object-cover mr-3"
+                        />
+                        <div className="flex-1 text-left">
+                          <h4 className="font-semibold text-gray-900 dark:text-white">{scholar.user.name}</h4>
+                          <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                            <div className="flex items-center">
+                              <div className={`w-2 h-2 rounded-full mr-2 ${scholar.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                              {scholar.isActive ? 'Online' : 'Offline'}
+                            </div>
+                            <div className="flex items-center">
+                              <SparklesIcon className="h-4 w-4 mr-1" />
+                              {scholar.averageRating.toFixed(1)} rating
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+              </div>
+
+              {(user?.role !== 'scholar' && scholarOptions.length === 0) && (
                 <div className="text-center py-8">
                   <UserGroupIcon className="h-16 w-16 text-emerald-600 dark:text-emerald-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Scholars Available</h3>
@@ -598,6 +662,15 @@ const EnhancedScholarChat = () => {
                   >
                     Browse Scholars
                   </button>
+                </div>
+              )}
+              {(user?.role === 'scholar' && studentOptions.length === 0) && (
+                <div className="text-center py-8">
+                  <UserGroupIcon className="h-16 w-16 text-emerald-600 dark:text-emerald-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Students Available</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    You have no enrolled students yet.
+                  </p>
                 </div>
               )}
             </div>

@@ -383,7 +383,11 @@ const cancelMeeting = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found or unauthorized' });
     }
 
-    await Meeting.findOneAndUpdate({ chatId }, { status: 'cancelled' }, { new: true });
+    // Cancel all active meetings for this chat to avoid duplicate leftovers
+    await Meeting.updateMany(
+      { chatId, status: { $in: ['requested', 'scheduled', 'link_sent'] } },
+      { $set: { status: 'cancelled' } }
+    );
 
     // Remove previous scheduled/link messages from this chat
     try {

@@ -1,6 +1,6 @@
 const express = require('express');
 const { auth } = require('../middleware/auth');
-const { applyScholar, listScholars, enrollScholar, leaveFeedback, myEnrollments, unenroll, getMyScholarProfile, updateMyScholarProfile, deleteMyScholarProfile, startDirectChat, getMyEnrolledStudents } = require('../controllers/scholarController');
+const { applyScholar, listScholars, enrollScholar, leaveFeedback, myEnrollments, unenroll, getMyScholarProfile, updateMyScholarProfile, deleteMyScholarProfile, startDirectChat, getMyEnrolledStudents, startDirectChatWithStudent } = require('../controllers/scholarController');
 
 const router = express.Router();
 router.post('/apply', auth, applyScholar);
@@ -14,6 +14,7 @@ router.put('/me', auth, updateMyScholarProfile);
 router.delete('/me', auth, deleteMyScholarProfile);
 router.post('/start-chat', auth, startDirectChat);
 router.get('/enrolled-students', auth, getMyEnrolledStudents);
+router.post('/start-chat-with-student', auth, startDirectChatWithStudent);
 
 module.exports = router;
 

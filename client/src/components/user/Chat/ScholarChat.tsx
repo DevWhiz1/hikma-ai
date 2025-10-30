@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PaperAirplaneIcon, ArrowPathIcon, UserIcon } from '@heroicons/react/24/outline';
 import { chatService, ChatSession, ChatMessage } from '../../../services/chatService';
-import { startDirectChat, getMyEnrollments, getScholars } from '../../../services/scholarService';
+import { startDirectChat, getMyEnrollments, getScholars, getMyEnrolledStudents } from '../../../services/scholarService';
+import { authService } from '../../../services/authService';
 import ChatHistory from '../../shared/ChatHistory';
 
 const ScholarChat = () => {
@@ -77,20 +78,31 @@ const ScholarChat = () => {
 
   const handleNewChat = async () => {
     try {
-      let enrs = await getMyEnrollments().catch(() => []);
-      let options = Array.isArray(enrs) ? enrs.map((e:any) => ({ id: e?.scholar?._id, name: e?.scholar?.user?.name || 'Scholar' })).filter(o => o.id) : [];
-      
-      if (!options.length) {
-        try {
-          const idsRaw = localStorage.getItem('enrolled_scholar_ids');
-          const ids = idsRaw ? new Set<string>(JSON.parse(idsRaw)) : new Set<string>();
-          if (ids.size) {
-            const sch = await getScholars();
-            options = sch.filter((s:any) => ids.has(s._id)).map((s:any) => ({ id: s._id, name: s?.user?.name || 'Scholar' }));
-          }
-        } catch {}
+      const user = authService.getUser();
+      if (user?.role === 'scholar') {
+        // Show enrolled students and navigate to the scholar's own chat session
+        const students = await getMyEnrolledStudents().catch(() => []);
+        const options = Array.isArray(students)
+          ? students.map((e:any) => ({ id: e?.chatId, name: e?.student?.name || 'Student' })).filter(o => o.id)
+          : [];
+        setScholarOptions(options);
+      } else {
+        // User: show enrolled scholars
+        let enrs = await getMyEnrollments().catch(() => []);
+        let options = Array.isArray(enrs) ? enrs.map((e:any) => ({ id: e?.scholar?._id, name: e?.scholar?.user?.name || 'Scholar' })).filter(o => o.id) : [];
+        
+        if (!options.length) {
+          try {
+            const idsRaw = localStorage.getItem('enrolled_scholar_ids');
+            const ids = idsRaw ? new Set<string>(JSON.parse(idsRaw)) : new Set<string>();
+            if (ids.size) {
+              const sch = await getScholars();
+              options = sch.filter((s:any) => ids.has(s._id)).map((s:any) => ({ id: s._id, name: s?.user?.name || 'Scholar' }));
+            }
+          } catch {}
+        }
+        setScholarOptions(options);
       }
-      setScholarOptions(options);
       setShowScholarPicker(true);
     } catch (e) { 
       console.error('Failed to create session:', e); 
@@ -100,9 +112,15 @@ const ScholarChat = () => {
   const pickScholar = async (id: string) => {
     try {
       setShowScholarPicker(false);
-      const res = await startDirectChat(id);
-      const sid = res?.studentSessionId;
-      if (sid) navigate(`/chat/scholar/${sid}`);
+      const user = authService.getUser();
+      if (user?.role === 'scholar') {
+        // id is already the scholar's session id for this student
+        navigate(`/chat/scholar/${id}`);
+      } else {
+        const res = await startDirectChat(id);
+        const sid = res?.studentSessionId;
+        if (sid) navigate(`/chat/scholar/${sid}`);
+      }
     } catch (e) { 
       console.error('Failed to start scholar chat:', e); 
     }
@@ -192,7 +210,7 @@ const ScholarChat = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {currentSession?.title || 'Chat with Scholar'}
+                {currentSession?.title || 'Chat'}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Connect directly with your enrolled Islamic scholars

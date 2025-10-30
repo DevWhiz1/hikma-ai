@@ -328,12 +328,13 @@ async function getMyEnrolledStudents(req, res) {
     })
       .populate('student', 'name email')
       .populate('studentSession', 'lastActivity')
+      .populate('scholarSession', 'lastActivity')
       .sort({ createdAt: -1 });
 
     const enrolledStudents = enrollments.map(enrollment => ({
-      chatId: enrollment.studentSession?._id || enrollment._id,
+      chatId: enrollment.scholarSession?._id || enrollment._id,
       student: enrollment.student,
-      lastActivity: enrollment.studentSession?.lastActivity || enrollment.createdAt
+      lastActivity: (enrollment.scholarSession?.lastActivity || enrollment.createdAt)
     }));
 
     // Debug: Log scholar enrolled students (remove in production)
@@ -351,6 +352,42 @@ async function getMyEnrolledStudents(req, res) {
   }
 }
 
-module.exports = { applyScholar, listScholars, enrollScholar, leaveFeedback, myEnrollments, unenroll, getMyScholarProfile, updateMyScholarProfile, deleteMyScholarProfile, startDirectChat, getMyEnrolledStudents };
+// Scholar ensures a direct chat with a specific student exists and returns scholar's session id
+async function startDirectChatWithStudent(req, res) {
+  try {
+    const { studentId } = req.body;
+    if (!studentId) return res.status(400).json({ message: 'studentId required' });
+
+    const scholarDoc = await Scholar.findOne({ user: req.user._id }).populate('user', 'name');
+    if (!scholarDoc) return res.status(404).json({ message: 'Scholar profile not found' });
+
+    let enrollment = await Enrollment.findOne({ student: studentId, scholar: scholarDoc._id });
+    if (!enrollment) {
+      const studentSession = await ChatSession.create({ user: studentId, title: `Chat with ${scholarDoc.user?.name || 'Scholar'} (Scholar)`, messages: [], kind: 'direct' });
+      const scholarSession = await ChatSession.create({ user: req.user._id, title: `Chat with (Student)`, messages: [], kind: 'direct' });
+      enrollment = await Enrollment.create({ student: studentId, scholar: scholarDoc._id, studentSession: studentSession._id, scholarSession: scholarSession._id });
+    } else {
+      if (!enrollment.studentSession || !enrollment.scholarSession) {
+        // Backfill any missing sessions
+        if (!enrollment.studentSession) {
+          const studentSession = await ChatSession.create({ user: studentId, title: `Chat with ${scholarDoc.user?.name || 'Scholar'} (Scholar)`, messages: [], kind: 'direct' });
+          enrollment.studentSession = studentSession._id;
+        }
+        if (!enrollment.scholarSession) {
+          const scholarSession = await ChatSession.create({ user: req.user._id, title: `Chat with (Student)`, messages: [], kind: 'direct' });
+          enrollment.scholarSession = scholarSession._id;
+        }
+        await enrollment.save();
+      }
+    }
+
+    return res.json({ success: true, scholarSessionId: enrollment.scholarSession });
+  } catch (e) {
+    console.error('startDirectChatWithStudent error:', e);
+    res.status(500).json({ message: e.message });
+  }
+}
+
+module.exports = { applyScholar, listScholars, enrollScholar, leaveFeedback, myEnrollments, unenroll, getMyScholarProfile, updateMyScholarProfile, deleteMyScholarProfile, startDirectChat, getMyEnrolledStudents, startDirectChatWithStudent };
 
 
