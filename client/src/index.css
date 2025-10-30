@@ -87,7 +87,7 @@ html.light .bg-emerald-50 { background-color: #d7ffec !important; }
 
 /* Typography and links */
 html.light a { color: var(--color-primary); }
-html.light a:hover { color: var(--color-accent); text-decoration: underline; }
+html.light a:hover { color: var(--color-accent); text-decoration: none; }
 
 /* Ensure sidebar links do not underline on hover */
 .sidebar a,
@@ -649,8 +649,9 @@ html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-tea
   color: #059669 !important;
 }
 
-html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 button:hover,
-html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] button:hover {
+/* Limit hover override to white buttons only so emerald buttons keep their own hover color */
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 button.bg-white:hover,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] button.bg-white:hover {
   background-color: #f3f4f6 !important;
   color: #059669 !important;
 }
@@ -665,6 +666,13 @@ html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-tea
 html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 .bg-emerald-700,
 html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] .bg-emerald-700 {
   background-color: #047857 !important;
+  color: #ffffff !important;
+}
+
+/* Ensure emerald button hover matches dark mode inside CTA */
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 .bg-emerald-700:hover,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] .bg-emerald-700:hover {
+  background-color: rgb(6 95 70 / var(--tw-bg-opacity, 1)) !important; /* match dark mode hover */
   color: #ffffff !important;
 }
 
@@ -720,6 +728,12 @@ html.light .feedback-menu-bg {
 }
 
 html.light .feedback-menu-bg * {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Ensure floating feedback button wrapper remains transparent in light mode */
+html.light .feedback-floating {
   background-color: transparent !important;
   background: transparent !important;
 }
@@ -818,6 +832,6 @@ html.light .feedback-menu-item:hover {
   }
 
   a {
-    @apply text-emerald-600 hover:underline;
+    @apply text-emerald-600 no-underline hover:no-underline;
   }
 }

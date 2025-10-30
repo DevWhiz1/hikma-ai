@@ -219,14 +219,14 @@ const UserDashboard = () => {
                     onClick={() => navigate('/available-meetings')}
                     className="px-8 py-4 bg-white text-emerald-700 font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-lg inline-flex items-center justify-center gap-2 leading-none text-center h-12"
                   >
-                    <VideoCameraIcon className="h-6 w-6 shrink-0" stroke="#10B981" fill="none" />
+                    <VideoCameraIcon className="h-6 w-6" stroke="#10B981" fill="none" />
                     View Available Slots
                   </Button>
                   <Button
                     onClick={() => navigate('/chat')}
                     className="px-8 py-4 font-bold rounded-xl transition-colors shadow-lg inline-flex items-center justify-center gap-2 leading-none text-center h-12 bg-emerald-700 hover:bg-emerald-800 text-white border border-emerald-800"
                   >
-                    <ChatBubbleLeftRightIcon className="h-6 w-6 shrink-0" />
+                    <ChatBubbleLeftRightIcon className="h-6 w-6" />
                     Chat with Scholars
                   </Button>
                 </div>
@@ -398,7 +398,7 @@ const UserDashboard = () => {
                 </p>
                 <Button
                   onClick={() => navigate('/scholars')}
-                  className="px-6"
+                  className="px-6 hover:bg-emerald-700 hover:text-emerald-700 transition-colors"
                 >
                   Schedule a Meeting
                 </Button>

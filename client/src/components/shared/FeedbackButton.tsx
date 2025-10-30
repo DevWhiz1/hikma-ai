@@ -54,7 +54,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
   return (
     <>
       {/* Floating Feedback Button with Menu */}
-      <div className={`fixed ${positionClasses[position]} z-40 !bg-transparent `}style={{ backgroundColor: "transparent !important" }}>
+      <div className={`fixed ${positionClasses[position]} z-40 feedback-floating !bg-transparent`}>
         {/* Menu */}
         {showMenu && (
           <div className="absolute bottom-16 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 min-w-[200px]">
