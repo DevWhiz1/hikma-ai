@@ -20,6 +20,7 @@ import smartSchedulerService from '../../services/smartSchedulerService';
 import notificationService from '../../services/notificationService';
 import aiAgentService from '../../services/aiAgentService';
 import { authService } from '../../services/authService';
+import ConfirmationModal from '../shared/ConfirmationModal';
 
 interface TimeSlot {
   start: string;
@@ -84,6 +85,7 @@ const UnifiedSmartScheduler: React.FC = () => {
   const [naturalLanguageInput, setNaturalLanguageInput] = useState('');
   const [aiInsights, setAiInsights] = useState<AIInsights | null>(null);
   const [showAIInsights, setShowAIInsights] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; confirmColor?: 'emerald' | 'red' | 'orange' | 'blue'; icon?: string }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   // Scheduling templates
   const schedulingTemplates: SchedulingTemplate[] = [
@@ -376,30 +378,62 @@ const UnifiedSmartScheduler: React.FC = () => {
         timezone: selectedTimezone
       });
       
-      // Ask to notify students
-      const notify = window.confirm('Broadcast created. Do you want to notify all enrolled students now?');
-      if (notify) {
-        try {
-          const msg = `${broadcastTitle} — New sessions available. ${broadcastDescription || ''}`.trim();
-          await notificationService.sendSmart({ text: msg, audience: 'all' });
-        } catch (_) { /* best effort */ }
-      }
-
-      alert('Broadcast created successfully!');
-      setBroadcastTitle('');
-      setBroadcastDescription('');
-      setSelectedTimes([]);
-      setSelectedTemplate('');
-      loadExistingBroadcasts();
+      // Ask to notify students (using custom modal)
+      setConfirmModal({
+        isOpen: true,
+        title: 'Notify Students?',
+        message: 'Broadcast created. Do you want to notify all enrolled students now?',
+        confirmColor: 'emerald',
+        icon: '📢',
+        confirmText: 'Yes, Notify',
+        cancelText: 'Skip',
+        onConfirm: async () => {
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+          try {
+            const msg = `${broadcastTitle} — New sessions available. ${broadcastDescription || ''}`.trim();
+            await notificationService.sendSmart({ text: msg, audience: 'all' });
+          } catch (_) { /* best effort */ }
+          alert('Broadcast created successfully!');
+          setBroadcastTitle('');
+          setBroadcastDescription('');
+          setSelectedTimes([]);
+          setSelectedTemplate('');
+          loadExistingBroadcasts();
+        },
+        onCancel: async () => {
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+          alert('Broadcast created successfully!');
+          setBroadcastTitle('');
+          setBroadcastDescription('');
+          setSelectedTimes([]);
+          setSelectedTemplate('');
+          loadExistingBroadcasts();
+        }
+      });
+      setLoading(false);
+      return;
     } catch (error) {
       console.error('Error creating broadcast:', error);
       alert('Failed to create broadcast');
-    } finally {
       setLoading(false);
     }
   };
 
+  const confirmModalType = confirmModal as any;
+  
   return (
+    <>
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={confirmModalType.onCancel || (() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} }))}
+        confirmColor={confirmModal.confirmColor || 'emerald'}
+        icon={confirmModal.icon}
+        confirmText={confirmModalType.confirmText}
+        cancelText={confirmModalType.cancelText}
+      />
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/20 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header with Mode Toggle */}
@@ -702,6 +736,7 @@ const UnifiedSmartScheduler: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

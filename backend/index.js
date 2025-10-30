@@ -424,11 +424,11 @@ cron.schedule('* * * * *', async () => {
       meeting.status = 'link_sent';
       await meeting.save();
 
-      // Create meeting link message (system: HikmaBot)
+      // Create meeting link message (system: HikmaBot) - URL is in metadata, will be shown as button
       const message = new Message({
         sender: meeting.scholarId,
         chatId: meeting.chatId,
-        text: `HikmaBot: Your meeting has started! Join here: ${link}`,
+        text: `HikmaBot: Your meeting has started!`,
         type: 'meeting_link',
         metadata: { meetingLink: link, roomId }
       });
@@ -457,7 +457,7 @@ cron.schedule('* * * * *', async () => {
                     const scholarProfile = await Scholar.findOne({ user: meeting.scholarId }).select('_id user');
                     if (scholarProfile) {
                       const enrollment = await Enrollment.findOne({ student: meeting.studentId, scholar: scholarProfile._id }).lean();
-                      const text = `HikmaBot: Your meeting has started! Join here: ${link}`;
+                      const text = `HikmaBot: Your meeting has started!`;
                       if (enrollment?.studentSession) {
                         await ChatSession.findByIdAndUpdate(enrollment.studentSession, { $push: { messages: { role: 'assistant', content: text } }, $set: { lastActivity: new Date() } });
                       }

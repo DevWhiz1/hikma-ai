@@ -9,6 +9,7 @@ const Scholar = require('../models/Scholar');
 const SensitiveLog = require('../models/SensitiveLog');
 const { filterMeetingLinks, filterContactInfo, detectAllLinks } = require('../middleware/messageFilter');
 const { emitMeetingRequest, emitMeetingScheduled, emitMeetingLinkSent } = require('../utils/socketEmitter');
+const NotificationService = require('../services/notificationService');
 
 // Generate Jitsi meeting link using custom domain
 const generateJitsiLink = () => {
@@ -209,6 +210,82 @@ const scheduleMeeting = async (req, res) => {
 
     // Emit WebSocket event for meeting scheduled
     emitMeetingScheduled(chat._id, scheduledTime);
+
+    // Generate and send meeting link immediately
+    try {
+      const { roomId, link } = generateJitsiLink();
+      
+      // Update meeting with link
+      meeting.link = link;
+      meeting.roomId = roomId;
+      await meeting.save();
+
+       // Create meeting link message immediately (text without URL - URL will be shown as button)
+       const linkMessage = new Message({
+         sender: scholarId,
+         chatId: chat._id,
+         text: `HikmaBot: Your meeting is scheduled!`,
+         type: 'meeting_link',
+         metadata: { meetingLink: link, roomId, scheduledTime: new Date(scheduledTime) }
+       });
+      await linkMessage.save();
+
+      // Add message to chat
+      chat.messages.push(linkMessage._id);
+      chat.lastActivity = new Date();
+      await chat.save();
+
+      // Emit socket event for the link
+      const { emitMeetingLinkSent } = require('../utils/socketEmitter');
+      emitMeetingLinkSent(chat._id, link, roomId);
+
+      console.log(`Meeting link sent immediately for meeting ${meeting._id}`);
+    } catch (linkErr) {
+      console.error('[scheduleMeeting] Failed to send meeting link immediately:', linkErr.message);
+      // Don't fail the schedule if link sending fails
+    }
+
+    // Create notifications for both participants
+    try {
+      const scholarUser = await User.findById(scholarId).select('name');
+      const studentUser = await User.findById(chat.studentId).select('name');
+      const meetingTimeStr = new Date(scheduledTime).toLocaleString();
+      
+      // Notify student
+      await NotificationService.createNotification(
+        chat.studentId,
+        'meeting',
+        '📅 Meeting Scheduled',
+        `Your meeting with ${scholarUser?.name || 'your scholar'} is scheduled for ${meetingTimeStr}.`,
+        {
+          meetingId: meeting._id,
+          chatId: chat._id,
+          scheduledTime: new Date(scheduledTime),
+          scholarId: scholarId
+        },
+        `/meetings/${chat._id}`,
+        'high'
+      );
+
+      // Notify scholar
+      await NotificationService.createNotification(
+        scholarId,
+        'meeting',
+        '📅 Meeting Scheduled',
+        `Meeting with ${studentUser?.name || 'student'} scheduled for ${meetingTimeStr}.`,
+        {
+          meetingId: meeting._id,
+          chatId: chat._id,
+          scheduledTime: new Date(scheduledTime),
+          studentId: chat.studentId
+        },
+        `/meetings/${chat._id}`,
+        'normal'
+      );
+    } catch (notifErr) {
+      console.error('[scheduleMeeting] Notification failed:', notifErr.message);
+      // Don't fail the schedule if notification fails
+    }
 
     res.json({ success: true, messageId: message._id });
   } catch (error) {
@@ -516,6 +593,34 @@ const sendMessage = async (req, res) => {
 
     // Populate sender info
     await message.populate('sender', 'name email');
+
+    // Create notification for the recipient (the person who didn't send the message)
+    try {
+      const recipientId = chat.studentId.toString() === senderId ? chat.scholarId : chat.studentId;
+      const senderUser = await User.findById(senderId).select('name');
+      const recipientUser = await User.findById(recipientId).select('name');
+      
+      // Only create notification if recipient exists and is different from sender
+      if (recipientId && recipientId.toString() !== senderId) {
+        const messagePreview = finalText.length > 100 ? finalText.substring(0, 100) + '...' : finalText;
+        await NotificationService.createNotification(
+          recipientId,
+          'message',
+          `💬 New message from ${senderUser?.name || 'User'}`,
+          messagePreview,
+          {
+            chatId: chat._id,
+            senderId: senderId,
+            senderName: senderUser?.name
+          },
+          `/meetings/${chat._id}`,
+          'normal'
+        );
+      }
+    } catch (notifErr) {
+      console.error('[sendMessage] Notification failed:', notifErr.message);
+      // Don't fail the message send if notification fails
+    }
 
     // Log all links for sensitive information tracking
     if (hasLinks) {

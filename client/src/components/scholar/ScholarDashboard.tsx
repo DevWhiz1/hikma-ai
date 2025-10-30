@@ -20,6 +20,8 @@ import { meetingService } from '../../services/meetingService';
 import { authService } from '../../services/authService';
 import { getMyScholarProfile, getMyEnrolledStudents } from '../../services/scholarService';
 import notificationService from '../../services/notificationService';
+import ConfirmationModal from '../shared/ConfirmationModal';
+import Toast, { ToastType } from '../shared/Toast';
 
 interface DashboardData {
   enrolledStudents: any[];
@@ -51,6 +53,7 @@ const ScholarDashboard = () => {
     scheduled: [], 
     linkSent: [] 
   });
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; confirmColor?: 'emerald' | 'red' | 'orange' | 'blue'; icon?: string }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [profile, setProfile] = useState<ScholarProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [schedulingMeeting, setSchedulingMeeting] = useState<string | null>(null);
@@ -61,6 +64,7 @@ const ScholarDashboard = () => {
   const [notifyAudience, setNotifyAudience] = useState<'all'|'selected'>('all');
   const [notifyText, setNotifyText] = useState('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // Check if user is a scholar
   if (user?.role !== 'scholar') {
@@ -168,7 +172,30 @@ const ScholarDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <>
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => {
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        }}
+        confirmColor={confirmModal.confirmColor || 'emerald'}
+        icon={confirmModal.icon}
+        confirmText="Yes, Cancel Meeting"
+        cancelText="Keep Meeting"
+      />
+      
+      <Toast
+        message={toast?.message || ''}
+        type={toast?.type || 'info'}
+        isVisible={!!toast}
+        onClose={() => setToast(null)}
+        duration={2000}
+      />
+      
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Streamlined Header */}
         <div className="mb-8">
@@ -510,7 +537,7 @@ const ScholarDashboard = () => {
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(meeting.link);
-                                alert('Link copied!');
+                                setToast({ message: 'Link copied to clipboard!', type: 'success' });
                               }}
                               className="px-3 py-1.5 bg-gray-600 text-white text-xs rounded hover:bg-gray-700 transition-colors font-medium"
                             >
@@ -519,16 +546,27 @@ const ScholarDashboard = () => {
                           </>
                         )}
                         <button
-                          onClick={async () => {
-                            if (!confirm('Cancel this meeting?')) return;
-                            try {
-                              await meetingService.cancelMeeting(meeting.chatId._id || meeting.chatId);
-                              alert('Cancelled');
-                              loadData();
-                            } catch (err) {
-                              console.error('Cancel failed:', err);
-                              alert('Failed to cancel');
-                            }
+                          onClick={() => {
+                            const chatId = meeting.chatId._id || meeting.chatId;
+                            setConfirmModal({
+                              isOpen: true,
+                              title: 'Cancel Meeting',
+                              message: 'Are you sure you want to cancel this meeting?',
+                              confirmColor: 'red',
+                              icon: '❌',
+                              onConfirm: async () => {
+                                setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+                                
+                                try {
+                                  await meetingService.cancelMeeting(chatId);
+                                  setToast({ message: 'Meeting cancelled successfully', type: 'success' });
+                                  loadData();
+                                } catch (err) {
+                                  console.error('Cancel failed:', err);
+                                  setToast({ message: 'Failed to cancel meeting', type: 'error' });
+                                }
+                              }
+                            });
                           }}
                           className="px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors font-medium"
                         >
@@ -678,17 +716,17 @@ const ScholarDashboard = () => {
                         // Find the enrolled student to get the student user ID
                         const enrolledStudent = data.enrolledStudents.find((s: any) => s.chatId === selectedEnrolledChatId);
                         if (!enrolledStudent || !enrolledStudent.student?._id) {
-                          alert('Student not found');
+                          setToast({ message: 'Student not found', type: 'error' });
                           return;
                         }
                         await meetingService.scheduleMeeting(enrolledStudent.student._id, scheduledTime, true);
                         setScheduledTime('');
                         setSelectedEnrolledChatId(null);
                         loadData();
-                        alert('Meeting scheduled successfully!');
+                        setToast({ message: 'Meeting scheduled successfully!', type: 'success' });
                       } catch (err) {
                         console.error('Schedule failed:', err);
-                        alert('Failed to schedule meeting');
+                        setToast({ message: 'Failed to schedule meeting', type: 'error' });
                       }
                     }}
                     disabled={!scheduledTime}
@@ -796,6 +834,7 @@ const ScholarDashboard = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

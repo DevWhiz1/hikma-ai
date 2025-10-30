@@ -15,6 +15,7 @@ import {
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import { enhancedAdminService, Scholar } from '../../services/enhancedAdminService';
+import ConfirmationModal from '../shared/ConfirmationModal';
 
 interface ScholarManagementProps {
   onScholarSelect?: (scholar: Scholar) => void;
@@ -31,6 +32,8 @@ const ScholarManagement: React.FC<ScholarManagementProps> = ({ onScholarSelect }
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedScholar, setSelectedScholar] = useState<Scholar | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; confirmColor?: 'emerald' | 'red' | 'orange' | 'blue'; icon?: string }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const [scholarToRemove, setScholarToRemove] = useState<{ id: string; reason: string } | null>(null);
 
   useEffect(() => {
     loadScholars();
@@ -66,17 +69,28 @@ const ScholarManagement: React.FC<ScholarManagementProps> = ({ onScholarSelect }
     }
   };
 
-  const handleRemoveScholar = async (scholarId: string, reason: string) => {
-    if (!confirm('Are you sure you want to remove this scholar? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await enhancedAdminService.removeScholar(scholarId, reason);
-      loadScholars();
-    } catch (error) {
-      console.error('Failed to remove scholar:', error);
-    }
+  const handleRemoveScholar = (scholarId: string, reason: string) => {
+    setScholarToRemove({ id: scholarId, reason });
+    setConfirmModal({
+      isOpen: true,
+      title: 'Remove Scholar',
+      message: 'Are you sure you want to remove this scholar? This action cannot be undone.',
+      confirmColor: 'red',
+      icon: '⚠️',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        if (!scholarToRemove) return;
+        
+        try {
+          await enhancedAdminService.removeScholar(scholarToRemove.id, scholarToRemove.reason);
+          loadScholars();
+          setScholarToRemove(null);
+        } catch (error) {
+          console.error('Failed to remove scholar:', error);
+          setScholarToRemove(null);
+        }
+      }
+    });
   };
 
   const filteredScholars = scholars.filter(scholar => {
@@ -95,7 +109,22 @@ const ScholarManagement: React.FC<ScholarManagementProps> = ({ onScholarSelect }
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => {
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+          setScholarToRemove(null);
+        }}
+        confirmColor={confirmModal.confirmColor || 'emerald'}
+        icon={confirmModal.icon}
+        confirmText="Yes, Remove Scholar"
+        cancelText="Cancel"
+      />
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -471,7 +500,8 @@ const ScholarManagement: React.FC<ScholarManagementProps> = ({ onScholarSelect }
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

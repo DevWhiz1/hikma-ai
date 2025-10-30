@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import smartSchedulerService from '../../services/smartSchedulerService';
 import { meetingService } from '../../services/meetingService';
+import ConfirmationModal from '../shared/ConfirmationModal';
 
 interface NotificationRule {
   id: string;
@@ -48,6 +49,7 @@ const SmartNotifications: React.FC = () => {
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [editingRule, setEditingRule] = useState<NotificationRule | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; confirmColor?: 'emerald' | 'red' | 'orange' | 'blue'; icon?: string }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [activeTab, setActiveTab] = useState<'rules' | 'logs' | 'settings'>('rules');
 
   useEffect(() => {
@@ -158,9 +160,17 @@ const SmartNotifications: React.FC = () => {
   };
 
   const handleDeleteRule = (ruleId: string) => {
-    if (window.confirm('Are you sure you want to delete this notification rule?')) {
-      setNotificationRules(prev => prev.filter(rule => rule.id !== ruleId));
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Notification Rule',
+      message: 'Are you sure you want to delete this notification rule?',
+      confirmColor: 'red',
+      icon: '🗑️',
+      onConfirm: () => {
+        setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+        setNotificationRules(prev => prev.filter(rule => rule.id !== ruleId));
+      }
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -494,6 +504,7 @@ const SmartNotifications: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

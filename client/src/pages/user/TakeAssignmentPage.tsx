@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { assignmentService, Assignment, Submission } from '../../services/assignmentService';
+import ConfirmationModal from '../../components/shared/ConfirmationModal';
 
 const TakeAssignmentPage: React.FC = () => {
   const { id } = useParams();
@@ -13,6 +14,7 @@ const TakeAssignmentPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showAllQuestions, setShowAllQuestions] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void; confirmColor?: 'emerald' | 'red' | 'orange' | 'blue'; icon?: string }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
   const isScrolling = useRef(false);
   const navigate = useNavigate();
@@ -59,9 +61,25 @@ const TakeAssignmentPage: React.FC = () => {
     });
     
     if (unanswered.length > 0) {
-      const confirmSkip = confirm(`You have ${unanswered.length} unanswered question(s). Submit anyway?`);
-      if (!confirmSkip) return;
+      setConfirmModal({
+        isOpen: true,
+        title: 'Unanswered Questions',
+        message: `You have ${unanswered.length} unanswered question(s). Submit anyway?`,
+        confirmColor: 'orange',
+        icon: '⚠️',
+        onConfirm: () => {
+          setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+          proceedWithSubmission();
+        }
+      });
+      return;
     }
+    
+    proceedWithSubmission();
+  };
+
+  const proceedWithSubmission = async () => {
+    if (!id || !assignment) return;
     
     setSubmitting(true);
     try {
@@ -240,7 +258,19 @@ const TakeAssignmentPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <>
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: () => {} })}
+        confirmColor={confirmModal.confirmColor || 'emerald'}
+        icon={confirmModal.icon}
+        confirmText="Submit Anyway"
+        cancelText="Review Questions"
+      />
+      <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-start justify-between mb-4">
@@ -623,6 +653,7 @@ const TakeAssignmentPage: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
