@@ -22,7 +22,7 @@ interface SidebarProps {
 const baseNavigationItems = [
   { name: 'Dashboard', icon: HomeIcon, id: 'home', path: '/' },
   { name: 'AI Chat', icon: ChatBubbleLeftRightIcon, id: 'ai-chat', path: '/chat/ai' },
-  { name: 'Scholar Chat', icon: UserGroupIcon, id: 'scholar-chat', path: '/chat/scholar' },
+  { name: 'Chat', icon: UserGroupIcon, id: 'scholar-chat', path: '/chat/scholar' },
   { name: 'Scholars', icon: AcademicCapIcon, id: 'scholars', path: '/scholars' },
   { name: 'Payment Tracking', icon: CurrencyDollarIcon, id: 'payments', path: '/payments' },
   { name: 'Upcoming Classes', icon: CalendarIcon, id: 'upcoming-classes', path: '/upcoming-classes' },
@@ -46,6 +46,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
     
     // Replace payment tracking with role-specific versions
     if (user?.role === 'scholar') {
+      // Remove Prayer Times and Tasbih for scholars
+      const hiddenForScholar = new Set(['prayer-times', 'tasbih']);
+      for (let i = items.length - 1; i >= 0; i--) {
+        if (hiddenForScholar.has(items[i].id)) items.splice(i, 1);
+      }
+
       const paymentIndex = items.findIndex(item => item.id === 'payments');
       if (paymentIndex !== -1) {
         items[paymentIndex] = { 
