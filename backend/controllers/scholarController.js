@@ -309,6 +309,31 @@ async function startDirectChat(req, res) {
   } catch (e) { res.status(500).json({ message: e.message }); }
 }
 
+// 🚀 NEW: Get enrollments where current user is the SCHOLAR (for assignment creation)
+async function getScholarEnrollments(req, res) {
+  try {
+    const Scholar = require('../models/Scholar');
+    
+    // Find the scholar document for this user
+    const scholar = await Scholar.findOne({ user: req.user._id });
+    if (!scholar) {
+      return res.json({ enrollments: [] });
+    }
+
+    // Get all enrollments where this user is the scholar
+    const enrollments = await Enrollment.find({ 
+      scholar: scholar._id,
+      isActive: true 
+    })
+      .populate('student', 'name email _id')
+      .lean();
+
+    res.json({ enrollments });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+}
+
 async function getMyEnrolledStudents(req, res) {
   try {
     const scholarId = req.user.id;
@@ -396,6 +421,20 @@ async function startDirectChatWithStudent(req, res) {
   }
 }
 
-module.exports = { applyScholar, listScholars, enrollScholar, leaveFeedback, myEnrollments, unenroll, getMyScholarProfile, updateMyScholarProfile, deleteMyScholarProfile, startDirectChat, getMyEnrolledStudents, startDirectChatWithStudent };
+module.exports = { 
+  applyScholar, 
+  listScholars, 
+  enrollScholar, 
+  leaveFeedback, 
+  myEnrollments, 
+  unenroll, 
+  getMyScholarProfile, 
+  updateMyScholarProfile, 
+  deleteMyScholarProfile, 
+  startDirectChat, 
+  getScholarEnrollments,
+  getMyEnrolledStudents,
+  startDirectChatWithStudent
+};
 
 

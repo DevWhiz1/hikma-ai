@@ -1,6 +1,6 @@
 import React from 'react';
 import { authService } from '../../services/authService';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
   HomeIcon, 
   ChatBubbleLeftRightIcon, 
@@ -33,8 +33,6 @@ const baseNavigationItems = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) => {
-  const location = useLocation();
-  
   const handleClick = (id: string) => {
     setActiveTab(id);
     onNavigate?.();
@@ -62,6 +60,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
         };
       }
       items.push({ name: 'Scholar Dashboard', icon: BookOpenIcon, id: 'scholar-dashboard', path: '/scholars/dashboard' });
+  items.push({ name: 'Assignments', icon: BookOpenIcon, id: 'scholar-assignments', path: '/scholar/assignments' });
+  items.push({ name: 'Create Assignment', icon: BookOpenIcon, id: 'scholar-assignments-new', path: '/scholar/assignments/new' });
+    }
+
+    // Student menu (default users)
+    if (!user || user.role === 'user') {
+      items.push({ name: 'Quizzes', icon: BookOpenIcon, id: 'quizzes', path: '/quizzes' });
+      items.push({ name: 'Assignments', icon: BookOpenIcon, id: 'assignments', path: '/assignments' });
+      items.push({ name: 'My Submissions', icon: BookOpenIcon, id: 'my-submissions', path: '/me/submissions' });
     }
     
     if (user?.role === 'admin') {
