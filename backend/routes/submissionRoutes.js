@@ -10,7 +10,8 @@ router.post('/assignment/:id/start', auth, ctrl.startAttempt);
 router.post('/assignment/:id/submit', auth, ctrl.submitAnswers);
 
 // Scholar/admin actions on submissions
-router.post('/:id/grade', auth, ctrl.gradeSubmissionAI);
+// 🚀 DISABLED: AI grading functionality - using manual grading only
+// router.post('/:id/grade', auth, ctrl.gradeSubmissionAI);
 router.post('/:id/override', auth, ctrl.overrideGrade);
 router.post('/:id/manual-grade', auth, ctrl.manualGradeSubmission);
 

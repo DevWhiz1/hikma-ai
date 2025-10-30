@@ -20,8 +20,12 @@ const AssignmentSchema = new mongoose.Schema({
   kind: { type: String, enum: ['assignment', 'quiz'], default: 'assignment', index: true },
   scholar: { type: mongoose.Schema.Types.ObjectId, ref: 'Scholar' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  // Enrollment-based access control: only students in this enrollment can see/submit
-  enrollmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Enrollment', required: true, index: true },
+  // Enrollment-based access control: can target one or multiple enrollments
+  enrollmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Enrollment', index: true }, // Legacy support
+  // 🚀 NEW: Support multiple students (array of enrollment IDs)
+  targetEnrollments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Enrollment', index: true }],
+  // Track if assignment targets all students
+  targetAllStudents: { type: Boolean, default: false },
   // Assignment deadline
   dueDate: { type: Date },
   // Quiz timing
@@ -43,9 +47,12 @@ const AssignmentSchema = new mongoose.Schema({
   questions: [QuestionSchema],
   sources: [{ type: String }],
   metadata: { type: Map, of: String },
+  // Track creation method
+  createdByAI: { type: Boolean, default: false },
 }, { timestamps: true });
 
 AssignmentSchema.index({ createdBy: 1, status: 1, dueDate: -1 });
 AssignmentSchema.index({ enrollmentId: 1, status: 1, kind: 1 });
+AssignmentSchema.index({ targetEnrollments: 1, status: 1, kind: 1 });
 
 module.exports = mongoose.model('Assignment', AssignmentSchema);

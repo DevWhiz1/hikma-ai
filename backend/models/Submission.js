@@ -9,7 +9,7 @@ const AnswerSchema = new mongoose.Schema({
 
 const ScoreSchema = new mongoose.Schema({
   questionId: { type: mongoose.Schema.Types.ObjectId, required: true },
-  score: { type: Number, required: true },
+  score: { type: Number, required: false }, // 🚀 FIX: Allow null/undefined for essay questions requiring manual grading
   feedback: { type: String },
 }, { _id: false });
 

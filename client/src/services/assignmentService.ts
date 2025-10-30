@@ -38,17 +38,32 @@ export type Assignment = {
 export type Submission = {
   _id: string;
   assignment: string;
-  student: string;
+  student: string | { _id: string; name: string; email: string }; // Can be ObjectId or populated object
   answers: { questionId: string; answerText?: string; selectedOption?: any }[];
   status: 'in_progress' | 'submitted' | 'graded' | 'resubmission-requested';
   grade?: number;
   feedback?: string;
+  aiGrading?: {
+    totalScore?: number;
+    perQuestion?: Array<{ questionId: string; score: number; feedback?: string }>;
+    reasoning?: string;
+    model?: string;
+    version?: string;
+  };
+  manualGrading?: {
+    totalScore?: number;
+    perQuestion?: Array<{ questionId: string; score: number; feedback?: string }>;
+    feedback?: string;
+    by?: string;
+    at?: string;
+  };
   createdAt?: string;
   updatedAt?: string;
   startedAt?: string;
   endAt?: string;
   submittedAt?: string;
   autoSubmitted?: boolean;
+  gradedBy?: string | { _id: string; name: string };
 };
 
 export const assignmentService = {

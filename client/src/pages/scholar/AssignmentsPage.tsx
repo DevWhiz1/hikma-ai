@@ -7,6 +7,7 @@ const AssignmentsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'draft' | 'published' | 'closed'>('all');
   const navigate = useNavigate();
 
   const load = async () => {
@@ -25,70 +26,272 @@ const AssignmentsPage: React.FC = () => {
   useEffect(() => { load(); }, []);
 
   const handleGenerate = async (id: string) => {
+    if (!confirm('This will regenerate all questions. Continue?')) return;
     setBusyId(id);
     try {
       await assignmentService.generate(id);
       await load();
-    } catch (e) {
-      alert('AI generation failed. Ensure Python + google-generativeai and GEMINI_API_KEY are configured.');
+      alert('✅ Questions regenerated successfully!\n\nReview the AI-generated questions and make any necessary edits before publishing.');
+    } catch (e: any) {
+      alert(e?.response?.data?.error || 'AI generation failed. Check your Python environment and API keys.');
     } finally {
       setBusyId(null);
     }
   };
 
   const handlePublish = async (id: string) => {
+    const assignment = items.find(a => a._id === id);
+    if (!assignment || (assignment.questions?.length || 0) === 0) {
+      alert('⚠️ Please add at least one question before publishing');
+      return;
+    }
+    const isQuiz = assignment.kind === 'quiz';
+    if (!confirm(`Publish this ${isQuiz ? 'quiz' : 'assignment'}? All target students will be notified and can ${isQuiz ? 'start taking' : 'access'} it.`)) return;
+    
     setBusyId(id);
     try {
       await assignmentService.publish(id);
       await load();
-    } catch (e) {
-      alert('Publish failed');
+      alert(`✅ ${isQuiz ? 'Quiz' : 'Assignment'} published successfully!\n\nAll students have been notified and can now ${isQuiz ? 'start the quiz' : 'view and submit the assignment'}.`);
+    } catch (e: any) {
+      alert(`❌ Failed to publish: ${e?.response?.data?.error || 'Unknown error'}`);
     } finally {
       setBusyId(null);
     }
   };
 
-  return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">Assignments</h1>
-        <button
-          onClick={() => navigate('/scholar/assignments/new')}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-        >New Assignment</button>
+  const handleClose = async (id: string) => {
+    if (!confirm('Close this assignment? Students will no longer be able to submit.')) return;
+    setBusyId(id);
+    try {
+      await assignmentService.close(id);
+      await load();
+      alert('🔒 Assignment closed successfully\n\nStudents will no longer be able to submit this assignment.');
+    } catch (e: any) {
+      alert(e?.response?.data?.error || 'Failed to close assignment');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const filteredItems = filter === 'all' 
+    ? items 
+    : items.filter(item => item.status === filter);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'published': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'closed': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      default: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading assignments...</p>
+        </div>
       </div>
-      {loading ? (
-        <p>Loading...</p>
-      ) : error ? (
-        <p className="text-red-600">{error}</p>
+    );
+  }
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-2">
+              My Assignments & Quizzes
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Create and manage assignments and quizzes for your students
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/scholar/assignments/new')}
+            className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center gap-2"
+          >
+            <span>➕</span> New Assignment
+          </button>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700">
+          {(['all', 'draft', 'published', 'closed'] as const).map(status => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                filter === status
+                  ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)} ({status === 'all' ? items.length : items.filter(i => i.status === status).length})
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+          <p className="text-red-800 dark:text-red-200">{error}</p>
+        </div>
+      )}
+
+      {/* Assignments List */}
+      {filteredItems.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">
+            {filter === 'all' ? 'No assignments yet' : `No ${filter} assignments`}
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mb-4">
+            {filter === 'all' && 'Create your first assignment to get started'}
+          </p>
+          {filter === 'all' && (
+            <button
+              onClick={() => navigate('/scholar/assignments/new')}
+              className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            >
+              Create Assignment
+            </button>
+          )}
+        </div>
       ) : (
         <div className="grid gap-4">
-          {items.map(item => (
-            <div key={item._id} className="rounded-lg border border-emerald-200/60 dark:border-emerald-800/60 bg-white/70 dark:bg-gray-900/50 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold">{item.title}</h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Status: {item.status} • Questions: {item.questions?.length || 0}</p>
+          {filteredItems.map(item => {
+            const questionCount = item.questions?.length || 0;
+            const hasQuestions = questionCount > 0;
+            
+            return (
+              <div
+                key={item._id}
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        {item.title}
+                      </h2>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status)}`}>
+                        {item.status.toUpperCase()}
+                      </span>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        item.kind === 'quiz'
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                          : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+                      }`}>
+                        {item.kind === 'quiz' ? '⏱️ Quiz' : '📝 Assignment'}
+                      </span>
+                      {(item as any).createdByAI && (
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+                          🤖 AI Created
+                        </span>
+                      )}
+                    </div>
+                    
+                    {item.description && (
+                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 line-clamp-2">
+                        {item.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <span>📚</span> {questionCount} question{questionCount !== 1 ? 's' : ''}
+                      </span>
+                      {item.kind === 'assignment' && item.dueDate && (
+                        <span className="flex items-center gap-1">
+                          <span>📅</span> Due: {new Date(item.dueDate).toLocaleDateString()}
+                        </span>
+                      )}
+                      {item.kind === 'quiz' && item.durationMinutes && (
+                        <span className="flex items-center gap-1">
+                          <span>⏱️</span> {item.durationMinutes} min
+                        </span>
+                      )}
+                      {(item as any).targetAllStudents && (
+                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                          <span>📢</span> All Students
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {item.status === 'draft' && (
-                    <button onClick={() => handleGenerate(item._id)} disabled={busyId === item._id}
-                      className="px-3 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60">{busyId === item._id ? 'Generating...' : 'AI Generate'}</button>
-                  )}
-                  {item.status !== 'published' && (
-                    <button onClick={() => handlePublish(item._id)} disabled={busyId === item._id}
-                      className="px-3 py-2 text-sm rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60">Publish</button>
-                  )}
-                  <Link to={`/scholar/assignments/${item._id}/builder`} className="px-3 py-2 text-sm rounded bg-indigo-600 text-white hover:bg-indigo-700">Edit</Link>
-                  <Link to={`/scholar/assignments/${item._id}/submissions`} className="px-3 py-2 text-sm rounded bg-gray-200 dark:bg-gray-700">Submissions</Link>
+
+                {/* Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    {item.status === 'draft' && !hasQuestions && (
+                      <button
+                        onClick={() => handleGenerate(item._id!)}
+                        disabled={busyId === item._id}
+                        className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                      >
+                        {busyId === item._id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                            Generating...
+                          </>
+                        ) : (
+                          <>🤖 Generate with AI</>
+                        )}
+                      </button>
+                    )}
+                    
+                    {item.status === 'draft' && hasQuestions && (
+                      <button
+                        onClick={() => handlePublish(item._id!)}
+                        disabled={busyId === item._id}
+                        className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                      >
+                        {busyId === item._id ? 'Publishing...' : '📢 Publish'}
+                      </button>
+                    )}
+                    
+                    {item.status === 'published' && (
+                      <button
+                        onClick={() => handleClose(item._id!)}
+                        disabled={busyId === item._id}
+                        className="px-3 py-1.5 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors"
+                      >
+                        {busyId === item._id ? 'Closing...' : '🔒 Close'}
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to={`/scholar/assignments/${item._id}/builder`}
+                      className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                    >
+                      ✏️ Edit
+                    </Link>
+                    <Link
+                      to={`/scholar/assignments/${item._id}/submissions`}
+                      className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+                    >
+                      📊 Submissions
+                    </Link>
+                  </div>
                 </div>
+
+                {/* Warning if no questions */}
+                {item.status === 'draft' && !hasQuestions && (
+                  <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      ⚠️ No questions yet. Add questions manually or generate with AI before publishing.
+                    </p>
+                  </div>
+                )}
               </div>
-              {item.description && <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">{item.description}</p>}
-            </div>
-          ))}
-          {items.length === 0 && (
-            <div className="text-gray-600 dark:text-gray-400">No assignments yet.</div>
-          )}
+            );
+          })}
         </div>
       )}
     </div>

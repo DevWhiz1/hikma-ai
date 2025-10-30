@@ -55,7 +55,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
       }
       items.push({ name: 'Scholar Dashboard', icon: BookOpenIcon, id: 'scholar-dashboard', path: '/scholars/dashboard' });
   items.push({ name: 'Assignments', icon: BookOpenIcon, id: 'scholar-assignments', path: '/scholar/assignments' });
-  items.push({ name: 'Check Assignments', icon: BookOpenIcon, id: 'scholar-assignments-check', path: '/scholar/submissions' });
   items.push({ name: 'Create Assignment', icon: BookOpenIcon, id: 'scholar-assignments-new', path: '/scholar/assignments/new' });
     }
 

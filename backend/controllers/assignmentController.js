@@ -9,11 +9,6 @@ async function createAssignment(req, res) {
   try {
     const body = req.body || {};
     
-    // Validate enrollmentId is provided
-    if (!body.enrollmentId) {
-      return res.status(400).json({ ok: false, error: 'enrollmentId is required' });
-    }
-
     // Find the scholar document for this user
     const Scholar = require('../models/Scholar');
     const scholar = await Scholar.findOne({ user: req.user._id });
@@ -21,15 +16,45 @@ async function createAssignment(req, res) {
       return res.status(403).json({ ok: false, error: 'You must be a scholar to create assignments' });
     }
 
-    // Verify enrollment exists and belongs to this scholar
-    const enrollment = await Enrollment.findOne({
-      _id: body.enrollmentId,
-      scholar: scholar._id,
-      isActive: true
-    });
+    // 🚀 NEW: Support multiple students via targetEnrollments or single enrollmentId (legacy)
+    let targetEnrollments = [];
+    let targetAllStudents = false;
+    let enrollmentId = null;
 
-    if (!enrollment) {
-      return res.status(403).json({ ok: false, error: 'Invalid enrollment or you do not have access to this enrollment' });
+    if (body.targetAllStudents === true || body.enrollmentId === 'all') {
+      // Get all active enrollments for this scholar
+      const allEnrollments = await Enrollment.find({
+        scholar: scholar._id,
+        isActive: true
+      }).select('_id');
+      targetEnrollments = allEnrollments.map(e => e._id);
+      targetAllStudents = true;
+    } else if (body.targetEnrollments && Array.isArray(body.targetEnrollments) && body.targetEnrollments.length > 0) {
+      // Multiple specific enrollments
+      const validEnrollments = await Enrollment.find({
+        _id: { $in: body.targetEnrollments },
+        scholar: scholar._id,
+        isActive: true
+      }).select('_id');
+      if (validEnrollments.length !== body.targetEnrollments.length) {
+        return res.status(403).json({ ok: false, error: 'Some selected enrollments are invalid or not accessible' });
+      }
+      targetEnrollments = validEnrollments.map(e => e._id);
+      enrollmentId = targetEnrollments[0]; // Set first for legacy compatibility
+    } else if (body.enrollmentId) {
+      // Single enrollment (legacy support)
+      const enrollment = await Enrollment.findOne({
+        _id: body.enrollmentId,
+        scholar: scholar._id,
+        isActive: true
+      });
+      if (!enrollment) {
+        return res.status(403).json({ ok: false, error: 'Invalid enrollment or you do not have access to this enrollment' });
+      }
+      enrollmentId = enrollment._id;
+      targetEnrollments = [enrollment._id];
+    } else {
+      return res.status(400).json({ ok: false, error: 'Either enrollmentId, targetEnrollments array, or targetAllStudents=true is required' });
     }
 
     const doc = await Assignment.create({
@@ -38,8 +63,10 @@ async function createAssignment(req, res) {
       type: body.type || 'quiz',
       kind: body.kind || 'assignment',
       createdBy: req.user._id,
-      enrollmentId: body.enrollmentId,
-      scholar: body.scholar || undefined,
+      enrollmentId, // Legacy support
+      targetEnrollments, // 🚀 NEW: Multiple students
+      targetAllStudents, // 🚀 NEW: Track if targeting all
+      scholar: scholar._id,
       dueDate: body.dueDate || undefined,
       quizWindowStart: body.quizWindowStart || undefined,
       quizWindowEnd: body.quizWindowEnd || undefined,
@@ -47,6 +74,7 @@ async function createAssignment(req, res) {
       aiSpec: body.aiSpec || undefined,
       questions: body.questions || [],
       sources: body.sources || [],
+      createdByAI: body.createdByAI || false, // Track if created via AI
     });
     res.json({ ok: true, assignment: doc });
   } catch (e) {
@@ -190,10 +218,16 @@ async function getStudentAssignments(req, res) {
     }).select('_id');
 
     const enrollmentIds = enrollments.map(e => e._id);
+    if (enrollmentIds.length === 0) {
+      return res.json({ ok: true, assignments: [] });
+    }
 
-    // Build query
+    // Build query: supports both legacy (enrollmentId) and new (targetEnrollments) format
     const query = {
-      enrollmentId: { $in: enrollmentIds },
+      $or: [
+        { enrollmentId: { $in: enrollmentIds } }, // Legacy support
+        { targetEnrollments: { $in: enrollmentIds } } // 🚀 NEW: Multi-student support
+      ],
       status: 'published'
     };
 
@@ -205,6 +239,7 @@ async function getStudentAssignments(req, res) {
     const assignments = await Assignment.find(query)
       .populate('createdBy', 'name')
       .populate('enrollmentId')
+      .populate('targetEnrollments')
       .sort({ createdAt: -1 })
       .lean();
 

@@ -2,6 +2,7 @@ const Assignment = require('../models/Assignment');
 const Submission = require('../models/Submission');
 const AgentActivity = require('../models/AgentActivity');
 const { runPythonAgent } = require('../utils/agentBridge');
+const NotificationService = require('../services/notificationService');
 
 // Start a quiz attempt (creates an in-progress submission with a per-student deadline)
 async function startAttempt(req, res) {
@@ -54,11 +55,27 @@ async function submitAnswers(req, res) {
       if (assignment.dueDate && now > assignment.dueDate) {
         return res.status(403).json({ ok: false, error: 'Deadline passed. Submission not accepted.' });
       }
+      
+      // 🚀 FIX: Check if already submitted - prevent resubmission
+      const existingSubmission = await Submission.findOne({ assignment: id, student: req.user._id });
+      if (existingSubmission && (existingSubmission.status === 'submitted' || existingSubmission.status === 'graded')) {
+        return res.status(403).json({ ok: false, error: 'Assignment already submitted. Resubmission is not allowed.' });
+      }
+      
       const doc = await Submission.findOneAndUpdate(
         { assignment: id, student: req.user._id },
         { answers, status: 'submitted', submittedAt: now },
         { upsert: true, new: true }
       );
+      
+      // 🚀 NEW: Notify scholar that student has submitted
+      try {
+        await NotificationService.notifyScholarSubmissionReceived(assignment, doc, req.user);
+      } catch (notifErr) {
+        console.error('[submitAnswers] Scholar notification failed:', notifErr.message);
+        // Don't fail submission if notification fails
+      }
+      
       return res.json({ ok: true, submission: doc });
     }
 
@@ -70,6 +87,11 @@ async function submitAnswers(req, res) {
       }
       if (assignment.quizWindowEnd && now > assignment.quizWindowEnd) {
         // Auto-submit with whatever was sent (or empty)
+        // 🚀 FIX: Check if already submitted - prevent resubmission
+        const existingQuiz = await Submission.findOne({ assignment: id, student: req.user._id });
+        if (existingQuiz && (existingQuiz.status === 'submitted' || existingQuiz.status === 'graded')) {
+          return res.status(403).json({ ok: false, error: 'Quiz already submitted. Resubmission is not allowed.' });
+        }
         const doc = await Submission.findOneAndUpdate(
           { assignment: id, student: req.user._id },
           { answers, status: 'submitted', submittedAt: now, autoSubmitted: true },
@@ -79,6 +101,11 @@ async function submitAnswers(req, res) {
       }
 
       let submission = await Submission.findOne({ assignment: id, student: req.user._id });
+      
+      // 🚀 FIX: Check if already submitted - prevent resubmission
+      if (submission && (submission.status === 'submitted' || submission.status === 'graded')) {
+        return res.status(403).json({ ok: false, error: 'Quiz already submitted. Resubmission is not allowed.' });
+      }
       if (!submission || !submission.startedAt || !submission.endAt) {
         // If user skipped explicit start, start now but keep duration from now
         const endAt = new Date(now.getTime() + (assignment.durationMinutes || 0) * 60 * 1000);
@@ -98,6 +125,15 @@ async function submitAnswers(req, res) {
       };
       submission.set(update);
       await submission.save();
+      
+      // 🚀 NEW: Notify scholar that student has submitted (for quiz)
+      try {
+        await NotificationService.notifyScholarSubmissionReceived(assignment, submission, req.user);
+      } catch (notifErr) {
+        console.error('[submitAnswers] Scholar notification failed:', notifErr.message);
+        // Don't fail submission if notification fails
+      }
+      
       return res.json({ ok: true, submission });
     }
 
@@ -152,18 +188,96 @@ async function gradeSubmissionAI(req, res) {
       model: payload.model,
     });
 
-    if (!result.ok) return res.status(502).json({ ok: false, error: 'AI grading failed', detail: result.error });
+    if (!result.ok) {
+      console.error('[gradeSubmissionAI] AI grading failed:', result.error);
+      return res.status(502).json({ ok: false, error: 'AI grading failed', detail: result.error });
+    }
 
-    const { totalScore, perQuestion = [], feedback, model, version } = result.data || {};
-    submission.status = 'graded';
-    submission.grade = typeof totalScore === 'number' ? totalScore : undefined;
+    const { totalScore, perQuestion = [], feedback, model, version, hasEssays } = result.data || {};
+    
+    // 🚀 FIX: Handle essay questions - add them to perQuestion with null scores for manual grading
+    const essayQuestions = assignment.questions.filter(q => q.type === 'essay');
+    const essayQuestionIds = essayQuestions.map(q => String(q._id));
+    
+    // Add essay questions with null scores to perQuestion array if not already present
+    const existingQuestionIds = perQuestion.map(pq => String(pq.questionId));
+    essayQuestions.forEach(essayQ => {
+      const essayQId = String(essayQ._id);
+      if (!existingQuestionIds.includes(essayQId)) {
+        // 🚀 FIX: Don't include score field at all for essays (omitted = undefined) to avoid Mongoose validation
+        perQuestion.push({
+          questionId: essayQId,
+          feedback: 'Essay question - requires manual grading'
+          // score field is intentionally omitted for essay questions
+        });
+      }
+    });
+    
+    // 🚀 FIX: Calculate totalScore only from gradable (non-essay) questions
+    const gradablePerQuestion = perQuestion.filter(pq => pq.score !== null && pq.score !== undefined);
+    let finalTotalScore = totalScore;
+    
+    // If gradable per-question scores exist, calculate totalScore from them
+    if (gradablePerQuestion && gradablePerQuestion.length > 0) {
+      const sumScores = gradablePerQuestion.reduce((sum, pq) => {
+        const score = typeof pq.score === 'number' ? pq.score : 0;
+        return sum + Math.max(0, Math.min(10, score)); // Ensure score is 0-10
+      }, 0);
+      const maxPossible = gradablePerQuestion.length * 10;
+      if (maxPossible > 0) {
+        finalTotalScore = Math.round((sumScores / maxPossible) * 100);
+      } else {
+        finalTotalScore = 0;
+      }
+    } else if (typeof totalScore !== 'number' || isNaN(totalScore) || totalScore < 0 || totalScore > 100) {
+      // If totalScore is invalid and no gradable per-question scores, check if there are essays
+      if (essayQuestions.length > 0 && gradablePerQuestion.length === 0) {
+        // Only essays - don't set a grade yet, wait for manual grading
+        finalTotalScore = null;
+      } else {
+        finalTotalScore = 0;
+      }
+    }
+    
+    // Ensure finalTotalScore is between 0-100 if it's a number
+    if (finalTotalScore !== null && typeof finalTotalScore === 'number') {
+      finalTotalScore = Math.max(0, Math.min(100, Math.round(finalTotalScore)));
+    }
+    
+    // If there are essays that need manual grading, don't mark as fully graded yet
+    const hasUngradedEssays = perQuestion.some(pq => pq.score === null || pq.score === undefined);
+    
+    submission.status = hasUngradedEssays ? 'submitted' : 'graded'; // Keep as submitted if essays need grading
+    submission.grade = finalTotalScore; // Can be null if only essays
     submission.feedback = feedback || '';
-    submission.aiGrading = { totalScore, perQuestion, reasoning: feedback, model, version };
+    submission.aiGrading = { 
+      totalScore: finalTotalScore, // Can be null
+      perQuestion, // Includes essays with null scores
+      reasoning: feedback, 
+      model, 
+      version,
+      hasEssays: hasEssays || essayQuestions.length > 0
+    };
     submission.gradedBy = req.user._id;
-    await submission.save();
+    
+    try {
+      await submission.save();
+      console.log(`[gradeSubmissionAI] Successfully graded submission ${submission._id}`);
+    } catch (saveError) {
+      console.error('[gradeSubmissionAI] Failed to save submission:', saveError.message);
+      console.error('[gradeSubmissionAI] Save error details:', saveError);
+      return res.status(500).json({ ok: false, error: 'Failed to save grading results', detail: saveError.message });
+    }
 
-    res.json({ ok: true, submission, activityId: activity._id });
+    // 🚀 FIX: Populate submission before returning to ensure student info is included
+    const populatedSubmission = await Submission.findById(submission._id)
+      .populate('student', 'name email _id')
+      .populate('gradedBy', 'name')
+      .lean();
+
+    res.json({ ok: true, submission: populatedSubmission || submission, activityId: activity._id });
   } catch (e) {
+    console.error('[gradeSubmissionAI] Unexpected error:', e);
     res.status(500).json({ ok: false, error: e.message });
   }
 }
@@ -199,7 +313,12 @@ async function listSubmissionsForAssignment(req, res) {
     if (!assignment) return res.status(404).json({ ok: false, error: 'Assignment not found' });
     const isOwner = String(assignment.createdBy) === String(req.user._id);
     if (!isOwner && req.user.role !== 'admin') return res.status(403).json({ ok: false, error: 'Forbidden' });
-    const list = await Submission.find({ assignment: id }).sort({ createdAt: -1 }).lean();
+    // 🚀 FIX: Populate student information to show name instead of ObjectId
+    const list = await Submission.find({ assignment: id })
+      .populate('student', 'name email _id')
+      .populate('gradedBy', 'name')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json({ ok: true, submissions: list });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
@@ -234,7 +353,13 @@ async function listSubmissionsInbox(req, res) {
     const status = req.query.status;
     const q = { assignment: { $in: ids } };
     if (status) q.status = status;
-    const list = await Submission.find(q).sort({ createdAt: -1 }).lean();
+    // 🚀 FIX: Populate student information to show name instead of ObjectId
+    const list = await Submission.find(q)
+      .populate('student', 'name email _id')
+      .populate('gradedBy', 'name')
+      .populate('assignment', 'title kind')
+      .sort({ createdAt: -1 })
+      .lean();
     res.json({ ok: true, submissions: list });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });

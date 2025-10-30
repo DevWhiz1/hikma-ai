@@ -114,7 +114,7 @@ class NotificationService {
       // Add system message to chat
       const systemMessage = {
         role: 'system',
-        content: `📢 **New ${assignmentKind === 'quiz' ? 'Quiz' : 'Assignment'} Published**\n\n**Title:** ${assignmentTitle}\n**From:** ${scholarName}\n\n[Click here to view and start](/assignments/${assignmentId}/take)`
+        content: `📚 **New ${assignmentKind === 'quiz' ? 'Quiz' : 'Assignment'} Available**\n\n**Title:** ${assignmentTitle}\n**Published by:** ${scholarName}\n\nYou can now access and complete this ${assignmentKind === 'quiz' ? 'quiz' : 'assignment'}. [Click here to get started](/assignments/${assignmentId}/take)`
       };
 
       chatSession.messages.push(systemMessage);
@@ -156,8 +156,8 @@ class NotificationService {
       const scholarName = scholarUser ? scholarUser.name : 'Your Scholar';
 
       const isQuiz = assignment.kind === 'quiz';
-      const title = `New ${isQuiz ? 'Quiz' : 'Assignment'} Published`;
-      const message = `${scholarName} has published: "${assignment.title}"`;
+      const title = `📚 New ${isQuiz ? 'Quiz' : 'Assignment'} Available`;
+      const message = `${scholarName} has published a new ${isQuiz ? 'quiz' : 'assignment'}: "${assignment.title}". ${isQuiz ? 'Complete it within the time limit' : 'Submit before the deadline'}.`;
 
       // 1. Create in-app notification
       const link = `/assignments/${assignment._id}/take`;
@@ -260,9 +260,13 @@ class NotificationService {
       const scholarUser = await User.findById(assignment.createdBy).select('name');
       const scholarName = scholarUser ? scholarUser.name : 'Your Scholar';
 
-      const title = `${assignment.kind === 'quiz' ? 'Quiz' : 'Assignment'} Graded`;
-      const score = submission.manualGrading?.totalScore || submission.aiGrading?.totalScore || 0;
-      const message = `Your submission for "${assignment.title}" has been graded. Score: ${score}`;
+      const title = `📊 ${assignment.kind === 'quiz' ? 'Quiz' : 'Assignment'} Graded`;
+      const score = submission.manualGrading?.totalScore || submission.aiGrading?.totalScore || submission.grade || 0;
+      const scoreText = typeof score === 'number' ? `${score}%` : 'Pending';
+      const message = `Your ${assignment.kind === 'quiz' ? 'quiz' : 'assignment'} submission for "${assignment.title}" has been reviewed and graded. Your score: ${scoreText}. View detailed feedback in your submissions.`;
+      
+      // Ensure scoreText is available for email template
+      const emailScoreText = scoreText;
 
       await this.createNotification(
         student._id,
@@ -288,8 +292,8 @@ class NotificationService {
           <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
             <h2 style="color: #10b981;">📊 ${title}</h2>
             <p>Dear ${student.name},</p>
-            <p>${scholarName} has graded your submission for <strong>"${assignment.title}"</strong>.</p>
-            <p style="font-size: 1.2em;"><strong>Score: ${score}</strong></p>
+            <p>${scholarName} has reviewed and graded your ${assignment.kind === 'quiz' ? 'quiz' : 'assignment'} submission for <strong>"${assignment.title}"</strong>.</p>
+            <p style="font-size: 1.2em;"><strong>Your Score: ${emailScoreText}</strong></p>
             ${submission.manualGrading?.feedback ? `<p><strong>Feedback:</strong> ${submission.manualGrading.feedback}</p>` : ''}
             <p><a href="${process.env.APP_BASE_URL}me/submissions" style="display: inline-block; padding: 10px 20px; background: #10b981; color: white; text-decoration: none; border-radius: 5px;">View Details</a></p>
             <p>Best regards,<br>Hikma AI Team</p>
@@ -303,6 +307,44 @@ class NotificationService {
       console.log(`[NotificationService] Grade notification sent for submission ${submission._id}`);
     } catch (error) {
       console.error('[NotificationService] Failed to notify grade:', error.message);
+    }
+  }
+
+  /**
+   * Notify scholar when a student submits an assignment/quiz
+   */
+  static async notifyScholarSubmissionReceived(assignment, submission, studentUser) {
+    try {
+      const scholarUserId = assignment.createdBy;
+      if (!scholarUserId) return;
+
+      const studentName = studentUser.name || 'A student';
+      const isQuiz = assignment.kind === 'quiz';
+      const title = `📝 New ${isQuiz ? 'Quiz' : 'Assignment'} Submission`;
+      const message = `${studentName} has ${isQuiz ? 'completed and submitted' : 'submitted'} the ${isQuiz ? 'quiz' : 'assignment'} "${assignment.title}". Ready for your review.`;
+
+      // Create in-app notification for scholar
+      const link = `/scholar/assignments/${assignment._id}/submissions`;
+      await this.createNotification(
+        scholarUserId,
+        isQuiz ? 'quiz' : 'assignment',
+        title,
+        message,
+        {
+          assignmentId: assignment._id,
+          submissionId: submission._id,
+          studentId: studentUser._id,
+          studentName,
+          assignmentTitle: assignment.title,
+          kind: assignment.kind
+        },
+        link,
+        'normal'
+      );
+
+      console.log(`[NotificationService] Submission notification sent to scholar ${scholarUserId} for submission ${submission._id}`);
+    } catch (error) {
+      console.error('[NotificationService] Failed to notify scholar of submission:', error.message);
     }
   }
 }

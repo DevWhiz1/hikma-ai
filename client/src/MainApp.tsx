@@ -41,7 +41,6 @@ import AvailableMeetingsPage from './pages/user/AvailableMeetingsPage';
 import AssignmentsPage from './pages/scholar/AssignmentsPage';
 import AssignmentCreatePage from './pages/scholar/AssignmentCreatePage';
 import AssignmentSubmissionsPage from './pages/scholar/AssignmentSubmissionsPage';
-import SubmissionsInboxPage from './pages/scholar/SubmissionsInboxPage';
 import TakeAssignmentPage from './pages/user/TakeAssignmentPage';
 import MySubmissionsPage from './pages/user/MySubmissionsPage';
 import AvailableAssignmentsPage from './pages/user/AvailableAssignmentsPage';
@@ -179,7 +178,6 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
                   <Route path="/scholar/assignments/new" element={<AssignmentCreatePage />} />
                   <Route path="/scholar/assignments/:id/builder" element={<AssignmentBuilderPage />} />
                   <Route path="/scholar/assignments/:id/submissions" element={<AssignmentSubmissionsPage />} />
-                  <Route path="/scholar/submissions" element={<SubmissionsInboxPage />} />
                   <Route path="/assignments/:id/take" element={<TakeAssignmentPage />} />
                   <Route path="/me/submissions" element={<MySubmissionsPage />} />
                   <Route path="/qibla" element={<QiblaFinder />} />
