@@ -10,12 +10,13 @@ const SensitiveLog = require('../models/SensitiveLog');
 const { filterMeetingLinks, filterContactInfo, detectAllLinks } = require('../middleware/messageFilter');
 const { emitMeetingRequest, emitMeetingScheduled, emitMeetingLinkSent } = require('../utils/socketEmitter');
 
-// Generate Jitsi meeting link
+// Generate Jitsi meeting link using custom domain
 const generateJitsiLink = () => {
   const room = crypto.randomBytes(6).toString('hex');
+  const jitsiDomain = process.env.JITSI_DOMAIN || 'hikmameet.live';
   return {
     roomId: room,
-    link: `https://meet.jit.si/HikmaAI-${room}`
+    link: `https://${jitsiDomain}/HikmaAI-${room}`
   };
 };
 
@@ -74,7 +75,7 @@ const requestMeeting = async (req, res) => {
     const message = new Message({
       sender: studentId,
       chatId: chat._id,
-      text: `Hikma: ${req.user.name} requested a meeting.${reason ? ` Reason: ${reason}` : ''}`,
+      text: `HikmaBot: ${req.user.name} requested a meeting.${reason ? ` Reason: ${reason}` : ''}`,
       type: 'meeting_request'
     });
     await message.save();
@@ -134,19 +135,39 @@ const requestMeeting = async (req, res) => {
 // Schedule a meeting
 const scheduleMeeting = async (req, res) => {
   try {
-    const { chatId, scheduledTime } = req.body;
+    const { chatId, scheduledTime, studentId } = req.body;
     const scholarId = req.user.id;
 
-    // Find the chat and verify scholar is participant
-    const chat = await Chat.findById(chatId);
-    if (!chat || chat.scholarId.toString() !== scholarId) {
-      return res.status(404).json({ error: 'Chat not found or unauthorized' });
+    let chat;
+    
+    // If studentId is provided (scheduling with enrolled student), find or create Chat
+    if (studentId) {
+      chat = await Chat.findOne({ studentId, scholarId });
+      if (!chat) {
+        // Create a new Chat for this student-scholar pair
+        chat = new Chat({ studentId, scholarId });
+        await chat.save();
+      }
+    } else if (chatId) {
+      // Find the chat by ID and verify scholar is participant
+      chat = await Chat.findById(chatId);
+      if (!chat || chat.scholarId.toString() !== scholarId) {
+        return res.status(404).json({ error: 'Chat not found or unauthorized' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Either chatId or studentId is required' });
     }
 
     // Upsert or update meeting with scheduled time
     const meeting = await Meeting.findOneAndUpdate(
-      { chatId, scholarId },
-      { $set: { scheduledTime: new Date(scheduledTime), status: 'scheduled' } },
+      { chatId: chat._id, scholarId },
+      { 
+        $set: { 
+          scheduledTime: new Date(scheduledTime), 
+          status: 'scheduled',
+          studentId: chat.studentId
+        } 
+      },
       { new: true, upsert: true }
     );
 
@@ -154,7 +175,7 @@ const scheduleMeeting = async (req, res) => {
   const message = new Message({
     sender: scholarId,
     chatId: chat._id,
-    text: `Hikma: Meeting scheduled for ${new Date(scheduledTime).toLocaleString()}.`,
+    text: `HikmaBot: Meeting scheduled for ${new Date(scheduledTime).toLocaleString()}.`,
     type: 'meeting_scheduled',
     metadata: { scheduledTime: new Date(scheduledTime) }
   });
@@ -217,7 +238,7 @@ const requestReschedule = async (req, res) => {
     const msg = new Message({
       sender: userId,
       chatId,
-      text: `Hikma: Reschedule requested.${proposedTime ? ` Proposed: ${new Date(proposedTime).toLocaleString()}` : ''}${note ? ` Note: ${note}` : ''}`,
+      text: `HikmaBot: Reschedule requested.${proposedTime ? ` Proposed: ${new Date(proposedTime).toLocaleString()}` : ''}${note ? ` Note: ${note}` : ''}`,
       type: 'text'
     });
     await msg.save();
@@ -279,7 +300,7 @@ const respondReschedule = async (req, res) => {
     if (decision === 'reject') {
       reqItem.status = 'rejected';
       await meeting.save();
-      const msg = new Message({ sender: scholarId, chatId, text: 'Hikma: Reschedule request was rejected.', type: 'text' });
+      const msg = new Message({ sender: scholarId, chatId, text: 'HikmaBot: Reschedule request was rejected.', type: 'text' });
       await msg.save();
       chat.messages.push(msg._id);
       chat.lastActivity = new Date();
@@ -314,7 +335,7 @@ const respondReschedule = async (req, res) => {
     const msg = new Message({
       sender: scholarId,
       chatId,
-      text: `Hikma: Meeting rescheduled to ${new Date(finalTime).toLocaleString()}.`,
+      text: `HikmaBot: Meeting rescheduled to ${new Date(finalTime).toLocaleString()}.`,
       type: 'meeting_scheduled',
       metadata: { scheduledTime: finalTime }
     });
@@ -362,7 +383,11 @@ const cancelMeeting = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found or unauthorized' });
     }
 
-    await Meeting.findOneAndUpdate({ chatId }, { status: 'cancelled' }, { new: true });
+    // Cancel all active meetings for this chat to avoid duplicate leftovers
+    await Meeting.updateMany(
+      { chatId, status: { $in: ['requested', 'scheduled', 'link_sent'] } },
+      { $set: { status: 'cancelled' } }
+    );
 
     // Remove previous scheduled/link messages from this chat
     try {
@@ -374,7 +399,7 @@ const cancelMeeting = async (req, res) => {
       }
     } catch {}
 
-    const msg = new Message({ sender: scholarId, chatId, text: 'Hikma: Meeting was cancelled by the scholar.', type: 'text' });
+    const msg = new Message({ sender: scholarId, chatId, text: 'HikmaBot: Meeting was cancelled by the scholar.', type: 'text' });
     await msg.save();
     chat.messages.push(msg._id);
     chat.lastActivity = new Date();
@@ -521,26 +546,51 @@ const getScholarDashboard = async (req, res) => {
   try {
     const scholarId = req.user.id;
 
-    // Enrolled students approximated from chats
-    const chats = await Chat.find({ scholarId, isActive: true })
-      .populate('studentId', 'name email')
-      .sort({ lastActivity: -1 });
+    // Get enrolled students from Enrollment model
+    const Enrollment = require('../models/Enrollment');
+    const User = require('../models/User');
+    
+    // First get the scholar document to get the scholar ID
+    const Scholar = require('../models/Scholar');
+    const scholarDoc = await Scholar.findOne({ user: scholarId });
+    
+    if (!scholarDoc) {
+      return res.json({ enrolledStudents: [], requested: [], scheduled: [], linkSent: [] });
+    }
 
-    const enrolledStudents = chats.map(c => ({
-      chatId: c._id,
-      student: c.studentId,
-      lastActivity: c.lastActivity
+    // Get enrollments for this scholar
+    const enrollments = await Enrollment.find({ 
+      scholar: scholarDoc._id, 
+      isActive: true 
+    })
+      .populate('student', 'name email')
+      .populate('studentSession', 'lastActivity')
+      .sort({ createdAt: -1 });
+
+    const enrolledStudents = enrollments.map(enrollment => ({
+      chatId: enrollment.studentSession?._id || enrollment._id,
+      student: enrollment.student,
+      lastActivity: enrollment.studentSession?.lastActivity || enrollment.createdAt
     }));
 
     // Meetings grouped by status
-  const meetings = await Meeting.find({ scholarId })
+    const meetings = await Meeting.find({ scholarId })
       .populate('studentId', 'name email')
       .populate('chatId', '_id')
       .sort({ updatedAt: -1 });
 
-  const requested = meetings.filter(m => m.status === 'requested');
-  const scheduled = meetings.filter(m => m.status === 'scheduled');
-  const linkSent = meetings.filter(m => m.status === 'link_sent');
+    const requested = meetings.filter(m => m.status === 'requested');
+    const scheduled = meetings.filter(m => m.status === 'scheduled');
+    const linkSent = meetings.filter(m => m.status === 'link_sent');
+
+    // Debug: Log scholar dashboard data (remove in production)
+    console.log('Scholar dashboard data:', {
+      scholarId,
+      scholarDocId: scholarDoc._id,
+      enrollmentsCount: enrollments.length,
+      enrolledStudentsCount: enrolledStudents.length,
+      meetingsCount: meetings.length
+    });
 
     res.json({ enrolledStudents, requested, scheduled, linkSent });
   } catch (error) {

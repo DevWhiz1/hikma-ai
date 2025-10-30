@@ -29,7 +29,7 @@ const ChatHistory: React.FC<{
           className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
         >
           <PlusIcon className="h-4 w-4 mr-2" />
-          New Scholar Chat
+          New Chat
         </button>
         {showScholarPicker && (
           <div className="mt-2 space-y-1">

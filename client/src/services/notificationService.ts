@@ -79,5 +79,33 @@ export const notificationService = {
   async deleteNotification(id: string) {
     const res = await axios.delete(`${API_URL}/notifications/${id}`);
     return res.data as { ok: boolean; message: string };
+  },
+
+  // Smart notification methods (from main branch)
+  sendSmart: async (payload: { text: string; audience: 'all'|'selected'; studentIds?: string[] }) => {
+    const res = await axios.post(`${API_URL}/notifications/smart`, payload);
+    return res.data;
+  },
+  listRules: async () => {
+    const res = await axios.get(`${API_URL}/notifications/rules`);
+    return res.data;
+  },
+  createRule: async (rule: any) => {
+    const res = await axios.post(`${API_URL}/notifications/rules`, rule);
+    return res.data;
+  },
+  updateRule: async (id: string, rule: any) => {
+    const res = await axios.put(`${API_URL}/notifications/rules/${id}`, rule);
+    return res.data;
+  },
+  deleteRule: async (id: string) => {
+    const res = await axios.delete(`${API_URL}/notifications/rules/${id}`);
+    return res.data;
+  },
+  runRulesNow: async () => {
+    const res = await axios.post(`${API_URL}/notifications/rules/run`, {});
+    return res.data;
   }
 };
+
+export default notificationService;

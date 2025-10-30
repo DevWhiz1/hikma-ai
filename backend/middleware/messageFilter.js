@@ -58,7 +58,25 @@ function filterContactInfo(text) {
 }
 
 function filterMeetingLinks(text) {
-  // Block all major meeting platforms
+  // Whitelist: Allow custom Jitsi domain (hikmameet.live)
+  const allowedDomains = [
+    /https?:\/\/(?:www\.)?hikmameet\.live\//gi,
+  ];
+  
+  // Check if text contains only allowed meeting links
+  let hasAllowedLink = false;
+  allowedDomains.forEach((pattern) => {
+    if (pattern.test(text)) {
+      hasAllowedLink = true;
+    }
+  });
+  
+  // If it's an allowed link, don't filter it
+  if (hasAllowedLink) {
+    return { filtered: text, hasMeetingLink: false };
+  }
+  
+  // Block all major meeting platforms (except whitelisted domains)
   const meetingPatterns = [
     // Zoom
     /https?:\/\/(?:www\.)?(?:zoom\.us\/j\/|zoom\.us\/my\/|zoom\.us\/meeting\/join\/)\S*/gi,
@@ -85,7 +103,7 @@ function filterMeetingLinks(text) {
     // BlueJeans
     /https?:\/\/(?:bluejeans\.com\/)\S*/gi,
     
-    // Jitsi (external)
+    // Jitsi (external - block public jitsi but allow custom domain)
     /https?:\/\/(?:meet\.jit\.si\/)\S*/gi,
     /https?:\/\/(?:[a-z0-9-]+\.jitsi\.meet\/)\S*/gi,
     

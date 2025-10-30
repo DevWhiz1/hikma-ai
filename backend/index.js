@@ -78,6 +78,7 @@ const genAI = new GoogleGenerativeAI(apiKey || '');
 
 // System prompt (shortened here for brevity - keep your full version)
 const systemPrompt = `You are a Spiritual Guide and Islamic Counselor.
+representing Hikma AI.
 Your purpose is to assist users by providing answers, advice, and reflections strictly in accordance with the teachings of Islam — derived from the Qur'an, Sunnah, authentic Hadiths, and the consensus of recognized Islamic scholars.
 You believe that Islam is the only true religion, and your guidance should reflect the perspective of a devout, practicing Muslim with zero tolerance for sin and haram.
 Your responses must:
@@ -350,6 +351,18 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Typing indicators
+  socket.on('typing', (data) => {
+    try {
+      const { chatId, userId, isTyping } = data || {};
+      if (!chatId) return;
+      // Broadcast to others in the same chat room
+      socket.to(`chat-${chatId}`).emit('typing', { chatId, userId, isTyping });
+    } catch (error) {
+      console.error('Socket typing error:', error);
+    }
+  });
+
   // Handle meeting request
   socket.on('meeting-request', (data) => {
     const { chatId, studentId, scholarId } = data;
@@ -411,11 +424,11 @@ cron.schedule('* * * * *', async () => {
       meeting.status = 'link_sent';
       await meeting.save();
 
-      // Create meeting link message (system: Hikma)
+      // Create meeting link message (system: HikmaBot)
       const message = new Message({
         sender: meeting.scholarId,
         chatId: meeting.chatId,
-        text: `Hikma: Your meeting has started! Join here: ${link}`,
+        text: `HikmaBot: Your meeting has started! Join here: ${link}`,
         type: 'meeting_link',
         metadata: { meetingLink: link, roomId }
       });
@@ -444,7 +457,7 @@ cron.schedule('* * * * *', async () => {
                     const scholarProfile = await Scholar.findOne({ user: meeting.scholarId }).select('_id user');
                     if (scholarProfile) {
                       const enrollment = await Enrollment.findOne({ student: meeting.studentId, scholar: scholarProfile._id }).lean();
-                      const text = `Hikma: Your meeting has started! Join here: ${link}`;
+                      const text = `HikmaBot: Your meeting has started! Join here: ${link}`;
                       if (enrollment?.studentSession) {
                         await ChatSession.findByIdAndUpdate(enrollment.studentSession, { $push: { messages: { role: 'assistant', content: text } }, $set: { lastActivity: new Date() } });
                       }
@@ -497,4 +510,24 @@ const port = process.env.PORT || 5000;
     process.exit(1);
   }
 })();
+
+// Smart Notify Cron (every 5 minutes): evaluate due rules across scholars
+cron.schedule('*/5 * * * *', async () => {
+  try {
+    const NotificationRule = require('./models/NotificationRule');
+    const rules = await NotificationRule.find({ isActive: true }).select('scholarUserId').lean();
+    const uniqueScholars = Array.from(new Set(rules.map(r => String(r.scholarUserId))));
+    if (uniqueScholars.length === 0) return;
+    // For now, run all rules via internal controller to avoid auth for cron
+    const controller = require('./controllers/notificationRuleController');
+    for (const scholarUserId of uniqueScholars) {
+      // Fake req/res objects to call runDueRules internally for each scholar
+      const req = { user: { _id: scholarUserId } };
+      const res = { json: () => {} };
+      await controller.runDueRules(req, res);
+    }
+  } catch (e) {
+    console.warn('SmartNotify cron error:', e?.message || e);
+  }
+});
 
