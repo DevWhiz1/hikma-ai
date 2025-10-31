@@ -1,0 +1,29 @@
+name: Sync Backend to Separate Repo
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'   # only run if something changes in /backend
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v3
+
+      - name: Push backend folder to new repo
+        run: |
+          cd backend
+          git init
+          git config user.name "GitHub Action"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Sync backend from main repo $(date)"
+          git branch -M main   # <-- rename 'master' to 'main'
+          git remote add target https://x-access-token:${{ secrets.BACKEND_REPO_TOKEN }}@github.com/DevWhiz1/hikmah-ai-backend.git
+          git push --force target main
+
+          

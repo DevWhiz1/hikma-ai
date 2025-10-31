@@ -14,6 +14,10 @@ import { ChatSession as BaseChatSession } from '../../../services/chatService';
 import { authService } from '../../../services/authService';
 import AIChatHistory from '../../shared/AIChatHistory';
 import socketService from '../../../services/socketService';
+import { Card, CardHeader } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import ReactMarkdown from 'react-markdown';
 
 const EnhancedAIChat = () => {
@@ -243,8 +247,8 @@ const EnhancedAIChat = () => {
     <div className="relative flex h-full w-full">
       {/* Chat History Sidebar */}
       {showHistory && (
-        <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <Card className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 rounded-none rounded-tr-xl rounded-br-xl">
+          <CardHeader className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">AI Chats</h2>
               <button
@@ -254,14 +258,14 @@ const EnhancedAIChat = () => {
                 <ArrowPathIcon className="h-5 w-5" />
               </button>
             </div>
-            <button
+            <Button
               onClick={handleNewChat}
-              className="w-full flex items-center justify-center px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+              className="w-full justify-center font-medium"
             >
               <SparklesIcon className="h-5 w-5 mr-2" />
               New AI Chat
-            </button>
-          </div>
+            </Button>
+          </CardHeader>
           
           <AIChatHistory
             sessions={sessions.map(session => ({
@@ -273,7 +277,7 @@ const EnhancedAIChat = () => {
             onNewChat={handleNewChat}
             onDeleteSession={handleDeleteSession}
           />
-        </div>
+        </Card>
       )}
 
       {/* Main Chat Area */}
@@ -320,7 +324,8 @@ const EnhancedAIChat = () => {
         </div>
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/50 rounded-full flex items-center justify-center mb-6">
@@ -555,25 +560,22 @@ const EnhancedAIChat = () => {
             </div>
           )}
           <div ref={messagesEndRef} />
-        </div>
+          </div>
+        </ScrollArea>
 
         {/* Message Input */}
         <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
           <form onSubmit={handleSubmit} className="flex items-center space-x-3">
-            <input
+            <Input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Ask about Islam..."
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="flex-1"
             />
-            <button
-              type="submit"
-              disabled={!message.trim() || isLoading}
-              className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
+            <Button type="submit" size="icon" disabled={!message.trim() || isLoading}>
               <PaperAirplaneIcon className="h-5 w-5" />
-            </button>
+            </Button>
           </form>
         </div>
       </div>

@@ -70,12 +70,12 @@ export default function HadithExplorer() {
       <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Search hadith collections. Get hadith for any topic.</p>
       <div className="flex flex-wrap gap-2 mb-4">
         {books.map(b => (
-          <button key={b.slug} onClick={() => setSelectedBook(sel => sel === b.slug ? null : b.slug)} className={`px-3 py-1 rounded-full text-sm border transition ${selectedBook === b.slug ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200'}`}>{b.name}</button>
+          <button key={b.slug} onClick={() => setSelectedBook(sel => sel === b.slug ? null : b.slug)} className={`px-3 py-1 rounded-full text-sm border transition ${selectedBook === b.slug ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-gray-100 dark:bg-gray-700 border-emerald-300 dark:border-emerald-600 text-gray-700 dark:text-gray-200'}`}>{b.name}</button>
         ))}
       </div>
       <div className="flex gap-2 mb-4">
-        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Ask or reference e.g. Sahih Bukhari 719" className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800" />
-        <select value={lang} onChange={e => setLang(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Ask or reference e.g. Sahih Bukhari 719" className="flex-1 px-3 py-2 rounded-lg border border-emerald-300 dark:border-emerald-600 bg-white dark:bg-gray-800" />
+        <select value={lang} onChange={e => setLang(e.target.value)} className="px-3 py-2 rounded-lg border border-emerald-300 dark:border-emerald-600 bg-white dark:bg-gray-800">
           <option value="english">English</option>
           <option value="urdu">Urdu</option>
           <option value="arabic">Arabic</option>

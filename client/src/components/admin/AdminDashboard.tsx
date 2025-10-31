@@ -14,13 +14,15 @@ import {
   UserMinusIcon,
   UserPlusIcon,
   StarIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  Bars3Icon
 } from '@heroicons/react/24/outline';
 import { getUsers, blockUser, unblockUser, getReviews, getSensitiveLogs, getScholarApplications, approveScholarApplication, rejectScholarApplication, removeScholarByUser, adminMessageUser } from '../../services/adminService';
 import { authService } from '../../services/authService';
 import AdminFeedbackManagement from './AdminFeedbackManagement';
 import ScholarManagement from './ScholarManagement';
 import PaymentManagement from './PaymentManagement';
+import hikmahLogo from '../../../assets/logo.png';
 
 type TabKey = 'users' | 'reviews' | 'logs' | 'applications' | 'feedback' | 'scholars' | 'payments';
 
@@ -56,6 +58,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('users');
   const [processing, setProcessing] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [viewingApp, setViewingApp] = useState<ScholarApplication | null>(null);
 
   useEffect(() => {
     loadData();
@@ -121,6 +125,160 @@ export default function AdminDashboard() {
     }
   };
 
+  const renderApplicationDetailsModal = () => {
+    if (!viewingApp) return null;
+    const app = viewingApp as ScholarApplication;
+    const isPending = (app as any).status ? (app as any).status === 'pending' : (app as any).approved === false;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+        <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Scholar Application</h3>
+            <button onClick={() => setViewingApp(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">✕</button>
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="flex items-start gap-4">
+              <img src={app.photoUrl || 'https://via.placeholder.com/80x80?text=Scholar'} alt={app.user.name} className="w-16 h-16 rounded-full object-cover border" />
+              <div>
+                <div className="text-xl font-semibold text-gray-900 dark:text-white">{app.user.name}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">{app.user.email}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">Experience: {app.experienceYears} years</div>
+                <div className="mt-1 flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-300">
+                  {(app as any).country && (<span>Country: <span className="font-medium text-gray-900 dark:text-white">{(app as any).country}</span></span>)}
+                  {(app as any).timezone && (<span>Timezone: <span className="font-medium text-gray-900 dark:text-white">{(app as any).timezone}</span></span>)}
+                </div>
+              </div>
+            </div>
+            {app.qualifications && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Qualifications</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{app.qualifications}</div>
+              </div>
+            )}
+            {app.bio && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Bio</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{app.bio}</div>
+              </div>
+            )}
+            {(app as any).teachingPhilosophy && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Teaching Philosophy</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{(app as any).teachingPhilosophy}</div>
+              </div>
+            )}
+            {(app as any).availability && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Availability</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{(app as any).availability}</div>
+              </div>
+            )}
+            {!!(app.specializations?.length) && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Specializations</div>
+                <div className="flex flex-wrap gap-2">
+                  {app.specializations.map((s, i) => (
+                    <span key={i} className="px-2 py-1 rounded-full text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {!!(app.languages?.length) && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Languages</div>
+                <div className="flex flex-wrap gap-2">
+                  {app.languages.map((l, i) => (
+                    <span key={i} className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">{l}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {(((app as any).hourlyRate) || ((app as any).monthlyRate)) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(app as any).hourlyRate ? (
+                  <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Hourly Rate</div>
+                    <div className="text-lg font-semibold text-gray-900 dark:text-white">${(app as any).hourlyRate}</div>
+                  </div>
+                ) : null}
+                {(app as any).monthlyRate ? (
+                  <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Monthly Rate</div>
+                    <div className="text-lg font-semibold text-gray-900 dark:text-white">${(app as any).monthlyRate}</div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+            {(app as any).certifications && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Certifications</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{(app as any).certifications}</div>
+              </div>
+            )}
+            {(app as any).achievements && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Achievements</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{(app as any).achievements}</div>
+              </div>
+            )}
+            {(((app as any).socialMedia) || ((app as any).website)) && (
+              <div className="flex flex-wrap gap-3">
+                {(app as any).socialMedia && (
+                  <a href={(app as any).socialMedia} target="_blank" rel="noopener noreferrer" className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100">Social</a>
+                )}
+                {(app as any).website && (
+                  <a href={(app as any).website} target="_blank" rel="noopener noreferrer" className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100">Website</a>
+                )}
+              </div>
+            )}
+            {app.demoVideoUrl && (
+              <div>
+                <a href={app.demoVideoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">View Demo Video</a>
+              </div>
+            )}
+            {(app as any).subscriptionPlans?.length ? (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Subscription Plans</div>
+                <div className="space-y-2">
+                  {(app as any).subscriptionPlans.map((p:any, idx:number) => (
+                    <div key={idx} className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold text-gray-900 dark:text-white">{p.name} · {p.duration}</div>
+                        <div className="text-gray-900 dark:text-white font-semibold">${p.price}</div>
+                      </div>
+                      {p.features?.length ? (
+                        <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mt-1">
+                          {p.features.map((f:string, i:number) => (<li key={i}>{f}</li>))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <button onClick={() => setViewingApp(null)} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">Close</button>
+            {isPending && (
+              <>
+                <button
+                  onClick={() => { setViewingApp(null); handleRejectApplication(app._id); }}
+                  disabled={processing === app._id}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50"
+                >Reject</button>
+                <button
+                  onClick={() => { setViewingApp(null); handleApproveApplication(app._id); }}
+                  disabled={processing === app._id}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg disabled:opacity-50"
+                >Approve</button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const handleLogout = () => {
     authService.logout();
     navigate('/login');
@@ -150,32 +308,41 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20">
       {/* Admin Top Bar */}
-      <div className="bg-emerald-600 dark:bg-emerald-700 shadow-lg">
-        <div className="px-6 py-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="px-6 py-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mr-3">
-                <ShieldCheckIcon className="h-6 w-6 text-white" />
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="mr-2 p-2 rounded-md text-gray-700 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-50 md:hidden"
+                aria-label="Open sidebar"
+                type="button"
+              >
+                <Bars3Icon className="h-6 w-6" />
+              </button>
+              <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/40 rounded-lg flex items-center justify-center mr-3">
+                <ShieldCheckIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Hikmah AI</h1>
-                <p className="text-emerald-100 text-sm">Admin Panel</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Hikmah AI</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Admin Panel</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Link 
-                to="/" 
-                className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg transition-colors"
+            <div className="flex items-center space-x-2">
+              <Link
+                to="/"
+                className="flex items-center px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                title="Return to Main"
               >
-                <ArrowLeftIcon className="h-4 w-4 mr-2" />
-                Return to Main
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                <span className="text-sm font-medium">Return to Main</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-gray-700 transition-colors"
+                title="Logout"
               >
-                <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
-                Logout
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -183,38 +350,50 @@ export default function AdminDashboard() {
       </div>
       
       <div className="flex">
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/30 z-20 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
         {/* Sidebar */}
-        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg">
-          <div className="p-6">
-            <div className="flex items-center mb-8">
-              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center mr-3">
-                <ShieldCheckIcon className="h-6 w-6 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Admin Panel</h2>
+        <div
+          className={`fixed md:static top-14 left-0 bottom-0 z-30 w-64 transform bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-sm transition-transform duration-300 ease-in-out ${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          }`}
+          aria-label="Admin sidebar"
+        >
+          <div className="p-4 h-full overflow-y-auto">
+            <div className="flex items-center p-2 mb-4 select-none">
+              <img src={`${hikmahLogo}`} alt="Hikmah Logo" className="h-12 w-12" />
+              <h2 className="text-xl font-bold text-emerald-600 ml-2">Hikmah</h2>
             </div>
-            
-            <nav className="space-y-2">
+            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 px-3 mb-2">Admin</div>
+
+            <nav className="space-y-1">
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
+                const isActive = activeTab === tab.key;
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-all duration-200 ${
-                      activeTab === tab.key
-                        ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors ${
+                      isActive
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'
                     }`}
                   >
                     <div className="flex items-center">
                       <IconComponent className="h-5 w-5 mr-3" />
-                      <span className="font-medium">{tab.label}</span>
+                      <span className="text-sm font-medium">{tab.label}</span>
                     </div>
                     {tab.count > 0 && (
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        activeTab === tab.key
-                          ? 'bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200'
-                          : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        isActive
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-200'
+                          : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                         {tab.count}
                       </span>
@@ -371,7 +550,7 @@ export default function AdminDashboard() {
                             ))}
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {app.languages.map((lang, index) => (
+                            {app.languages.map((lang: string, index: number) => (
                               <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs rounded-full">
                                 {lang}
                               </span>
@@ -379,8 +558,15 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {app.status === 'pending' && (
-                          <div className="flex space-x-3">
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            onClick={() => setViewingApp(app)}
+                            className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 font-medium rounded-lg transition-colors"
+                          >
+                            <EyeIcon className="h-4 w-4 mr-2" /> View Application
+                          </button>
+                          {(((app as any).status ? (app as any).status === 'pending' : (app as any).approved === false)) && (
+                            <>
                             <button
                               onClick={() => handleApproveApplication(app._id)}
                               disabled={processing === app._id}
@@ -405,19 +591,20 @@ export default function AdminDashboard() {
                               )}
                               Reject
                             </button>
-                            {app.demoVideoUrl && (
-                              <a
-                                href={app.demoVideoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-                              >
-                                <EyeIcon className="h-4 w-4 mr-2" />
-                                View Demo
-                              </a>
-                            )}
-                          </div>
-                        )}
+                            </>
+                          )}
+                          {app.demoVideoUrl && (
+                            <a
+                              href={app.demoVideoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                            >
+                              <EyeIcon className="h-4 w-4 mr-2" />
+                              View Demo
+                            </a>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
@@ -609,6 +796,7 @@ export default function AdminDashboard() {
             </div>
         )}
         </div>
+        {renderApplicationDetailsModal()}
       </div>
     </div>
   );

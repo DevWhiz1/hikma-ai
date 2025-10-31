@@ -9,6 +9,7 @@ const Scholar = require('../models/Scholar');
 const SensitiveLog = require('../models/SensitiveLog');
 const { filterMeetingLinks, filterContactInfo, detectAllLinks } = require('../middleware/messageFilter');
 const { emitMeetingRequest, emitMeetingScheduled, emitMeetingLinkSent } = require('../utils/socketEmitter');
+const NotificationService = require('../services/notificationService');
 
 // Generate Jitsi meeting link using custom domain
 const generateJitsiLink = () => {
@@ -75,7 +76,7 @@ const requestMeeting = async (req, res) => {
     const message = new Message({
       sender: studentId,
       chatId: chat._id,
-      text: `Hikma: ${req.user.name} requested a meeting.${reason ? ` Reason: ${reason}` : ''}`,
+      text: `HikmaBot: ${req.user.name} requested a meeting.${reason ? ` Reason: ${reason}` : ''}`,
       type: 'meeting_request'
     });
     await message.save();
@@ -135,19 +136,39 @@ const requestMeeting = async (req, res) => {
 // Schedule a meeting
 const scheduleMeeting = async (req, res) => {
   try {
-    const { chatId, scheduledTime } = req.body;
+    const { chatId, scheduledTime, studentId } = req.body;
     const scholarId = req.user.id;
 
-    // Find the chat and verify scholar is participant
-    const chat = await Chat.findById(chatId);
-    if (!chat || chat.scholarId.toString() !== scholarId) {
-      return res.status(404).json({ error: 'Chat not found or unauthorized' });
+    let chat;
+    
+    // If studentId is provided (scheduling with enrolled student), find or create Chat
+    if (studentId) {
+      chat = await Chat.findOne({ studentId, scholarId });
+      if (!chat) {
+        // Create a new Chat for this student-scholar pair
+        chat = new Chat({ studentId, scholarId });
+        await chat.save();
+      }
+    } else if (chatId) {
+      // Find the chat by ID and verify scholar is participant
+      chat = await Chat.findById(chatId);
+      if (!chat || chat.scholarId.toString() !== scholarId) {
+        return res.status(404).json({ error: 'Chat not found or unauthorized' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Either chatId or studentId is required' });
     }
 
     // Upsert or update meeting with scheduled time
     const meeting = await Meeting.findOneAndUpdate(
-      { chatId, scholarId },
-      { $set: { scheduledTime: new Date(scheduledTime), status: 'scheduled' } },
+      { chatId: chat._id, scholarId },
+      { 
+        $set: { 
+          scheduledTime: new Date(scheduledTime), 
+          status: 'scheduled',
+          studentId: chat.studentId
+        } 
+      },
       { new: true, upsert: true }
     );
 
@@ -155,7 +176,7 @@ const scheduleMeeting = async (req, res) => {
   const message = new Message({
     sender: scholarId,
     chatId: chat._id,
-    text: `Hikma: Meeting scheduled for ${new Date(scheduledTime).toLocaleString()}.`,
+    text: `HikmaBot: Meeting scheduled for ${new Date(scheduledTime).toLocaleString()}.`,
     type: 'meeting_scheduled',
     metadata: { scheduledTime: new Date(scheduledTime) }
   });
@@ -190,6 +211,82 @@ const scheduleMeeting = async (req, res) => {
     // Emit WebSocket event for meeting scheduled
     emitMeetingScheduled(chat._id, scheduledTime);
 
+    // Generate and send meeting link immediately
+    try {
+      const { roomId, link } = generateJitsiLink();
+      
+      // Update meeting with link
+      meeting.link = link;
+      meeting.roomId = roomId;
+      await meeting.save();
+
+       // Create meeting link message immediately (text without URL - URL will be shown as button)
+       const linkMessage = new Message({
+         sender: scholarId,
+         chatId: chat._id,
+         text: `HikmaBot: Your meeting is scheduled!`,
+         type: 'meeting_link',
+         metadata: { meetingLink: link, roomId, scheduledTime: new Date(scheduledTime) }
+       });
+      await linkMessage.save();
+
+      // Add message to chat
+      chat.messages.push(linkMessage._id);
+      chat.lastActivity = new Date();
+      await chat.save();
+
+      // Emit socket event for the link
+      const { emitMeetingLinkSent } = require('../utils/socketEmitter');
+      emitMeetingLinkSent(chat._id, link, roomId);
+
+      console.log(`Meeting link sent immediately for meeting ${meeting._id}`);
+    } catch (linkErr) {
+      console.error('[scheduleMeeting] Failed to send meeting link immediately:', linkErr.message);
+      // Don't fail the schedule if link sending fails
+    }
+
+    // Create notifications for both participants
+    try {
+      const scholarUser = await User.findById(scholarId).select('name');
+      const studentUser = await User.findById(chat.studentId).select('name');
+      const meetingTimeStr = new Date(scheduledTime).toLocaleString();
+      
+      // Notify student
+      await NotificationService.createNotification(
+        chat.studentId,
+        'meeting',
+        '📅 Meeting Scheduled',
+        `Your meeting with ${scholarUser?.name || 'your scholar'} is scheduled for ${meetingTimeStr}.`,
+        {
+          meetingId: meeting._id,
+          chatId: chat._id,
+          scheduledTime: new Date(scheduledTime),
+          scholarId: scholarId
+        },
+        `/meetings/${chat._id}`,
+        'high'
+      );
+
+      // Notify scholar
+      await NotificationService.createNotification(
+        scholarId,
+        'meeting',
+        '📅 Meeting Scheduled',
+        `Meeting with ${studentUser?.name || 'student'} scheduled for ${meetingTimeStr}.`,
+        {
+          meetingId: meeting._id,
+          chatId: chat._id,
+          scheduledTime: new Date(scheduledTime),
+          studentId: chat.studentId
+        },
+        `/meetings/${chat._id}`,
+        'normal'
+      );
+    } catch (notifErr) {
+      console.error('[scheduleMeeting] Notification failed:', notifErr.message);
+      // Don't fail the schedule if notification fails
+    }
+
     res.json({ success: true, messageId: message._id });
   } catch (error) {
     console.error('Error scheduling meeting:', error);
@@ -218,7 +315,7 @@ const requestReschedule = async (req, res) => {
     const msg = new Message({
       sender: userId,
       chatId,
-      text: `Hikma: Reschedule requested.${proposedTime ? ` Proposed: ${new Date(proposedTime).toLocaleString()}` : ''}${note ? ` Note: ${note}` : ''}`,
+      text: `HikmaBot: Reschedule requested.${proposedTime ? ` Proposed: ${new Date(proposedTime).toLocaleString()}` : ''}${note ? ` Note: ${note}` : ''}`,
       type: 'text'
     });
     await msg.save();
@@ -280,7 +377,7 @@ const respondReschedule = async (req, res) => {
     if (decision === 'reject') {
       reqItem.status = 'rejected';
       await meeting.save();
-      const msg = new Message({ sender: scholarId, chatId, text: 'Hikma: Reschedule request was rejected.', type: 'text' });
+      const msg = new Message({ sender: scholarId, chatId, text: 'HikmaBot: Reschedule request was rejected.', type: 'text' });
       await msg.save();
       chat.messages.push(msg._id);
       chat.lastActivity = new Date();
@@ -315,7 +412,7 @@ const respondReschedule = async (req, res) => {
     const msg = new Message({
       sender: scholarId,
       chatId,
-      text: `Hikma: Meeting rescheduled to ${new Date(finalTime).toLocaleString()}.`,
+      text: `HikmaBot: Meeting rescheduled to ${new Date(finalTime).toLocaleString()}.`,
       type: 'meeting_scheduled',
       metadata: { scheduledTime: finalTime }
     });
@@ -363,7 +460,11 @@ const cancelMeeting = async (req, res) => {
       return res.status(404).json({ error: 'Chat not found or unauthorized' });
     }
 
-    await Meeting.findOneAndUpdate({ chatId }, { status: 'cancelled' }, { new: true });
+    // Cancel all active meetings for this chat to avoid duplicate leftovers
+    await Meeting.updateMany(
+      { chatId, status: { $in: ['requested', 'scheduled', 'link_sent'] } },
+      { $set: { status: 'cancelled' } }
+    );
 
     // Remove previous scheduled/link messages from this chat
     try {
@@ -375,7 +476,7 @@ const cancelMeeting = async (req, res) => {
       }
     } catch {}
 
-    const msg = new Message({ sender: scholarId, chatId, text: 'Hikma: Meeting was cancelled by the scholar.', type: 'text' });
+    const msg = new Message({ sender: scholarId, chatId, text: 'HikmaBot: Meeting was cancelled by the scholar.', type: 'text' });
     await msg.save();
     chat.messages.push(msg._id);
     chat.lastActivity = new Date();
@@ -492,6 +593,34 @@ const sendMessage = async (req, res) => {
 
     // Populate sender info
     await message.populate('sender', 'name email');
+
+    // Create notification for the recipient (the person who didn't send the message)
+    try {
+      const recipientId = chat.studentId.toString() === senderId ? chat.scholarId : chat.studentId;
+      const senderUser = await User.findById(senderId).select('name');
+      const recipientUser = await User.findById(recipientId).select('name');
+      
+      // Only create notification if recipient exists and is different from sender
+      if (recipientId && recipientId.toString() !== senderId) {
+        const messagePreview = finalText.length > 100 ? finalText.substring(0, 100) + '...' : finalText;
+        await NotificationService.createNotification(
+          recipientId,
+          'message',
+          `💬 New message from ${senderUser?.name || 'User'}`,
+          messagePreview,
+          {
+            chatId: chat._id,
+            senderId: senderId,
+            senderName: senderUser?.name
+          },
+          `/meetings/${chat._id}`,
+          'normal'
+        );
+      }
+    } catch (notifErr) {
+      console.error('[sendMessage] Notification failed:', notifErr.message);
+      // Don't fail the message send if notification fails
+    }
 
     // Log all links for sensitive information tracking
     if (hasLinks) {

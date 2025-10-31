@@ -29,17 +29,19 @@ import BroadcastManagement from './components/scholar/BroadcastManagement';
 import { authService } from './services/authService';
 
 // Enhanced Feature Pages
-import SmartSchedulerPage from './pages/scholar/SmartSchedulerPage';
-import AISmartSchedulerPage from './pages/scholar/AISmartSchedulerPage';
+import UnifiedSchedulerPage from './pages/scholar/UnifiedSchedulerPage';
 import BroadcastManagementPage from './pages/scholar/BroadcastManagementPage';
-import SchedulerAnalyticsPage from './pages/scholar/SchedulerAnalyticsPage';
-import AIAnalyticsPage from './pages/scholar/AIAnalyticsPage';
-import RecurringMeetingsPage from './pages/scholar/RecurringMeetingsPage';
-import SmartNotificationsPage from './pages/scholar/SmartNotificationsPage';
-import ConflictResolverPage from './pages/scholar/ConflictResolverPage';
-import PersonalizationPage from './pages/scholar/PersonalizationPage';
-import AIAgentDashboardPage from './pages/scholar/AIAgentDashboardPage';
+import SmartNotifyManagerPage from './pages/scholar/SmartNotifyManagerPage';
 import AvailableMeetingsPage from './pages/user/AvailableMeetingsPage';
+import SettingsPage from './pages/user/SettingsPage';
+import AssignmentsPage from './pages/scholar/AssignmentsPage';
+import AssignmentCreatePage from './pages/scholar/AssignmentCreatePage';
+import AssignmentSubmissionsPage from './pages/scholar/AssignmentSubmissionsPage';
+import TakeAssignmentPage from './pages/user/TakeAssignmentPage';
+import MySubmissionsPage from './pages/user/MySubmissionsPage';
+import AvailableAssignmentsPage from './pages/user/AvailableAssignmentsPage';
+import AvailableQuizzesPage from './pages/user/AvailableQuizzesPage';
+import AssignmentBuilderPage from './pages/scholar/AssignmentBuilderPage';
 
 interface MainAppProps {
   setIsAuthenticated: (value: boolean) => void;
@@ -47,36 +49,17 @@ interface MainAppProps {
 
 function MainApp({ setIsAuthenticated }: MainAppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false); // default light
+  const [isDarkMode, setIsDarkMode] = useState(false); // retained for legacy props
   const location = useLocation();
   const isChatRoute = location.pathname.startsWith('/chat');
 
-  // Toggle dark mode and save to localStorage
-  const toggleDarkMode = () => {
-    const next = !isDarkMode;
-    setIsDarkMode(next);
-    localStorage.setItem('darkMode', JSON.stringify(next));
-    if (next) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-    }
-  };
+  // Legacy no-op; theme is now controlled by ThemeToggle component
+  const toggleDarkMode = () => setIsDarkMode((v) => !v);
 
-  // Load dark mode preference from localStorage
+  // Start in light mode; ThemeToggle manages html class and persistence
   useEffect(() => {
-    const saved = localStorage.getItem('darkMode');
-    const dark = saved === 'true';
-    setIsDarkMode(dark);
-    if (dark) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-    }
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
   }, []);
 
   // Handle resize to show sidebar on large screens automatically
@@ -104,7 +87,7 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
   // If admin route, render AdminDashboard without main layout
   if (isAdminRoute) {
     return (
-      <div className={`App min-h-screen ${isDarkMode ? 'dark' : ''}`}>
+      <div className={`App min-h-screen`}>
         <AdminDashboard />
       </div>
     );
@@ -120,7 +103,7 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
           aria-hidden="true"
         />
       )}
-      <div className={`App min-h-screen ${isDarkMode ? 'dark' : ''}`}>
+      <div className={`App min-h-screen`}>
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
           <TopBar
             toggleSidebar={() => setSidebarOpen(prev => !prev)}
@@ -156,17 +139,23 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
                   <Route path="/scholars/dashboard" element={<ScholarDashboard />} />
                   <Route path="/scholar/feedback" element={<ScholarFeedbackManagement />} />
                   {/* Enhanced Feature Pages */}
-                  <Route path="/scholar/smart-scheduler" element={<SmartSchedulerPage />} />
-                  <Route path="/scholar/ai-smart-scheduler" element={<AISmartSchedulerPage />} />
+                  <Route path="/scholar/scheduler" element={<UnifiedSchedulerPage />} />
+                  <Route path="/scholar/smart-scheduler" element={<UnifiedSchedulerPage />} />
+                  <Route path="/scholar/ai-smart-scheduler" element={<UnifiedSchedulerPage />} />
+                  <Route path="/scholar/ai-agent" element={<UnifiedSchedulerPage />} />
                   <Route path="/scholar/broadcast-management" element={<BroadcastManagementPage />} />
-                  <Route path="/scholar/scheduler-analytics" element={<SchedulerAnalyticsPage />} />
-                  <Route path="/scholar/ai-analytics" element={<AIAnalyticsPage />} />
-                  <Route path="/scholar/recurring-meetings" element={<RecurringMeetingsPage />} />
-                  <Route path="/scholar/smart-notifications" element={<SmartNotificationsPage />} />
-                  <Route path="/scholar/conflict-resolver" element={<ConflictResolverPage />} />
-                  <Route path="/scholar/personalization" element={<PersonalizationPage />} />
-                  <Route path="/scholar/ai-agent" element={<AIAgentDashboardPage />} />
+                  <Route path="/scholar/smart-notify" element={<SmartNotifyManagerPage />} />
                   <Route path="/available-meetings" element={<AvailableMeetingsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  {/* Assignments */}
+                  <Route path="/quizzes" element={<AvailableQuizzesPage />} />
+                  <Route path="/assignments" element={<AvailableAssignmentsPage />} />
+                  <Route path="/scholar/assignments" element={<AssignmentsPage />} />
+                  <Route path="/scholar/assignments/new" element={<AssignmentCreatePage />} />
+                  <Route path="/scholar/assignments/:id/builder" element={<AssignmentBuilderPage />} />
+                  <Route path="/scholar/assignments/:id/submissions" element={<AssignmentSubmissionsPage />} />
+                  <Route path="/assignments/:id/take" element={<TakeAssignmentPage />} />
+                  <Route path="/me/submissions" element={<MySubmissionsPage />} />
                   <Route path="/qibla" element={<QiblaFinder />} />
                   <Route path="/prayer-times" element={<PrayerTimesPage />} />
                   <Route path="/tasbih" element={<TasbihCounter />} />

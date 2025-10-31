@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  CurrencyDollarIcon, 
-  MagnifyingGlassIcon, 
-  EyeIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  CalendarIcon,
-  UserIcon,
-  AcademicCapIcon,
-  DocumentTextIcon,
-  CreditCardIcon,
-  BanknotesIcon,
-  ChartBarIcon,
-  FunnelIcon,
-  DownloadIcon,
-  ArrowPathIcon
-} from '@heroicons/react/24/outline';
+import {
+  DollarSign as CurrencyDollarIcon,
+  Search as MagnifyingGlassIcon,
+  Eye as EyeIcon,
+  CheckCircle2 as CheckCircleIcon,
+  XCircle as XCircleIcon,
+  Clock as ClockIcon,
+  AlertTriangle as ExclamationTriangleIcon,
+  ArrowUp as ArrowUpIcon,
+  ArrowDown as ArrowDownIcon,
+  Calendar as CalendarIcon,
+  User as UserIcon,
+  GraduationCap as AcademicCapIcon,
+  FileText as DocumentTextIcon,
+  CreditCard as CreditCardIcon,
+  Banknote as BanknotesIcon,
+  BarChart3 as ChartBarIcon,
+  Filter as FunnelIcon,
+  Download as DownloadIcon,
+  RefreshCw as ArrowPathIcon
+} from 'lucide-react';
 import { paymentService, Payment, Subscription } from '../../../services/paymentService';
 
 interface PaymentTrackingProps {
@@ -123,11 +123,11 @@ const PaymentTracking: React.FC<PaymentTrackingProps> = ({ onPaymentSelect }) =>
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircleIcon className="h-5 w-5 text-emerald-600" />;
-      case 'pending': return <ClockIcon className="h-5 w-5 text-teal-600" />;
-      case 'failed': return <XCircleIcon className="h-5 w-5 text-lime-600" />;
+      case 'pending': return <ClockIcon className="h-5 w-5 text-emerald-600" />;
+      case 'failed': return <XCircleIcon className="h-5 w-5 text-emerald-600" />;
       case 'refunded': return <ArrowDownIcon className="h-5 w-5 text-emerald-600" />;
-      case 'cancelled': return <ExclamationTriangleIcon className="h-5 w-5 text-lime-600" />;
-      default: return <ClockIcon className="h-5 w-5 text-gray-600" />;
+      case 'cancelled': return <ExclamationTriangleIcon className="h-5 w-5 text-emerald-600" />;
+      default: return <ClockIcon className="h-5 w-5 text-emerald-600" />;
     }
   };
 
@@ -144,11 +144,11 @@ const PaymentTracking: React.FC<PaymentTrackingProps> = ({ onPaymentSelect }) =>
 
   const getPaymentMethodIcon = (method: string) => {
     switch (method) {
-      case 'stripe': return <CreditCardIcon className="h-5 w-5" />;
-      case 'paypal': return <BanknotesIcon className="h-5 w-5" />;
-      case 'bank_transfer': return <DocumentTextIcon className="h-5 w-5" />;
-      case 'crypto': return <CurrencyDollarIcon className="h-5 w-5" />;
-      default: return <CreditCardIcon className="h-5 w-5" />;
+      case 'stripe': return <CreditCardIcon className="h-5 w-5 text-emerald-600" />;
+      case 'paypal': return <BanknotesIcon className="h-5 w-5 text-emerald-600" />;
+      case 'bank_transfer': return <DocumentTextIcon className="h-5 w-5 text-emerald-600" />;
+      case 'crypto': return <CurrencyDollarIcon className="h-5 w-5 text-emerald-600" />;
+      default: return <CreditCardIcon className="h-5 w-5 text-emerald-600" />;
     }
   };
 
@@ -181,7 +181,7 @@ const PaymentTracking: React.FC<PaymentTrackingProps> = ({ onPaymentSelect }) =>
             </div>
             <button
               onClick={() => { loadPayments(); loadSubscriptions(); loadAnalytics(); }}
-              className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              className="payment-refresh-btn flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
             >
               <ArrowPathIcon className="h-4 w-4 mr-2" />
               Refresh
@@ -202,7 +202,7 @@ const PaymentTracking: React.FC<PaymentTrackingProps> = ({ onPaymentSelect }) =>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex items-center">
-              <ChartBarIcon className="h-8 w-8 text-teal-600 mr-3" />
+              <ChartBarIcon className="h-8 w-8 text-emerald-600 mr-3" />
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Transactions</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics?.totalTransactions || 0}</p>
@@ -220,7 +220,7 @@ const PaymentTracking: React.FC<PaymentTrackingProps> = ({ onPaymentSelect }) =>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex items-center">
-              <ClockIcon className="h-8 w-8 text-teal-600 mr-3" />
+              <ClockIcon className="h-8 w-8 text-emerald-600 mr-3" />
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Active Subscriptions</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{analytics?.activeSubscriptions || 0}</p>
@@ -234,23 +234,23 @@ const PaymentTracking: React.FC<PaymentTrackingProps> = ({ onPaymentSelect }) =>
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-600" />
                 <input
                   type="text"
                   placeholder="Search by scholar name, email, or transaction ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full pl-10 pr-4 py-2 border border-emerald-600 dark:border-emerald-600 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-transparent dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="filter-toggle-btn flex items-center px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
               >
-                <FunnelIcon className="h-4 w-4 mr-2" />
-                Filters
+                <FunnelIcon className="h-4 w-4 mr-2 text-emerald-600" />
+                <span className="filter-toggle-label">Filters</span>
               </button>
             </div>
           </div>
@@ -317,7 +317,7 @@ const PaymentTracking: React.FC<PaymentTrackingProps> = ({ onPaymentSelect }) =>
             </div>
           ) : filteredPayments.length === 0 ? (
             <div className="p-8 text-center">
-              <CurrencyDollarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <CurrencyDollarIcon className="h-12 w-12 text-emerald-600 mx-auto mb-4" />
               <p className="text-gray-600 dark:text-gray-400">No payments found</p>
             </div>
           ) : (
@@ -384,9 +384,9 @@ const PaymentTracking: React.FC<PaymentTrackingProps> = ({ onPaymentSelect }) =>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => setSelectedPayment(payment)}
-                          className="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300"
+                          className="hover:text-emerald-900"
                         >
-                          <EyeIcon className="h-4 w-4" />
+                          <EyeIcon className="h-4 w-4 text-emerald-600" />
                         </button>
                       </td>
                     </tr>
@@ -433,9 +433,9 @@ const PaymentTracking: React.FC<PaymentTrackingProps> = ({ onPaymentSelect }) =>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Payment Details</h3>
                   <button
                     onClick={() => setSelectedPayment(null)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="hover:text-emerald-700"
                   >
-                    <XCircleIcon className="h-6 w-6" />
+                    <XCircleIcon className="h-6 w-6 text-emerald-600" />
                   </button>
                 </div>
               </div>

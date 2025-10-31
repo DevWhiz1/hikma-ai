@@ -91,8 +91,14 @@ async function enrollScholar(req, res) {
           existing.scholarSession = scholarSession._id;
         }
         await existing.save();
-        // Increment scholar's totalStudents when reactivating enrollment
-        try { await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: 1 } }); } catch {}
+        
+        // Increment scholar's totalStudents count when re-activating
+        try {
+          await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: 1 } });
+        } catch (err) {
+          console.warn('Failed to update totalStudents on re-activation:', err.message);
+        }
+        
         return res.json({ success: true, enrollment: existing, studentSessionId: existing.studentSession, scholarSessionId: existing.scholarSession });
       }
       return res.status(400).json({ message: 'Already enrolled' });
@@ -122,9 +128,6 @@ async function enrollScholar(req, res) {
       scholarSession: scholarSession._id
     });
 
-    // Increment scholar's totalStudents on first-time enrollment
-    try { await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: 1 } }); } catch {}
-
     // Update user's enrolledScholars list with denormalized name for quick sidebar display
     try {
       const User = require('../models/User');
@@ -133,6 +136,13 @@ async function enrollScholar(req, res) {
         $addToSet: { enrolledScholars: { scholar: scholarId, name: scholarName } }
       });
     } catch {}
+
+    // Increment scholar's totalStudents count
+    try {
+      await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: 1 } });
+    } catch (err) {
+      console.warn('Failed to update totalStudents:', err.message);
+    }
 
     res.json({ success: true, enrollment, studentSessionId: studentSession._id, scholarSessionId: scholarSession._id });
   } catch (e) {
@@ -155,18 +165,20 @@ async function leaveFeedback(req, res) {
 
 async function myEnrollments(req, res) {
   try {
-    // Prefer denormalized list for performance if present
-    const User = require('../models/User');
-    const u = await User.findById(req.user._id).select('enrolledScholars').lean();
-    if (u && Array.isArray(u.enrolledScholars) && u.enrolledScholars.length) {
-      const mapped = u.enrolledScholars.map(es => ({ scholar: { _id: es.scholar, user: { name: es.name } } }));
-      return res.json(mapped);
-    }
-    // Fallback to live lookup from enrollments
-    const list = await Enrollment.find({ student: req.user._id })
+    console.log('User requesting enrollments:', req.user._id);
+    
+    // Always query the Enrollment model for accurate data
+    const list = await Enrollment.find({ student: req.user._id, isActive: true })
       .populate({ path: 'scholar', populate: { path: 'user', select: 'name email _id' } })
-      .select('scholar studentSession')
+      .select('scholar studentSession createdAt')
       .lean();
+    
+    console.log('Found enrollments for user:', {
+      userId: req.user._id,
+      enrollmentCount: list.length,
+      enrollments: list.map(e => ({ scholarId: e?.scholar?._id, scholarName: e?.scholar?.user?.name }))
+    });
+    
     // Backfill user's enrolledScholars for future fast loads
     try {
       const entries = list
@@ -175,12 +187,18 @@ async function myEnrollments(req, res) {
       if (entries.length) {
         const User = require('../models/User');
         await User.findByIdAndUpdate(req.user._id, {
-          $addToSet: { enrolledScholars: { $each: entries } }
+          enrolledScholars: entries // Replace instead of addToSet to ensure accuracy
         });
       }
-    } catch {}
+    } catch (backfillErr) {
+      console.warn('Backfill failed:', backfillErr.message);
+    }
+    
     res.json(list);
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) { 
+    console.error('Error fetching enrollments:', e);
+    res.status(500).json({ message: e.message }); 
+  }
 }
 
 async function unenroll(req, res) {
@@ -190,6 +208,14 @@ async function unenroll(req, res) {
     if (!enr) return res.status(404).json({ message: 'Not enrolled' });
     enr.isActive = false; // soft-unenroll; retain sessions
     await enr.save();
+    
+    // Decrement scholar's totalStudents count
+    try {
+      await Scholar.findByIdAndUpdate(scholarId, { $inc: { totalStudents: -1 } });
+    } catch (err) {
+      console.warn('Failed to update totalStudents on unenroll:', err.message);
+    }
+    
     res.json({ success: true });
   } catch (e) { res.status(500).json({ message: e.message }); }
 }
@@ -270,7 +296,7 @@ async function startDirectChat(req, res) {
       // Notify scholar that the student started a chat
       try {
         await ChatSession.findByIdAndUpdate(enrollment.scholarSession, {
-          $push: { messages: { role: 'assistant', content: 'Student started a new chat with you.' } },
+          $push: { messages: { role: 'assistant', content: 'HikmaBot: Student started a new chat with you.' } },
           $set: { lastActivity: new Date() }
         });
       } catch {}
@@ -288,6 +314,31 @@ async function startDirectChat(req, res) {
     }
     return res.json({ success: true, studentSessionId: enrollment.studentSession, scholarSessionId: enrollment.scholarSession });
   } catch (e) { res.status(500).json({ message: e.message }); }
+}
+
+// 🚀 NEW: Get enrollments where current user is the SCHOLAR (for assignment creation)
+async function getScholarEnrollments(req, res) {
+  try {
+    const Scholar = require('../models/Scholar');
+    
+    // Find the scholar document for this user
+    const scholar = await Scholar.findOne({ user: req.user._id });
+    if (!scholar) {
+      return res.json({ enrollments: [] });
+    }
+
+    // Get all enrollments where this user is the scholar
+    const enrollments = await Enrollment.find({ 
+      scholar: scholar._id,
+      isActive: true 
+    })
+      .populate('student', 'name email _id')
+      .lean();
+
+    res.json({ enrollments });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 }
 
 async function getMyEnrolledStudents(req, res) {
@@ -309,12 +360,13 @@ async function getMyEnrolledStudents(req, res) {
     })
       .populate('student', 'name email')
       .populate('studentSession', 'lastActivity')
+      .populate('scholarSession', 'lastActivity')
       .sort({ createdAt: -1 });
 
     const enrolledStudents = enrollments.map(enrollment => ({
-      chatId: enrollment.studentSession?._id || enrollment._id,
+      chatId: enrollment.scholarSession?._id || enrollment._id,
       student: enrollment.student,
-      lastActivity: enrollment.studentSession?.lastActivity || enrollment.createdAt
+      lastActivity: (enrollment.scholarSession?.lastActivity || enrollment.createdAt)
     }));
 
     // Debug: Log scholar enrolled students (remove in production)
@@ -332,6 +384,64 @@ async function getMyEnrolledStudents(req, res) {
   }
 }
 
-module.exports = { applyScholar, listScholars, enrollScholar, leaveFeedback, myEnrollments, unenroll, getMyScholarProfile, updateMyScholarProfile, deleteMyScholarProfile, startDirectChat, getMyEnrolledStudents };
+// Scholar ensures a direct chat with a specific student exists and returns scholar's session id
+async function startDirectChatWithStudent(req, res) {
+  try {
+    const { studentId } = req.body;
+    if (!studentId) return res.status(400).json({ message: 'studentId required' });
+
+    const scholarDoc = await Scholar.findOne({ user: req.user._id }).populate('user', 'name');
+    if (!scholarDoc) return res.status(404).json({ message: 'Scholar profile not found' });
+    const studentUser = await require('../models/User').findById(studentId).select('name');
+
+    let enrollment = await Enrollment.findOne({ student: studentId, scholar: scholarDoc._id });
+    if (!enrollment) {
+      const studentSession = await ChatSession.create({ user: studentId, title: `Chat with ${scholarDoc.user?.name || 'Scholar'} (Scholar)`, messages: [], kind: 'direct', isActive: true });
+      const scholarSession = await ChatSession.create({ user: req.user._id, title: `Chat with ${studentUser?.name || 'Student'} (Student)`, messages: [], kind: 'direct', isActive: true });
+      enrollment = await Enrollment.create({ student: studentId, scholar: scholarDoc._id, studentSession: studentSession._id, scholarSession: scholarSession._id });
+    } else {
+    // Ensure referenced sessions actually exist and are active; recreate if missing/inactive
+    const existingStudentSession = enrollment.studentSession ? await ChatSession.findById(enrollment.studentSession) : null;
+    const existingScholarSession = enrollment.scholarSession ? await ChatSession.findById(enrollment.scholarSession) : null;
+
+    if (!existingStudentSession || existingStudentSession.isActive === false) {
+      const studentSession = await ChatSession.create({ user: studentId, title: `Chat with ${scholarDoc.user?.name || 'Scholar'} (Scholar)`, messages: [], kind: 'direct', isActive: true });
+      enrollment.studentSession = studentSession._id;
+    }
+    if (!existingScholarSession || existingScholarSession.isActive === false) {
+      const scholarSession = await ChatSession.create({ user: req.user._id, title: `Chat with ${studentUser?.name || 'Student'} (Student)`, messages: [], kind: 'direct', isActive: true });
+      enrollment.scholarSession = scholarSession._id;
+    }
+    await enrollment.save();
+    }
+
+    // Touch lastActivity on both sides
+    try {
+      if (enrollment.studentSession) await ChatSession.findByIdAndUpdate(enrollment.studentSession, { $set: { lastActivity: new Date() } });
+      if (enrollment.scholarSession) await ChatSession.findByIdAndUpdate(enrollment.scholarSession, { $set: { lastActivity: new Date() } });
+    } catch {}
+
+    return res.json({ success: true, scholarSessionId: enrollment.scholarSession, studentSessionId: enrollment.studentSession });
+  } catch (e) {
+    console.error('startDirectChatWithStudent error:', e);
+    res.status(500).json({ message: e.message });
+  }
+}
+
+module.exports = { 
+  applyScholar, 
+  listScholars, 
+  enrollScholar, 
+  leaveFeedback, 
+  myEnrollments, 
+  unenroll, 
+  getMyScholarProfile, 
+  updateMyScholarProfile, 
+  deleteMyScholarProfile, 
+  startDirectChat, 
+  getScholarEnrollments,
+  getMyEnrolledStudents,
+  startDirectChatWithStudent
+};
 
 

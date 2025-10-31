@@ -21,6 +21,10 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { applyScholar, uploadPhoto } from '../../services/scholarService';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 interface FormData {
   bio: string;
@@ -247,7 +251,7 @@ const ScholarApplyForm = () => {
         </div>
 
         {/* Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <Card className="rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
           <form onSubmit={handleSubmit} className="p-8">
             {/* Step 1: Personal Information */}
             {currentStep === 1 && (
@@ -262,7 +266,7 @@ const ScholarApplyForm = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Bio *
                   </label>
-                  <textarea
+                  <Textarea
                     name="bio"
                     value={formData.bio}
                     onChange={handleInputChange}
@@ -285,7 +289,7 @@ const ScholarApplyForm = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Specializations *
                   </label>
-                  <input
+                  <Input
                     name="specializations"
                     value={formData.specializations}
                     onChange={handleInputChange}
@@ -310,7 +314,7 @@ const ScholarApplyForm = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Languages *
                   </label>
-                  <input
+                  <Input
                     name="languages"
                     value={formData.languages}
                     onChange={handleInputChange}
@@ -640,35 +644,35 @@ const ScholarApplyForm = () => {
 
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-8 border-t border-gray-200 dark:border-gray-700">
-              <button
+              <Button
                 type="button"
                 onClick={prevStep}
                 disabled={currentStep === 1}
-                className="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                variant="outline"
               >
                 Previous
-              </button>
+              </Button>
 
               {currentStep < 5 ? (
-                <button
+                <Button
                   type="button"
                   onClick={nextStep}
-                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg"
+                  className="px-6"
                 >
                   Next Step
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   type="submit"
                   disabled={loading || !isValid}
-                  className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                  className="px-8"
                 >
                   {loading ? 'Submitting...' : 'Submit Application'}
-                </button>
+                </Button>
               )}
             </div>
           </form>
-        </div>
+        </Card>
 
         {/* Application Tips */}
         <div className="mt-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-6 border border-emerald-200 dark:border-emerald-800">

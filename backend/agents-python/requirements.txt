@@ -1,0 +1,3 @@
+google-generativeai>=0.7.2
+# Optional CrewAI support for assignment generation (guarded by CREWAI_ENABLED)
+crewai>=0.30.0

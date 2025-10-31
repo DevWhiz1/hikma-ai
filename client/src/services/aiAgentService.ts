@@ -302,39 +302,6 @@ class AIAgentService {
     };
   }
 
-  // Get booking insights and analytics
-  async getBookingInsights(scholarId: string): Promise<BookingInsights> {
-    try {
-      const response = await this.request(`/insights/${scholarId}`);
-      return response.insights;
-    } catch (error) {
-      console.error('Error getting booking insights:', error);
-      // Return fallback data if API fails
-      return {
-        mostPopularTimes: [],
-        averageBookingRate: 0,
-        studentPreferences: {
-          preferredDuration: 60,
-          preferredDays: ['Monday', 'Wednesday', 'Friday'],
-          timeZone: 'UTC'
-        },
-        optimalDuration: 60,
-        suggestedFrequency: 'weekly',
-        studentSatisfaction: 0.5,
-        timeEfficiency: 0.5,
-        revenueGrowth: 0,
-        confidence: 0.5,
-        insights: ['No data available yet'],
-        recommendations: ['Start scheduling to see insights'],
-        predictions: {
-          nextWeekBookings: 0,
-          optimalTimes: [],
-          suggestedPricing: 50
-        }
-      };
-    }
-  }
-
   // Intelligent conflict resolution
   async resolveConflicts(conflicts: any[]): Promise<{ alternatives: TimeSlot[]; suggestions: string[] }> {
     try {

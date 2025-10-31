@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface TasbihItem {
   id: string;
@@ -141,13 +143,13 @@ const TasbihCounter: React.FC = () => {
   return (
     <div className="w-full h-full p-4 md:p-6 flex flex-col gap-6">
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="md:w-1/3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex flex-col">
+        <Card className="md:w-1/3 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex flex-col">
           <h2 className="text-lg font-semibold mb-3 text-emerald-600 dark:text-emerald-400">Your Dhikr</h2>
           <div className="space-y-2 overflow-y-auto max-h-72 pr-1">
             {items.map(it => {
               const pct = Math.min(it.count / it.target, 1);
               return (
-                <button
+                <Button
                   key={it.id}
                   onClick={() => setActiveId(it.id)}
                   className={`w-full text-left px-3 py-2 rounded-lg border transition flex items-center justify-between gap-3 ${
@@ -159,7 +161,7 @@ const TasbihCounter: React.FC = () => {
                   <span className="flex-1 h-1 ml-2 rounded bg-gray-200 dark:bg-gray-600 overflow-hidden">
                     <span className="h-full block bg-emerald-500" style={{ width: `${pct * 100}%` }} />
                   </span>
-                </button>
+                </Button>
               );
             })}
             {items.length === 0 && <p className="text-sm text-gray-500">No dhikr added.</p>}
@@ -179,17 +181,17 @@ const TasbihCounter: React.FC = () => {
               onChange={e => setNewTarget(parseInt(e.target.value) || 0)}
               className="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
             />
-            <button type="submit" className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium transition">Add Dhikr</button>
+            <Button type="submit" className="w-full">Add Dhikr</Button>
           </form>
           <div className="mt-4 flex flex-wrap gap-2 text-xs">
-            <button onClick={resetActive} className="px-3 py-1 rounded bg-amber-500/80 hover:bg-amber-600 text-white">Reset Current</button>
-            <button onClick={resetAll} className="px-3 py-1 rounded bg-rose-600/90 hover:bg-rose-700 text-white">Reset All</button>
-            <button onClick={() => toggleSetting('sound')} className={`px-3 py-1 rounded ${settings.sound ? 'bg-emerald-600' : 'bg-gray-500'} text-white`}>{settings.sound ? 'Sound On' : 'Sound Off'}</button>
-            <button onClick={() => toggleSetting('voice')} className={`px-3 py-1 rounded ${settings.voice ? 'bg-emerald-600' : 'bg-gray-500'} text-white`}>{settings.voice ? 'Voice On' : 'Voice Off'}</button>
+            <Button onClick={resetActive} className="px-3 py-1">Reset Current</Button>
+            <Button onClick={resetAll} className="px-3 py-1" variant="destructive">Reset All</Button>
+            <Button onClick={() => toggleSetting('sound')} className="px-3 py-1">{settings.sound ? 'Sound On' : 'Sound Off'}</Button>
+            <Button onClick={() => toggleSetting('voice')} className="px-3 py-1">{settings.voice ? 'Voice On' : 'Voice Off'}</Button>
           </div>
-        </div>
+        </Card>
 
-        <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 flex flex-col items-center justify-center relative overflow-hidden">
+        <Card className="flex-1 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 flex flex-col items-center justify-center relative overflow-hidden">
           {celebrate && <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.15),transparent_70%)] animate-pulse" />}
           {activeItem ? (
             <>
@@ -216,18 +218,18 @@ const TasbihCounter: React.FC = () => {
                   <div className="text-sm text-gray-500 dark:text-gray-400">of {activeItem.target}</div>
                 </div>
               </div>
-              <button
+              <Button
                 ref={incrementBtnRef}
                 onClick={increment}
                 className="relative group px-14 py-14 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-600 active:scale-95 transition transform shadow-xl shadow-emerald-600/30 text-white focus:outline-none focus:ring-4 focus:ring-emerald-400/50"
               >
                 <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-active:opacity-100 transition" />
                 <span className="text-xl font-semibold tracking-wide drop-shadow">Dhikr</span>
-              </button>
+              </Button>
               <p className="mt-5 text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Tap / Click / Space / Enter</p>
             </>
           ) : <p className="text-gray-500">No active dhikr selected.</p>}
-        </div>
+        </Card>
       </div>
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between text-xs text-gray-400 dark:text-gray-500">
         <div>Progress saved locally in your browser.</div>
