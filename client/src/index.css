@@ -145,11 +145,25 @@ html.light .filter-toggle-btn .filter-toggle-label {
   color: #10B981 !important;
 }
 
-/* Ensure floating feedback icon stays white regardless */
-html.light .feedback-floating button,
-html.light .feedback-floating button *,
-html.light .feedback-floating svg {
+/* Ensure floating feedback MAIN button icon stays white - exclude menu items */
+html.light .feedback-floating-main-btn,
+html.light .feedback-floating-main-btn *,
+html.light .feedback-floating-main-icon,
+html.light .feedback-floating-main-btn svg,
+html.light .feedback-floating > button.feedback-floating-main-btn,
+html.light .feedback-floating > button.feedback-floating-main-btn *,
+html.light .feedback-floating > button.feedback-floating-main-btn svg {
   color: #ffffff !important;
+}
+
+/* Explicitly exclude menu items from the white color rule */
+html.light .feedback-floating .feedback-menu-item,
+html.light .feedback-floating .feedback-menu-item *,
+html.light .feedback-floating .feedback-menu-item svg,
+html.light .feedback-floating .feedback-menu-bg,
+html.light .feedback-floating .feedback-menu-bg *,
+html.light .feedback-floating .feedback-menu-bg svg {
+  color: inherit !important;
 }
 
 /* Ensure 'View Profile' outline button text is emerald in light mode */
@@ -751,15 +765,15 @@ html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-tea
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Feedback button menu - force transparent background in light mode */
+/* Feedback button menu - white background in light mode */
 html.light .feedback-menu-bg {
-  background-color: transparent !important;
-  background: transparent !important;
+  background-color: rgb(255 255 255) !important; /* white */
+  background: rgb(255 255 255) !important;
 }
 
 html.light .feedback-menu-bg * {
-  background-color: transparent !important;
-  background: transparent !important;
+  background-color: inherit !important;
+  background: inherit !important;
 }
 
 /* Ensure floating feedback button wrapper remains transparent in light mode */
@@ -768,15 +782,51 @@ html.light .feedback-floating {
   background: transparent !important;
 }
 
+/* Feedback menu items - white background with dark text in light mode */
 html.light .feedback-menu-item {
-  background-color: transparent !important;
-  background: transparent !important;
+  background-color: rgb(255 255 255) !important; /* white */
+  background: rgb(255 255 255) !important;
+  color: rgb(17 24 39) !important; /* gray-900 - dark text */
 }
 
 html.light .feedback-menu-item:hover {
-  background-color: #d7ffec !important; /* emerald-50 equivalent */
-  background: #d7ffec !important;
+  background-color: rgb(249 250 251) !important; /* gray-50 - light hover */
+  background: rgb(249 250 251) !important;
 }
+
+html.light .feedback-menu-item span {
+  color: rgb(17 24 39) !important; /* gray-900 - dark text */
+}
+
+/* Submit Feedback icon - unique selector to avoid global overrides */
+html.light .feedback-submit-btn .feedback-submit-icon,
+html.light .feedback-menu-item.feedback-submit-btn svg,
+html.light .feedback-menu-item.feedback-submit-btn svg[class*="text-emerald"],
+html.light .feedback-submit-icon {
+  color: rgb(16 185 129) !important; /* emerald-500 for icons */
+}
+
+/* Fallback for emerald-600 class on submit icon */
+html.light .feedback-menu-item svg.text-emerald-600:not(.feedback-submit-icon),
+html.light .feedback-menu-item svg[class*="text-emerald-600"]:not(.feedback-submit-icon) {
+  color: rgb(16 185 129) !important; /* emerald-500 for other icons */
+}
+
+/* View History icon - unique selector to avoid global overrides */
+html.light .feedback-history-btn .feedback-history-icon,
+html.light .feedback-menu-item.feedback-history-btn svg,
+html.light .feedback-menu-item.feedback-history-btn svg[class*="text-blue"],
+html.light .feedback-history-icon {
+  color: rgb(96 165 250) !important; /* blue-400 - rgb(96 165 250) */
+}
+
+/* Fallback for blue-600 class on history icon */
+html.light .feedback-menu-item svg.text-blue-600:not(.feedback-history-icon),
+html.light .feedback-menu-item svg[class*="text-blue-600"]:not(.feedback-history-icon) {
+  color: rgb(59 130 246) !important; /* blue-500 for other icons */
+}
+
+/* Hover state handled above */
 
 
 
