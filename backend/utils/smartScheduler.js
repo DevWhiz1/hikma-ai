@@ -223,11 +223,11 @@ class SmartScheduler {
         { new: true, upsert: true }
       );
 
-      // Create notification message
+      // Create notification message (link is in metadata, will be shown as button)
       const message = new Message({
         sender: scholarId,
         chatId: chat._id,
-        text: `Hikma: Meeting scheduled for ${new Date(scheduledTime).toLocaleString()}. Meeting link: ${link}`,
+        text: `HikmaBot: Meeting scheduled for ${new Date(scheduledTime).toLocaleString()}.`,
         type: 'meeting_scheduled',
         metadata: { 
           scheduledTime: new Date(scheduledTime),
@@ -235,6 +235,22 @@ class SmartScheduler {
           roomId: roomId
         }
       });
+      
+      // Also create a meeting_link message with the button
+      const linkMessage = new Message({
+        sender: scholarId,
+        chatId: chat._id,
+        text: `HikmaBot: Your meeting link is ready!`,
+        type: 'meeting_link',
+        metadata: { 
+          meetingLink: link,
+          meetLink: link,
+          roomId: roomId,
+          scheduledTime: new Date(scheduledTime)
+        }
+      });
+      await linkMessage.save();
+      chat.messages.push(linkMessage._id);
       await message.save();
 
       // Add message to chat
@@ -391,7 +407,7 @@ class SmartScheduler {
       const message = new Message({
         sender: studentId,
         chatId: chatId,
-        text: `Hikma: Reschedule requested for ${new Date(proposedTime).toLocaleString()}.${note ? ` Note: ${note}` : ''}`,
+        text: `HikmaBot: Reschedule requested for ${new Date(proposedTime).toLocaleString()}.${note ? ` Note: ${note}` : ''}`,
         type: 'reschedule_request',
         metadata: { proposedTime: new Date(proposedTime), note }
       });
@@ -566,7 +582,7 @@ class SmartScheduler {
       const message = new Message({
         sender: studentId,
         chatId: chat._id,
-        text: `Hikma: Meeting booked for ${new Date(timeSlot.start).toLocaleString()}. Topic: ${broadcastMeeting.title}. Meeting link: ${link}`,
+        text: `HikmaBot: Meeting booked for ${new Date(timeSlot.start).toLocaleString()}. Topic: ${broadcastMeeting.title}.`,
         type: 'meeting_booked',
         metadata: { 
           scheduledTime: timeSlot.start,

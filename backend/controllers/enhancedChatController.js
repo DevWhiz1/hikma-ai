@@ -126,6 +126,24 @@ const sendAIMessage = async (req, res) => {
     session.lastActivity = new Date();
     await session.save();
 
+    // Emit realtime event to this chat room and update user session list
+    try {
+      const { emitNewMessage, emitSessionUpdate } = require('../utils/socketEmitter');
+      emitNewMessage(session._id, {
+        text: cleanMessage,
+        senderId: String(userId),
+        timestamp: new Date()
+      });
+      emitSessionUpdate(req.user._id, session._id, {
+        _id: session._id,
+        title: session.title,
+        lastActivity: session.lastActivity,
+        messages: session.messages
+      });
+    } catch (e) {
+      console.warn('Socket emit failed (scholar message):', e?.message || e);
+    }
+
     res.json({
       success: true,
       session: {
@@ -211,6 +229,14 @@ const sendScholarMessage = async (req, res) => {
             },
             $set: { lastActivity: new Date() }
           });
+          try {
+            const { emitNewMessage } = require('../utils/socketEmitter');
+            emitNewMessage(counterpartId, {
+              text: cleanMessage,
+              senderId: String(userId),
+              timestamp: new Date()
+            });
+          } catch {}
         }
       }
     } catch (mirrorError) {
@@ -274,12 +300,12 @@ const startDirectChat = async (req, res) => {
     // Create or get existing sessions
     let studentSession, scholarSession;
 
+    // Ensure sessions exist; recreate if missing or inactive
     if (enrollment.studentSession && enrollment.scholarSession) {
-      // Use existing sessions
       studentSession = await ChatSession.findById(enrollment.studentSession);
       scholarSession = await ChatSession.findById(enrollment.scholarSession);
-    } else {
-      // Create new sessions
+    }
+    if (!studentSession || studentSession.isActive === false) {
       studentSession = await ChatSession.create({
         user: userId,
         title: `Chat with ${scholar.user.name} (Scholar)`,
@@ -287,7 +313,9 @@ const startDirectChat = async (req, res) => {
         kind: 'direct',
         isActive: true
       });
-
+      enrollment.studentSession = studentSession._id;
+    }
+    if (!scholarSession || scholarSession.isActive === false) {
       scholarSession = await ChatSession.create({
         user: scholar.user._id,
         title: `Chat with ${req.user.name} (Student)`,
@@ -295,12 +323,9 @@ const startDirectChat = async (req, res) => {
         kind: 'direct',
         isActive: true
       });
-
-      // Update enrollment with session IDs
-      enrollment.studentSession = studentSession._id;
       enrollment.scholarSession = scholarSession._id;
-      await enrollment.save();
     }
+    await enrollment.save();
 
     // Update last activity
     studentSession.lastActivity = new Date();
@@ -427,22 +452,37 @@ const generateAIResponse = async (message, conversation) => {
     // Step 3: Determine if context is relevant (check if scores are above threshold)
     const isRelevantContext = ragResult.hasContext && ragResult.fatwaCount > 0;
     
-    // Step 4: Build enhanced prompt - AI generates response, then adds Quran/Hadith references
+    // Step 4: Detect if the message is a greeting (Salam, Hello, etc.)
+    const greetingRegex = /^(salam|assalamu|assalam|hello|hi|hey|peace be upon you|salam alaikum|السلام عليكم)/i;
+    const isGreeting = greetingRegex.test(message.trim());
+    
+    // Step 5: Build system prompt
     let systemPrompt = `You are Hikma AI, a knowledgeable Islamic assistant. Provide comprehensive, accurate, and thoughtful answers about Islam.
-
+    
 FORMATTING:
 - Use clear, well-structured responses
 - Always respond in the SAME language the user used
 - Be respectful and scholarly in tone
 
-IMPORTANT: 
+IMPORTANT:
 - Provide detailed, informative answers
 - Support responses with Islamic knowledge when appropriate
-`;
 
-    // Add retrieved Quran/Hadith context if available
-    if (isRelevantContext) {
-      systemPrompt += `\n\nAUTHENTIC ISLAMIC SOURCES AVAILABLE:
+SPECIAL RULE FOR GREETINGS:
+If the user greets you with "Salam", "Assalamu Alaikum", "Hello", "Hi", or similar short greetings:
+- Do NOT use RAG or add long context.
+- Do NOT include any sources, Hadiths, or Tafsir.
+- Simply reply with a short, warm message (3–4 lines max), such as:
+
+"Assalamu Alaikum wa Rahmatullahi wa Barakatuh dear brother/sister.  
+May Allah bless you with peace and guidance.  
+How can I assist you today?"`;
+    
+    // Step 6: Add RAG context only if NOT greeting
+    if (!isGreeting && isRelevantContext) {
+      systemPrompt += `
+
+AUTHENTIC ISLAMIC SOURCES AVAILABLE:
 ${ragResult.context}
 
 IMPORTANT: Weave these Quran verses and Hadiths naturally into your response. Don't just list them at the end. Incorporate them smoothly like:
@@ -452,43 +492,47 @@ IMPORTANT: Weave these Quran verses and Hadiths naturally into your response. Do
 
 Make the citations feel natural and conversational, not academic.`;
       console.log(`✅ Retrieved ${ragResult.sources.length} relevant sources to enhance response`);
+    } else if (isGreeting) {
+      console.log('🤝 Greeting detected — skipping RAG context');
     } else {
-      console.log('ℹ️ No specific sources found, generating comprehensive response from general knowledge');
+      console.log('ℹ️ No specific sources found, generating response from general knowledge');
     }
     
-    // Step 5: Generate comprehensive AI response with Gemini
+    // Step 7: Generate AI response using Gemini
     const chat = model.startChat({
       history: conversationHistory,
       generationConfig: {
-        temperature: 0.8,  // Slightly higher for more natural, detailed responses
+        temperature: 0.8,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 2048,  // Increased for comprehensive responses
+        maxOutputTokens: 2048,
       },
     });
     
     const result = await chat.sendMessage(systemPrompt + '\n\nUser question: ' + message);
-    const response = result.response;
-    const aiResponse = response.text();
+    const aiResponse = result.response.text();
     
-    // Step 6: Add source attribution ONLY if context was actually used
+    // Step 8: Add sources ONLY if NOT a greeting and RAG was used
     let finalResponse = aiResponse;
-    if (isRelevantContext && ragResult.sources.length > 0) {
+    if (!isGreeting && isRelevantContext && ragResult.sources.length > 0) {
       const sourcesList = ragResult.sources
-        .slice(0, 3) // Show top 3 sources
+        .slice(0, 3)
         .map(src => `• ${src}`)
         .join('\n');
+      
       finalResponse += `\n\n📚 **Sources:**\n${sourcesList}`;
+    } else if (isGreeting) {
+      console.log('📭 Skipping sources — greeting detected.');
     }
     
+    // Step 9: Return the clean response
     return finalResponse;
-    
   } catch (error) {
-    console.error('Error generating AI response:', error);
-    // Fallback response in case of error
+    console.error('❌ Error generating AI response:', error);
     return "I apologize, but I'm having trouble processing your question right now. Please try again in a moment, or rephrase your question.";
   }
 };
+      
 
 module.exports = {
   getChatSessions,

@@ -59,6 +59,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabKey>('users');
   const [processing, setProcessing] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [viewingApp, setViewingApp] = useState<ScholarApplication | null>(null);
 
   useEffect(() => {
     loadData();
@@ -122,6 +123,160 @@ export default function AdminDashboard() {
     } finally {
       setProcessing(null);
     }
+  };
+
+  const renderApplicationDetailsModal = () => {
+    if (!viewingApp) return null;
+    const app = viewingApp as ScholarApplication;
+    const isPending = (app as any).status ? (app as any).status === 'pending' : (app as any).approved === false;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+        <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Scholar Application</h3>
+            <button onClick={() => setViewingApp(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">✕</button>
+          </div>
+          <div className="p-6 space-y-6">
+            <div className="flex items-start gap-4">
+              <img src={app.photoUrl || 'https://via.placeholder.com/80x80?text=Scholar'} alt={app.user.name} className="w-16 h-16 rounded-full object-cover border" />
+              <div>
+                <div className="text-xl font-semibold text-gray-900 dark:text-white">{app.user.name}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">{app.user.email}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">Experience: {app.experienceYears} years</div>
+                <div className="mt-1 flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-300">
+                  {(app as any).country && (<span>Country: <span className="font-medium text-gray-900 dark:text-white">{(app as any).country}</span></span>)}
+                  {(app as any).timezone && (<span>Timezone: <span className="font-medium text-gray-900 dark:text-white">{(app as any).timezone}</span></span>)}
+                </div>
+              </div>
+            </div>
+            {app.qualifications && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Qualifications</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{app.qualifications}</div>
+              </div>
+            )}
+            {app.bio && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Bio</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{app.bio}</div>
+              </div>
+            )}
+            {(app as any).teachingPhilosophy && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Teaching Philosophy</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{(app as any).teachingPhilosophy}</div>
+              </div>
+            )}
+            {(app as any).availability && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Availability</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{(app as any).availability}</div>
+              </div>
+            )}
+            {!!(app.specializations?.length) && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Specializations</div>
+                <div className="flex flex-wrap gap-2">
+                  {app.specializations.map((s, i) => (
+                    <span key={i} className="px-2 py-1 rounded-full text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {!!(app.languages?.length) && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Languages</div>
+                <div className="flex flex-wrap gap-2">
+                  {app.languages.map((l, i) => (
+                    <span key={i} className="px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">{l}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {(((app as any).hourlyRate) || ((app as any).monthlyRate)) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(app as any).hourlyRate ? (
+                  <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Hourly Rate</div>
+                    <div className="text-lg font-semibold text-gray-900 dark:text-white">${(app as any).hourlyRate}</div>
+                  </div>
+                ) : null}
+                {(app as any).monthlyRate ? (
+                  <div className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Monthly Rate</div>
+                    <div className="text-lg font-semibold text-gray-900 dark:text-white">${(app as any).monthlyRate}</div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+            {(app as any).certifications && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Certifications</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{(app as any).certifications}</div>
+              </div>
+            )}
+            {(app as any).achievements && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Achievements</div>
+                <div className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{(app as any).achievements}</div>
+              </div>
+            )}
+            {(((app as any).socialMedia) || ((app as any).website)) && (
+              <div className="flex flex-wrap gap-3">
+                {(app as any).socialMedia && (
+                  <a href={(app as any).socialMedia} target="_blank" rel="noopener noreferrer" className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100">Social</a>
+                )}
+                {(app as any).website && (
+                  <a href={(app as any).website} target="_blank" rel="noopener noreferrer" className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100">Website</a>
+                )}
+              </div>
+            )}
+            {app.demoVideoUrl && (
+              <div>
+                <a href={app.demoVideoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">View Demo Video</a>
+              </div>
+            )}
+            {(app as any).subscriptionPlans?.length ? (
+              <div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Subscription Plans</div>
+                <div className="space-y-2">
+                  {(app as any).subscriptionPlans.map((p:any, idx:number) => (
+                    <div key={idx} className="p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold text-gray-900 dark:text-white">{p.name} · {p.duration}</div>
+                        <div className="text-gray-900 dark:text-white font-semibold">${p.price}</div>
+                      </div>
+                      {p.features?.length ? (
+                        <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mt-1">
+                          {p.features.map((f:string, i:number) => (<li key={i}>{f}</li>))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <button onClick={() => setViewingApp(null)} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">Close</button>
+            {isPending && (
+              <>
+                <button
+                  onClick={() => { setViewingApp(null); handleRejectApplication(app._id); }}
+                  disabled={processing === app._id}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50"
+                >Reject</button>
+                <button
+                  onClick={() => { setViewingApp(null); handleApproveApplication(app._id); }}
+                  disabled={processing === app._id}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg disabled:opacity-50"
+                >Approve</button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const handleLogout = () => {
@@ -395,7 +550,7 @@ export default function AdminDashboard() {
                             ))}
                           </div>
                           <div className="flex flex-wrap gap-2">
-                            {app.languages.map((lang, index) => (
+                            {app.languages.map((lang: string, index: number) => (
                               <span key={index} className="px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs rounded-full">
                                 {lang}
                               </span>
@@ -403,8 +558,15 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        {app.status === 'pending' && (
-                          <div className="flex space-x-3">
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            onClick={() => setViewingApp(app)}
+                            className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 font-medium rounded-lg transition-colors"
+                          >
+                            <EyeIcon className="h-4 w-4 mr-2" /> View Application
+                          </button>
+                          {(((app as any).status ? (app as any).status === 'pending' : (app as any).approved === false)) && (
+                            <>
                             <button
                               onClick={() => handleApproveApplication(app._id)}
                               disabled={processing === app._id}
@@ -429,19 +591,20 @@ export default function AdminDashboard() {
                               )}
                               Reject
                             </button>
-                            {app.demoVideoUrl && (
-                              <a
-                                href={app.demoVideoUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-                              >
-                                <EyeIcon className="h-4 w-4 mr-2" />
-                                View Demo
-                              </a>
-                            )}
-                          </div>
-                        )}
+                            </>
+                          )}
+                          {app.demoVideoUrl && (
+                            <a
+                              href={app.demoVideoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                            >
+                              <EyeIcon className="h-4 w-4 mr-2" />
+                              View Demo
+                            </a>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}
@@ -633,6 +796,7 @@ export default function AdminDashboard() {
             </div>
         )}
         </div>
+        {renderApplicationDetailsModal()}
       </div>
     </div>
   );

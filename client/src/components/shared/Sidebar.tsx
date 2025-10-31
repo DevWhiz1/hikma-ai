@@ -1,6 +1,6 @@
 import React from 'react';
 import { authService } from '../../services/authService';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
   HomeIcon, 
   ChatBubbleLeftRightIcon, 
@@ -24,7 +24,7 @@ interface SidebarProps {
 const baseNavigationItems = [
   { name: 'Dashboard', icon: HomeIcon, id: 'home', path: '/' },
   { name: 'AI Chat', icon: ChatBubbleLeftRightIcon, id: 'ai-chat', path: '/chat/ai' },
-  { name: 'Scholar Chat', icon: UserGroupIcon, id: 'scholar-chat', path: '/chat/scholar' },
+  { name: 'Chat', icon: UserGroupIcon, id: 'scholar-chat', path: '/chat/scholar' },
   { name: 'Scholars', icon: AcademicCapIcon, id: 'scholars', path: '/scholars' },
   { name: 'Payment Tracking', icon: CurrencyDollarIcon, id: 'payments', path: '/payments' },
   { name: 'Upcoming Classes', icon: CalendarIcon, id: 'upcoming-classes', path: '/upcoming-classes' },
@@ -36,8 +36,6 @@ const baseNavigationItems = [
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) => {
-  const location = useLocation();
-  
   const handleClick = (id: string) => {
     setActiveTab(id);
     onNavigate?.();
@@ -49,6 +47,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
     
     // Replace payment tracking with role-specific versions
     if (user?.role === 'scholar') {
+      // Remove Prayer Times and Tasbih for scholars
+      const hiddenForScholar = new Set(['prayer-times', 'tasbih']);
+      for (let i = items.length - 1; i >= 0; i--) {
+        if (hiddenForScholar.has(items[i].id)) items.splice(i, 1);
+      }
+
       const paymentIndex = items.findIndex(item => item.id === 'payments');
       if (paymentIndex !== -1) {
         items[paymentIndex] = { 
@@ -59,6 +63,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setActiveTab, onNavigate }) =
         };
       }
       items.push({ name: 'Scholar Dashboard', icon: BookOpenIcon, id: 'scholar-dashboard', path: '/scholars/dashboard' });
+  items.push({ name: 'Assignments', icon: BookOpenIcon, id: 'scholar-assignments', path: '/scholar/assignments' });
+  items.push({ name: 'Create Assignment', icon: BookOpenIcon, id: 'scholar-assignments-new', path: '/scholar/assignments/new' });
+    }
+
+    // Student menu (default users)
+    if (!user || user.role === 'user') {
+      items.push({ name: 'Quizzes', icon: BookOpenIcon, id: 'quizzes', path: '/quizzes' });
+      items.push({ name: 'Assignments', icon: BookOpenIcon, id: 'assignments', path: '/assignments' });
+      items.push({ name: 'My Submissions', icon: BookOpenIcon, id: 'my-submissions', path: '/me/submissions' });
     }
     
     if (user?.role === 'admin') {

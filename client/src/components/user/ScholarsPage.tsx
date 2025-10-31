@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getScholars, enrollScholar, leaveFeedback, getCachedScholars, unenroll, getMyEnrollments, startDirectChat } from '../../services/scholarService';
 import { authService } from '../../services/authService';
 import { meetingService } from '../../services/meetingService';
+import MeetingRequestModal from '../shared/MeetingRequestModal';
 import { Link, useNavigate } from 'react-router-dom';
 import MeetingChat from './Chat/MeetingChat';
 import ScholarFeedbackModal from './ScholarFeedbackModal';
@@ -29,6 +30,8 @@ export default function ScholarsPage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [selectedScholar, setSelectedScholar] = useState<{ id: string; name: string } | null>(null);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [meetingScholarData, setMeetingScholarData] = useState<{ profileId: string; userId: string; name: string } | null>(null);
   const user = authService.getUser();
   const navigate = useNavigate();
 
@@ -114,38 +117,59 @@ export default function ScholarsPage() {
     }
   };
 
-  const onScheduleMeeting = async (scholarProfileId: string) => {
-    try {
-      // Find the scholar to get their user ID
-      const scholar = scholars.find(s => s._id === scholarProfileId);
-      if (!scholar) {
-        alert('Scholar not found');
-        return;
-      }
+  const onScheduleMeeting = (scholarProfileId: string) => {
+    // Find the scholar to get their user ID
+    const scholar = scholars.find(s => s._id === scholarProfileId);
+    if (!scholar) {
+      alert('Scholar not found');
+      return;
+    }
 
-      const reason = prompt('Reason for meeting (optional):') || '';
-      // Request meeting
-      const response = await meetingService.requestMeeting(scholar.user._id, reason.trim() || undefined);
-      // Navigate to the existing Hikma chat instead of opening meeting modal
+    setMeetingScholarData({
+      profileId: scholarProfileId,
+      userId: scholar.user._id,
+      name: scholar.user.name
+    });
+    setShowMeetingModal(true);
+  };
+
+  const handleMeetingSubmit = async (data: { reason: string; preferredDate?: string; preferredTime?: string; notes?: string }) => {
+    if (!meetingScholarData) return;
+    
+    try {
+      // Combine reason and notes if both exist
+      const reasonText = [data.reason, data.notes].filter(Boolean).join(' | ') || undefined;
+      await meetingService.requestMeeting(meetingScholarData.userId, reasonText);
+      
+      // Navigate to the existing Hikma chat
       try {
-        // Find or create direct chat session and navigate
-        const res = await startDirectChat(scholarProfileId);
+        const res = await startDirectChat(meetingScholarData.profileId);
         const sid = res?.studentSessionId;
         if (sid) navigate(`/chat/${sid}`);
       } catch {
-        // Fallback: keep behavior
-        setActiveChatId(response.chatId);
+        // Fallback: try to navigate with chatId if available
+        console.warn('Could not navigate to chat session');
       }
     } catch (error) {
       console.error('Error requesting meeting:', error);
-      alert('Failed to request meeting. Please try again.');
+      throw error; // Re-throw to let modal handle error state
     }
   };
 
   // Join Meet removed
 
   return (
-    <div className="p-6 space-y-4 max-w-6xl mx-auto">
+    <>
+      <MeetingRequestModal
+        isOpen={showMeetingModal}
+        scholarName={meetingScholarData?.name}
+        onClose={() => {
+          setShowMeetingModal(false);
+          setMeetingScholarData(null);
+        }}
+        onSubmit={handleMeetingSubmit}
+      />
+      <div className="p-6 space-y-4 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Scholars</h1>
         {user?.role !== 'scholar' && (
@@ -287,7 +311,9 @@ export default function ScholarsPage() {
           scholarName={selectedScholar.name}
         />
       )}
+      </div>
     </div>
+    </>
   );
 }
 
