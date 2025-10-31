@@ -15,6 +15,13 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
+  type?: 'text' | 'meeting_request' | 'meeting_scheduled' | 'meeting_link';
+  metadata?: {
+    scheduledTime?: string | Date;
+    meetingLink?: string;
+    meetLink?: string;
+    roomId?: string;
+  };
 }
 
 interface Scholar {
@@ -48,8 +55,17 @@ class EnhancedChatService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Request failed');
+      let errorMessage = 'Request failed';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || error.message || 'Request failed';
+      } catch {
+        // If response is not JSON, use status text
+        errorMessage = response.status === 404 ? 'Session not found' : response.statusText || 'Request failed';
+      }
+      const error = new Error(errorMessage);
+      (error as any).status = response.status;
+      throw error;
     }
 
     return response.json();
