@@ -64,7 +64,7 @@ const ScholarApplyForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
-  const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]{11}(&.*)?$/i;
+  const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]{11}([?&].*)?$/i;
 
   const isValid = useMemo(() => {
     const has = (s: string) => typeof s === 'string' && s.trim().length > 0;
@@ -165,7 +165,8 @@ const ScholarApplyForm = () => {
         ...formData,
         specializations: formData.specializations.split(',').map(s => s.trim()).filter(Boolean),
         languages: formData.languages.split(',').map(s => s.trim()).filter(Boolean),
-        experienceYears: Number(formData.experienceYears)
+        experienceYears: Number(formData.experienceYears),
+        hourlyRate: Number(formData.hourlyRate) || 0
       };
 
       await applyScholar(payload);

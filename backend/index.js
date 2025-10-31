@@ -118,6 +118,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/enhanced-admin', require('./routes/enhancedAdminRoutes'));
 app.use('/api/payments', require('./routes/paymentRoutes'));
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
+app.use('/api/ratings-reviews', require('./routes/ratingReviewRoutes'));
 app.use('/api/scholar-feedback', require('./routes/scholarFeedbackRoutes'));
 app.use('/api/smart-scheduler', require('./routes/smartSchedulerRoutes'));
 app.use('/api/enhanced-meetings', require('./routes/enhancedMeetingRoutes'));

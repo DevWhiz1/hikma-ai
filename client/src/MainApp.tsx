@@ -7,6 +7,8 @@ import ScholarProfileView from './components/user/ScholarProfile/ScholarProfileV
 import AIChat from './components/user/Chat/EnhancedAIChat';
 import ScholarChat from './components/user/Chat/EnhancedScholarChat';
 import UpcomingClasses from './components/user/UpcomingClasses/UpcomingClasses';
+import ReviewRatingPage from './pages/ReviewRatingPage';
+import ShowReviewsAndRatings from './pages/ShowReviewsAndRatings';
 import QiblaFinder from './components/features/QiblaFinder';
 import AppContent from './components/shared/AppContent';
 import PrayerTimesPage from './components/features/PrayerTimes';
@@ -128,6 +130,8 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
                   <Route path="/chat/scholar/:sessionId" element={<ScholarChat />} />
                   <Route path="/scholar/:id" element={<ScholarProfileView />} />
                   <Route path="/upcoming-classes" element={<UpcomingClasses />} />
+                  <Route path="/feedback/:scholarId" element={<ReviewRatingPage />} />
+                  <Route path="/scholars/:scholarId/reviews" element={<ShowReviewsAndRatings />} />
                   <Route path="/hadith" element={<HadithExplorer />} />
                   <Route path="/scholars" element={<ScholarsPage />} />
                   <Route path="/scholars/apply" element={<ScholarApplyForm />} />

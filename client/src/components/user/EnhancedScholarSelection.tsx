@@ -17,6 +17,7 @@ import {
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { getScholars } from '../../services/scholarService';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import ScholarImage from '../shared/ScholarImage';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,7 @@ interface EnhancedScholarSelectionProps {
 
 const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onScholarSelect }) => {
   const [scholars, setScholars] = useState<Scholar[]>([]);
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [specializationFilter, setSpecializationFilter] = useState('all');
@@ -375,6 +377,14 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                       {scholar.totalStudents} students
                     </div>
+                    <div className="mt-2">
+                      <Link
+                        to={`/scholars/${scholar._id}/reviews`}
+                        className="inline-flex items-center px-3 py-1.5 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700"
+                      >
+                        See All Reviews
+                      </Link>
+                    </div>
                   </div>
                 </div>
 
@@ -401,23 +411,25 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                 </p>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between">
-                  <Link
-                    to={`/scholar/${scholar._id}`}
-                    className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                  >
-                    <EyeIcon className="h-4 w-4 mr-2" />
-                    View Profile
-                  </Link>
-                  <Button
-                    onClick={() => setSelectedScholar(scholar)}
-                    variant="outline"
-                    className="flex items-center"
-                  >
-                    <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
-                    Chat
-                  </Button>
-                </div>
+                {user?.role !== 'scholar' && (
+                  <div className="flex items-center justify-between">
+                    <Link
+                      to={`/scholar/${scholar._id}`}
+                      className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    >
+                      <EyeIcon className="h-4 w-4 mr-2" />
+                      View Profile
+                    </Link>
+                    <Button
+                      onClick={() => setSelectedScholar(scholar)}
+                      variant="outline"
+                      className="flex items-center"
+                    >
+                      <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
+                      Chat
+                    </Button>
+                  </div>
+                )}
               </div>
             </Card>
           ))}
@@ -455,43 +467,33 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                         <UserGroupIcon className="h-4 w-4 mr-1" />
                         {scholar.totalStudents} students
                       </div>
+                      <div className="mt-3">
+                        <Link
+                          to={`/scholars/${scholar._id}/reviews`}
+                          className="inline-flex items-center px-3 py-1.5 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700"
+                        >
+                          See All Reviews
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                      ${scholar.hourlyRate}/hr
+                  {/* Right actions (hidden for scholars) */}
+                  {user?.role !== 'scholar' && (
+                    <div className="flex items-center space-x-2">
+                      <Link
+                        to={`/scholar/${scholar._id}`}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                      >
+                        <EyeIcon className="h-4 w-4 inline mr-2" /> View Profile
+                      </Link>
+                      <Button
+                        onClick={() => setSelectedScholar(scholar)}
+                        variant="outline"
+                      >
+                        <ChatBubbleLeftRightIcon className="h-4 w-4 inline mr-2" /> Chat
+                      </Button>
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {scholar.experienceYears} years exp
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      onClick={() => toggleFavorite(scholar._id)}
-                      variant="ghost"
-                      className={`p-2 rounded-full transition-colors ${
-                        favorites.includes(scholar._id)
-                          ? 'text-red-500 bg-red-50 dark:bg-red-900/20'
-                          : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                      }`}
-                    >
-                      <HeartIcon className={`h-5 w-5 ${favorites.includes(scholar._id) ? 'fill-current' : ''}`} />
-                    </Button>
-                    <Link
-                      to={`/scholar/${scholar._id}`}
-                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                    >
-                      View Profile
-                    </Link>
-                    <Button
-                      onClick={() => setSelectedScholar(scholar)}
-                      variant="outline"
-                    >
-                      Chat
-                    </Button>
-                  </div>
+                  )}
                 </div>
               </div>
             </Card>

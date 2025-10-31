@@ -17,6 +17,7 @@ import {
   XCircleIcon,
   PlayIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '../../../hooks/useAuth';
 
 interface Scholar {
   _id: string;
@@ -38,6 +39,7 @@ interface Scholar {
 const ScholarProfileView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [scholar, setScholar] = useState<Scholar | null>(null);
   const [loading, setLoading] = useState(true);
   const [enrolled, setEnrolled] = useState(false);
@@ -220,22 +222,24 @@ const ScholarProfileView = () => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col space-y-2">
-                {enrolled ? (
-                  <div className="flex items-center text-emerald-100">
-                    <CheckCircleIcon className="h-5 w-5 mr-2" />
-                    <span className="text-sm">Enrolled</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleEnroll}
-                    disabled={enrolling || Boolean(scholar.user.lockUntil)}
-                    className="px-6 py-3 bg-white text-emerald-600 font-semibold rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                  >
-                    {enrolling ? 'Enrolling...' : 'Enroll Now'}
-                  </button>
-                )}
-              </div>
+              {user?.role !== 'scholar' && (
+                <div className="flex flex-col space-y-2">
+                  {enrolled ? (
+                    <div className="flex items-center text-emerald-100">
+                      <CheckCircleIcon className="h-5 w-5 mr-2" />
+                      <span className="text-sm">Enrolled</span>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleEnroll}
+                      disabled={enrolling || Boolean(scholar.user.lockUntil)}
+                      className="px-6 py-3 bg-white text-emerald-600 font-semibold rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    >
+                      {enrolling ? 'Enrolling...' : 'Enroll Now'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -328,35 +332,37 @@ const ScholarProfileView = () => {
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-              {enrolled ? (
-                <>
+            {/* Action Buttons (hidden for scholars) */}
+            {user?.role !== 'scholar' && (
+              <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                {enrolled ? (
+                  <>
+                    <button
+                      onClick={handleChat}
+                      className="flex-1 flex items-center justify-center px-6 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors shadow-lg"
+                    >
+                      <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2" />
+                      Chat with Scholar
+                    </button>
+                    <button
+                      onClick={handleScheduleMeeting}
+                      className="flex-1 flex items-center justify-center px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors shadow-lg"
+                    >
+                      <CalendarIcon className="h-5 w-5 mr-2" />
+                      Schedule Meeting
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={handleChat}
-                    className="flex-1 flex items-center justify-center px-6 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors shadow-lg"
+                    onClick={handleEnroll}
+                    disabled={enrolling || Boolean(scholar.user.lockUntil)}
+                    className="w-full flex items-center justify-center px-6 py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                   >
-                    <ChatBubbleLeftRightIcon className="h-5 w-5 mr-2" />
-                    Chat with Scholar
+                    {enrolling ? 'Enrolling...' : 'Enroll with Scholar'}
                   </button>
-                  <button
-                    onClick={handleScheduleMeeting}
-                    className="flex-1 flex items-center justify-center px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors shadow-lg"
-                  >
-                    <CalendarIcon className="h-5 w-5 mr-2" />
-                    Schedule Meeting
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={handleEnroll}
-                  disabled={enrolling || Boolean(scholar.user.lockUntil)}
-                  className="w-full flex items-center justify-center px-6 py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                >
-                  {enrolling ? 'Enrolling...' : 'Enroll with Scholar'}
-                </button>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

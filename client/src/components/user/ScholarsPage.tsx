@@ -221,60 +221,62 @@ export default function ScholarsPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="mt-4 flex gap-2 flex-wrap items-center w-full">
-                  <button
-                    title={enrolledIds.has(s._id) ? 'Already enrolled' : 'Enroll with this scholar'}
-                    onClick={() => onToggleEnroll(s._id)}
-                    disabled={Boolean(s.user?.lockUntil)}
-                    className={`px-2.5 py-1.5 text-sm rounded-md text-white shadow-sm ${s.user?.lockUntil ? 'bg-gray-400 cursor-not-allowed' : enrolledIds.has(s._id) ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'}`}
-                  >
-                    {s.user?.lockUntil ? 'Blocked' : enrolledIds.has(s._id) ? 'Enrolled' : 'Enroll'}
-                  </button>
-                  <button
-                    title="View scholar profile"
-                    onClick={() => navigate(`/scholar/${s._id}`)}
-                    className="px-2.5 py-1.5 text-sm rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-                  >
-                    View Profile
-                  </button>
-                  <button
-                    title="Leave feedback for this scholar"
-                    onClick={() => onFeedback(s._id)}
-                    className="px-2.5 py-1.5 text-sm rounded-md bg-gray-700 hover:bg-gray-800 text-white shadow-sm"
-                  >
-                    Leave Feedback
-                  </button>
-                  {enrolledIds.has(s._id) && (
-                    <>
-                      <button
-                        title="Open direct chat with this scholar"
-                        onClick={() => onChatWithScholar(s._id)}
-                        className="px-2.5 py-1.5 text-sm rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                      >
-                        Chat with Scholar
-                      </button>
-                      <button
-                        title="Schedule a meeting with this scholar"
-                        onClick={() => onScheduleMeeting(s._id)}
-                        className="px-2.5 py-1.5 text-sm rounded-md bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
-                      >
-                        Schedule Meeting
-                      </button>
-                    </>
-                  )}
-                  {s.demoVideoUrl && (
-                    <a
-                      title="Watch demo video"
-                      href={s.demoVideoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-2.5 py-1.5 text-sm rounded-md bg-amber-600 hover:bg-amber-700 text-white shadow-sm no-underline"
-                      style={{color: 'white', textDecoration: 'none'}}
+                {user?.role !== 'scholar' && (
+                  <div className="mt-4 flex gap-2 flex-wrap items-center w-full">
+                    <button
+                      title={enrolledIds.has(s._id) ? 'Already enrolled' : 'Enroll with this scholar'}
+                      onClick={() => onToggleEnroll(s._id)}
+                      disabled={Boolean(s.user?.lockUntil)}
+                      className={`px-2.5 py-1.5 text-sm rounded-md text-white shadow-sm ${s.user?.lockUntil ? 'bg-gray-400 cursor-not-allowed' : enrolledIds.has(s._id) ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                     >
-                      Demo Video
-                    </a>
-                  )}
-                </div>
+                      {s.user?.lockUntil ? 'Blocked' : enrolledIds.has(s._id) ? 'Enrolled' : 'Enroll'}
+                    </button>
+                    <button
+                      title="View scholar profile"
+                      onClick={() => navigate(`/scholar/${s._id}`)}
+                      className="px-2.5 py-1.5 text-sm rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      title="Leave feedback for this scholar"
+                      onClick={() => onFeedback(s._id)}
+                      className="px-2.5 py-1.5 text-sm rounded-md bg-gray-700 hover:bg-gray-800 text-white shadow-sm"
+                    >
+                      Leave Feedback
+                    </button>
+                    {enrolledIds.has(s._id) && (
+                      <>
+                        <button
+                          title="Open direct chat with this scholar"
+                          onClick={() => onChatWithScholar(s._id)}
+                          className="px-2.5 py-1.5 text-sm rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                        >
+                          Chat with Scholar
+                        </button>
+                        <button
+                          title="Schedule a meeting with this scholar"
+                          onClick={() => onScheduleMeeting(s._id)}
+                          className="px-2.5 py-1.5 text-sm rounded-md bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
+                        >
+                          Schedule Meeting
+                        </button>
+                      </>
+                    )}
+                    {s.demoVideoUrl && (
+                      <a
+                        title="Watch demo video"
+                        href={s.demoVideoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1.5 text-sm rounded-md bg-amber-600 hover:bg-amber-700 text-white shadow-sm no-underline"
+                        style={{color: 'white', textDecoration: 'none'}}
+                      >
+                        Demo Video
+                      </a>
+                    )}
+                  </div>
+                )}
 
                 {/* Footer subtle meta */}
                 <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
