@@ -173,7 +173,7 @@ export default function ScholarsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Scholars</h1>
         {user?.role !== 'scholar' && (
-          <Link to="/scholars/apply" className="bg-[#264653] dark:text-gray-300 px-4 py-2 rounded hover:bg-[#2A9D8F] no-underline" style={{color: '#14b8a6', textDecoration: 'none'}}>Apply as Scholar</Link>
+          <Link to="/scholars/apply" className="bg-[#264653] text-white px-4 py-2 rounded hover:bg-[#2A9D8F] no-underline">Apply as Scholar</Link>
         )}
       </div>
       {/* Meeting topic removed */}

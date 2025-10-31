@@ -18,6 +18,9 @@ import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { getScholars } from '../../services/scholarService';
 import { Link } from 'react-router-dom';
 import ScholarImage from '../shared/ScholarImage';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface Scholar {
   _id: string;
@@ -320,7 +323,7 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedScholars.map((scholar) => (
-            <div key={scholar._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-shadow">
+            <Card key={scholar._id} className="rounded-xl overflow-hidden hover:shadow-md transition-shadow">
               {/* Scholar Header */}
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -342,8 +345,9 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                       </div>
                     </div>
                   </div>
-                  <button
+                  <Button
                     onClick={() => toggleFavorite(scholar._id)}
+                    variant="ghost"
                     className={`p-2 rounded-full transition-colors ${
                       favorites.includes(scholar._id)
                         ? 'text-red-500 bg-red-50 dark:bg-red-900/20'
@@ -351,7 +355,7 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                     }`}
                   >
                     <HeartIcon className={`h-5 w-5 ${favorites.includes(scholar._id) ? 'fill-current' : ''}`} />
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Rating and Stats */}
@@ -405,22 +409,23 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                     <EyeIcon className="h-4 w-4 mr-2" />
                     View Profile
                   </Link>
-                  <button
+                  <Button
                     onClick={() => setSelectedScholar(scholar)}
-                    className="flex items-center px-4 py-2 border border-emerald-600 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                    variant="outline"
+                    className="flex items-center"
                   >
                     <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
                     Chat
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       ) : (
         <div className="space-y-4">
           {sortedScholars.map((scholar) => (
-            <div key={scholar._id} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow">
+            <Card key={scholar._id} className="rounded-xl p-6 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <ScholarImage
@@ -463,8 +468,9 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <button
+                    <Button
                       onClick={() => toggleFavorite(scholar._id)}
+                      variant="ghost"
                       className={`p-2 rounded-full transition-colors ${
                         favorites.includes(scholar._id)
                           ? 'text-red-500 bg-red-50 dark:bg-red-900/20'
@@ -472,42 +478,34 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                       }`}
                     >
                       <HeartIcon className={`h-5 w-5 ${favorites.includes(scholar._id) ? 'fill-current' : ''}`} />
-                    </button>
+                    </Button>
                     <Link
                       to={`/scholar/${scholar._id}`}
                       className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                     >
                       View Profile
                     </Link>
-                    <button
+                    <Button
                       onClick={() => setSelectedScholar(scholar)}
-                      className="px-4 py-2 border border-emerald-600 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                      variant="outline"
                     >
                       Chat
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
-      {/* Scholar Details Modal */}
+      <Dialog open={!!selectedScholar} onOpenChange={() => setSelectedScholar(null)}>
+        <DialogContent className="sm:max-w-2xl">
       {selectedScholar && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Quick Scholar Info</h3>
-                <button
-                  onClick={() => setSelectedScholar(null)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <XCircleIcon className="h-6 w-6" />
-                </button>
-              </div>
-
+            <>
+              <DialogHeader>
+                <DialogTitle>Quick Scholar Info</DialogTitle>
+              </DialogHeader>
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
                   <ScholarImage
@@ -516,11 +514,11 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                     className="h-16 w-16 rounded-full object-cover"
                   />
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{selectedScholar.user.name}</h4>
+                    <h4 className="text-lg font-semibold">{selectedScholar.user.name}</h4>
                     <div className="flex items-center space-x-4 mt-2">
                       <div className="flex items-center">
                         {renderStars(selectedScholar.averageRating)}
-                        <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span className="ml-2 text-sm text-muted-foreground">
                           {selectedScholar.averageRating.toFixed(1)} ({selectedScholar.totalReviews} reviews)
                         </span>
                       </div>
@@ -530,9 +528,8 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                     </div>
                   </div>
                 </div>
-
                 <div>
-                  <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Specializations</h5>
+                  <h5 className="font-semibold mb-2">Specializations</h5>
                   <div className="flex flex-wrap gap-2">
                     {selectedScholar.specializations.map((spec, index) => (
                       <span
@@ -544,42 +541,29 @@ const EnhancedScholarSelection: React.FC<EnhancedScholarSelectionProps> = ({ onS
                     ))}
                   </div>
                 </div>
-
                 <div>
-                  <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Bio</h5>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{selectedScholar.bio}</p>
+                  <h5 className="font-semibold mb-2">Bio</h5>
+                  <p className="text-sm text-muted-foreground">{selectedScholar.bio}</p>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Experience</h5>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedScholar.experienceYears} years</p>
+                    <h5 className="font-semibold mb-2">Experience</h5>
+                    <p className="text-sm text-muted-foreground">{selectedScholar.experienceYears} years</p>
                   </div>
                   <div>
-                    <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Students</h5>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{selectedScholar.totalStudents} students</p>
+                    <h5 className="font-semibold mb-2">Students</h5>
+                    <p className="text-sm text-muted-foreground">{selectedScholar.totalStudents} students</p>
                   </div>
                 </div>
               </div>
-
-              <div className="flex items-center justify-end space-x-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => setSelectedScholar(null)}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  Close
-                </button>
-                <Link
-                  to={`/scholar/${selectedScholar._id}`}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                >
-                  View Full Profile
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setSelectedScholar(null)}>Close</Button>
+                <Link to={`/scholar/${selectedScholar._id}`} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors">View Full Profile</Link>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

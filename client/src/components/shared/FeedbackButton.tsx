@@ -54,18 +54,18 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
   return (
     <>
       {/* Floating Feedback Button with Menu */}
-      <div className={`fixed ${positionClasses[position]} z-40 !bg-transparent `}style={{ backgroundColor: "transparent !important" }}>
+      <div className={`fixed ${positionClasses[position]} z-40 feedback-floating !bg-transparent`}>
         {/* Menu */}
         {showMenu && (
-          <div className="absolute bottom-16 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 min-w-[200px]">
+          <div className="feedback-menu-bg absolute bottom-16 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 min-w-[200px]">
             <button
               onClick={() => {
                 setIsModalOpen(true);
                 setShowMenu(false);
               }}
-              className="feedback-menu-item w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-gray-700 flex items-center space-x-3 rounded-lg"
+              className="feedback-menu-item feedback-submit-btn w-full px-4 py-3 text-left bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 rounded-lg transition-colors"
             >
-              <MessageSquare className="w-5 h-5 text-emerald-600" />
+              <MessageSquare className="feedback-submit-icon w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span className="text-gray-900 dark:text-white">Submit Feedback</span>
             </button>
             <button
@@ -73,9 +73,9 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                 setIsHistoryOpen(true);
                 setShowMenu(false);
               }}
-              className="feedback-menu-item w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-gray-700 flex items-center space-x-3 rounded-lg"
+              className="feedback-menu-item feedback-history-btn w-full px-4 py-3 text-left bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 rounded-lg transition-colors"
             >
-              <History className="w-5 h-5 text-blue-600" />
+              <History className="feedback-history-icon w-5 h-5 text-blue-600 dark:text-blue-400" />
               <span className="text-gray-900 dark:text-white">View History</span>
             </button>
           </div>
@@ -84,10 +84,10 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
         {/* Main Button */}
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+          className="feedback-floating-main-btn w-14 h-14 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
           title="Feedback Menu"
         >
-          <MessageSquare className="w-6 h-6 group-hover:scale-110 transition-transform" />
+          <MessageSquare className="feedback-floating-main-icon w-6 h-6 group-hover:scale-110 transition-transform" />
         </button>
       </div>
 

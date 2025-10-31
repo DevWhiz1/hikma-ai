@@ -21,6 +21,8 @@ import {
   VideoCameraIcon,
   ClockIcon
 } from '@heroicons/react/24/outline';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 interface Enrollment {
   _id: string;
@@ -161,7 +163,7 @@ const UserDashboard = () => {
       <div className="px-6 pb-12 pt-6 max-w-7xl mx-auto">
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
+          <Card className="p-6 rounded-2xl hover:shadow-md transition-all duration-300">
             <div className="flex items-center">
               <div className="p-3 bg-emerald-50 dark:bg-emerald-900/50 rounded-xl">
                 <ChatBubbleLeftRightIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
@@ -171,8 +173,8 @@ const UserDashboard = () => {
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
               </div>
             </div>
-          </div>
-           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
+          </Card>
+           <Card className="p-6 rounded-2xl hover:shadow-md transition-all duration-300">
             <div className="flex items-center">
                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/50 rounded-xl">
                  <UserGroupIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
@@ -182,8 +184,8 @@ const UserDashboard = () => {
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{enrollments.length}</p>
               </div>
             </div>
-          </div>
-           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
+          </Card>
+           <Card className="p-6 rounded-2xl hover:shadow-md transition-all duration-300">
             <div className="flex items-center">
                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/50 rounded-xl">
                  <CalendarIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
@@ -193,8 +195,8 @@ const UserDashboard = () => {
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
               </div>
             </div>
-          </div>
-           <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300">
+          </Card>
+           <Card className="p-6 rounded-2xl hover:shadow-md transition-all duration-300">
             <div className="flex items-center">
                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/50 rounded-xl">
                  <ChartBarIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
@@ -204,12 +206,12 @@ const UserDashboard = () => {
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">--</p>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Book Meetings Section */}
         <div className="mb-12">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl shadow-xl p-8 text-white">
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <h2 className="text-3xl font-bold mb-4">Book Your Meeting Slots</h2>
@@ -217,20 +219,20 @@ const UserDashboard = () => {
                   Your enrolled scholars have posted available meeting times. Book your preferred slots now!
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button
+                  <Button
                     onClick={() => navigate('/available-meetings')}
-                    className="px-8 py-4 bg-white text-blue-600 font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-lg flex items-center justify-center"
+                    className="px-8 py-4 bg-white text-emerald-700 font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-lg inline-flex items-center justify-center gap-2 leading-none text-center h-12"
                   >
-                    <VideoCameraIcon className="h-6 w-6 mr-2" />
+                    <VideoCameraIcon className="h-6 w-6" stroke="#10B981" fill="none" />
                     View Available Slots
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => navigate('/chat')}
-                    className="px-8 py-4 bg-blue-700 text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg flex items-center justify-center"
+                    className="px-8 py-4 font-bold rounded-xl transition-colors shadow-lg inline-flex items-center justify-center gap-2 leading-none text-center h-12 bg-emerald-700 hover:bg-emerald-800 text-white border border-emerald-800"
                   >
-                    <ChatBubbleLeftRightIcon className="h-6 w-6 mr-2" />
+                    <ChatBubbleLeftRightIcon className="h-6 w-6" />
                     Chat with Scholars
-                  </button>
+                  </Button>
                 </div>
               </div>
               <div className="hidden lg:block ml-8">
@@ -256,7 +258,7 @@ const UserDashboard = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {enrollments.map((enrollment) => (
-                <div key={enrollment._id} className="bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300 overflow-hidden">
+                <Card key={enrollment._id} className="rounded-2xl hover:shadow-md transition-all duration-300 overflow-hidden">
                   <div className="p-6">
                     <div className="flex items-center space-x-4 mb-4">
                       <img
@@ -279,21 +281,22 @@ const UserDashboard = () => {
                       </div>
                     )}
                     <div className="flex space-x-2">
-                      <button
+                      <Button
                         onClick={() => navigate('/chat')}
-                        className="flex-1 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+                        className="flex-1 text-sm font-medium"
                       >
                         Chat
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => navigate('/scholars')}
-                        className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        variant="outline"
+                        className="flex-1 text-sm font-medium border-emerald-600 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-gray-800 view-profile-btn"
                       >
-                        View Profile
-                      </button>
+                        <span className="view-profile-label">View Profile</span>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
@@ -407,7 +410,7 @@ const UserDashboard = () => {
                   className="group block"
                 >
                   <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 h-full">
-                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${feature.gradient} mb-4 shadow-lg`}>
+                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-r ${feature.gradient} mb-4 shadow-lg feature-icon`}>
                       <IconComponent className="h-6 w-6 text-white" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
@@ -432,7 +435,7 @@ const UserDashboard = () => {
           {scheduledMeetings.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {scheduledMeetings.map((meeting) => (
-                <div key={meeting.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-all duration-300">
+                <Card key={meeting.id} className="rounded-2xl p-6 hover:shadow-xl transition-all duration-300">
                   <div className="flex items-center space-x-4 mb-4">
                     <div className="p-3 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
                       <CalendarIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
@@ -473,25 +476,25 @@ const UserDashboard = () => {
                       />
                     </div>
                   )}
-                </div>
+                </Card>
               ))}
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+            <Card className="rounded-2xl shadow-lg p-6">
               <div className="text-center py-12">
                 <CalendarIcon className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Upcoming Classes</h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Schedule a meeting with your enrolled scholars to see upcoming classes here.
                 </p>
-                <button
+                <Button
                   onClick={() => navigate('/scholars')}
-                  className="px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+                  className="px-6 hover:bg-emerald-700 hover:text-emerald-700 transition-colors"
                 >
                   Schedule a Meeting
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           )}
         </div>
 

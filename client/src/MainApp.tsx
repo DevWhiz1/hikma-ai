@@ -31,6 +31,7 @@ import UnifiedSchedulerPage from './pages/scholar/UnifiedSchedulerPage';
 import BroadcastManagementPage from './pages/scholar/BroadcastManagementPage';
 import SmartNotifyManagerPage from './pages/scholar/SmartNotifyManagerPage';
 import AvailableMeetingsPage from './pages/user/AvailableMeetingsPage';
+import SettingsPage from './pages/user/SettingsPage';
 import AssignmentsPage from './pages/scholar/AssignmentsPage';
 import AssignmentCreatePage from './pages/scholar/AssignmentCreatePage';
 import AssignmentSubmissionsPage from './pages/scholar/AssignmentSubmissionsPage';
@@ -46,36 +47,17 @@ interface MainAppProps {
 
 function MainApp({ setIsAuthenticated }: MainAppProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false); // default light
+  const [isDarkMode, setIsDarkMode] = useState(false); // retained for legacy props
   const location = useLocation();
   const isChatRoute = location.pathname.startsWith('/chat');
 
-  // Toggle dark mode and save to localStorage
-  const toggleDarkMode = () => {
-    const next = !isDarkMode;
-    setIsDarkMode(next);
-    localStorage.setItem('darkMode', JSON.stringify(next));
-    if (next) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-    }
-  };
+  // Legacy no-op; theme is now controlled by ThemeToggle component
+  const toggleDarkMode = () => setIsDarkMode((v) => !v);
 
-  // Load dark mode preference from localStorage
+  // Start in light mode; ThemeToggle manages html class and persistence
   useEffect(() => {
-    const saved = localStorage.getItem('darkMode');
-    const dark = saved === 'true';
-    setIsDarkMode(dark);
-    if (dark) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-    }
+    document.documentElement.classList.add('light');
+    document.documentElement.classList.remove('dark');
   }, []);
 
   // Handle resize to show sidebar on large screens automatically
@@ -103,7 +85,7 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
   // If admin route, render AdminDashboard without main layout
   if (isAdminRoute) {
     return (
-      <div className={`App min-h-screen ${isDarkMode ? 'dark' : ''}`}>
+      <div className={`App min-h-screen`}>
         <AdminDashboard />
       </div>
     );
@@ -119,7 +101,7 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
           aria-hidden="true"
         />
       )}
-      <div className={`App min-h-screen ${isDarkMode ? 'dark' : ''}`}>
+      <div className={`App min-h-screen`}>
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
           <TopBar
             toggleSidebar={() => setSidebarOpen(prev => !prev)}
@@ -160,6 +142,7 @@ function MainApp({ setIsAuthenticated }: MainAppProps) {
                   <Route path="/scholar/broadcast-management" element={<BroadcastManagementPage />} />
                   <Route path="/scholar/smart-notify" element={<SmartNotifyManagerPage />} />
                   <Route path="/available-meetings" element={<AvailableMeetingsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                   {/* Assignments */}
                   <Route path="/quizzes" element={<AvailableQuizzesPage />} />
                   <Route path="/assignments" element={<AvailableAssignmentsPage />} />

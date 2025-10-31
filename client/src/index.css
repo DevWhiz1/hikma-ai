@@ -31,9 +31,11 @@ html.light .bg-gray-100 { background-color: var(--color-surface) !important; }
 html.light .navbar,
 html.light .topbar,
 html.light .header,
-html.light [class*="top-"],
-html.light [class*="sticky"],
-html.light [class*="fixed"] {
+html.light .top-0,
+html.light .sticky,
+html.light .fixed,
+html.light [data-role="navbar"],
+html.light [data-navbar="true"] {
   background-color: #FFFFFF !important;
 }
 html.light .text-gray-900 { color: var(--color-text) !important; }
@@ -87,7 +89,7 @@ html.light .bg-emerald-50 { background-color: #d7ffec !important; }
 
 /* Typography and links */
 html.light a { color: var(--color-primary); }
-html.light a:hover { color: var(--color-accent); text-decoration: underline; }
+html.light a:hover { color: var(--color-accent); text-decoration: none; }
 
 /* Ensure sidebar links do not underline on hover */
 .sidebar a,
@@ -105,7 +107,7 @@ html.light a:hover { color: var(--color-accent); text-decoration: underline; }
 html.light hr, html.light .divider { border-color: var(--color-accent) !important; }
 
 /* Headings and text */
-html.light h1, html.light h2 { color: var(--color-sidebar); }
+html.light h1, html.light h2 { color: #111827 !important; }
 html.light h3, html.light .subheading { color: var(--color-secondary); }
 html.light body, html.light p, html.light li { color: var(--color-text); }
 
@@ -123,9 +125,55 @@ html.light .bg-orange-100 .text-black,
 html.light .bg-green-100 .text-black,
 html.light .bg-gray-100 .text-black { color: #000000 !important; }
 
-/* Force button text to be white in light mode */
-html.light button[class*="bg-"]:not([class*="bg-white"]):not([class*="bg-gray-100"]):not([class*="bg-transparent"]) {
+/* removed: global white text for colored buttons in light mode to allow per-component control */
+/* Ensure icons inside colored buttons stay white in light mode */
+html.light button[class*="bg-"]:not([class*="bg-white"]):not([class*="bg-gray-100"]):not([class*="bg-transparent"]) svg {
   color: #ffffff !important;
+}
+
+/* Exception: Filters button should be emerald, not forced white */
+html.light .filter-toggle-btn,
+html.light .filter-toggle-btn *,
+html.light .filter-toggle-btn svg {
+  color: #10B981 !important;
+}
+/* Ensure Filters text stays emerald even against button text overrides */
+html.light .filter-toggle-btn .filter-toggle-label {
+  color: #10B981 !important;
+}
+
+/* Ensure floating feedback MAIN button icon stays white - exclude menu items */
+html.light .feedback-floating-main-btn,
+html.light .feedback-floating-main-btn *,
+html.light .feedback-floating-main-icon,
+html.light .feedback-floating-main-btn svg,
+html.light .feedback-floating > button.feedback-floating-main-btn,
+html.light .feedback-floating > button.feedback-floating-main-btn *,
+html.light .feedback-floating > button.feedback-floating-main-btn svg {
+  color: #ffffff !important;
+}
+
+/* Explicitly exclude menu items from the white color rule */
+html.light .feedback-floating .feedback-menu-item,
+html.light .feedback-floating .feedback-menu-item *,
+html.light .feedback-floating .feedback-menu-item svg,
+html.light .feedback-floating .feedback-menu-bg,
+html.light .feedback-floating .feedback-menu-bg *,
+html.light .feedback-floating .feedback-menu-bg svg {
+  color: inherit !important;
+}
+
+/* Ensure 'View Profile' outline button text is emerald in light mode */
+html.light .view-profile-btn,
+html.light .view-profile-btn *,
+html.light button.view-profile-btn,
+html.light button.view-profile-btn * {
+  color: #10B981 !important;
+}
+
+/* Stronger fix: Force emerald text on the label element, bypassing inherited white */
+html.light .view-profile-btn .view-profile-label {
+  color: #10B981 !important;
 }
 html.light .bg-blue-600,
 html.light .bg-emerald-600,
@@ -152,9 +200,24 @@ html.light .header * {
 /* Force navbar text to be black in light mode - more specific targeting */
 html.light .sticky.top-0 *,
 html.light [class*="sticky"] *,
-html.light [class*="top-0"] *,
-html.light .flex.items-center.justify-between * {
+/* Limit broad overrides to elements without background utility classes (preserve button/link text colors) */
+html.light [class*="top-0"] *:not([class*="bg-"]),
+html.light .flex.items-center.justify-between *:not([class*="bg-"]) {
   color: #1F2937 !important;
+}
+
+/* Restore brand color: make the navbar 'Hikmah AI' title emerald in light mode */
+html.light .sticky.top-0 .flex.items-center h1.text-emerald-600,
+html.light .flex.items-center.justify-between h1.text-emerald-600 {
+  color: #10B981 !important;
+}
+
+/* Exception: keep Payment Tracking refresh button/icon white in light mode */
+html.light .payment-refresh-btn,
+html.light .payment-refresh-btn *,
+html.light .flex.items-center.justify-between .payment-refresh-btn,
+html.light .flex.items-center.justify-between .payment-refresh-btn * {
+  color: #ffffff !important;
 }
 
 /* Make Hikmah AI logo green and constant in both light and dark modes */
@@ -173,16 +236,17 @@ html.dark [class*="Hikmah"] {
 }
 
 /* Force white text to be black in light mode for visibility */
-html.light .text-white,
-html.light .text-gray-100,
-html.light .text-gray-200,
-html.light .text-gray-300,
-html.light .text-gray-400,
-html.light .text-gray-500,
-html.light .text-gray-600,
-html.light .text-gray-700,
-html.light .text-gray-800,
-html.light .text-gray-900 {
+/* Do not flip text color to dark if the element has a background utility (buttons, badges) */
+html.light .text-white:not([class*="bg-"]),
+html.light .text-gray-100:not([class*="bg-"]),
+html.light .text-gray-200:not([class*="bg-"]),
+html.light .text-gray-300:not([class*="bg-"]),
+html.light .text-gray-400:not([class*="bg-"]),
+html.light .text-gray-500:not([class*="bg-"]),
+html.light .text-gray-600:not([class*="bg-"]),
+html.light .text-gray-700:not([class*="bg-"]),
+html.light .text-gray-800:not([class*="bg-"]),
+html.light .text-gray-900:not([class*="bg-"]) {
   color: #1F2937 !important;
 }
 
@@ -414,33 +478,18 @@ html.light [class*="Icon"].text-purple-400 {
 }
 
 /* Make Explore Our Features icons white and constant */
-html.light .bg-gradient-to-r svg,
-html.light .bg-gradient-to-r [class*="Icon"],
-html.light .bg-gradient-to-r .h-6,
-html.light .bg-gradient-to-r .w-6,
-html.light .bg-gradient-to-r .h-5,
-html.light .bg-gradient-to-r .w-5,
-html.light [class*="gradient"] svg,
-html.light [class*="gradient"] [class*="Icon"],
-html.light [class*="gradient"] .h-6,
-html.light [class*="gradient"] .w-6,
-html.light [class*="gradient"] .h-5,
-html.light [class*="gradient"] .w-5 {
-  color: #ffffff !important;
-}
+/* Scoped only to CTA hero gradients; avoid forcing white on all gradients */
+/* If you need white icons inside a specific gradient, add a wrapper class and target it explicitly. */
 
-html.dark .bg-gradient-to-r svg,
-html.dark .bg-gradient-to-r [class*="Icon"],
-html.dark .bg-gradient-to-r .h-6,
-html.dark .bg-gradient-to-r .w-6,
-html.dark .bg-gradient-to-r .h-5,
-html.dark .bg-gradient-to-r .w-5,
-html.dark [class*="gradient"] svg,
-html.dark [class*="gradient"] [class*="Icon"],
-html.dark [class*="gradient"] .h-6,
-html.dark [class*="gradient"] .w-6,
-html.dark [class*="gradient"] .h-5,
-html.dark [class*="gradient"] .w-5 {
+/* Avoid forcing white icons in dark mode globally; scope where needed */
+
+/* Keep Explore Our Features icons white in both modes */
+html.light .feature-icon,
+html.light .feature-icon *,
+html.light .feature-icon svg,
+html.dark .feature-icon,
+html.dark .feature-icon *,
+html.dark .feature-icon svg {
   color: #ffffff !important;
 }
 
@@ -649,8 +698,9 @@ html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-tea
   color: #059669 !important;
 }
 
-html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 button:hover,
-html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] button:hover {
+/* Limit hover override to white buttons only so emerald buttons keep their own hover color */
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 button.bg-white:hover,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] button.bg-white:hover {
   background-color: #f3f4f6 !important;
   color: #059669 !important;
 }
@@ -665,6 +715,13 @@ html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-tea
 html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 .bg-emerald-700,
 html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] .bg-emerald-700 {
   background-color: #047857 !important;
+  color: #ffffff !important;
+}
+
+/* Ensure emerald button hover matches dark mode inside CTA */
+html.light .bg-gradient-to-r.from-emerald-600.to-teal-600 .bg-emerald-700:hover,
+html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-teal-600"] .bg-emerald-700:hover {
+  background-color: rgb(6 95 70 / var(--tw-bg-opacity, 1)) !important; /* match dark mode hover */
   color: #ffffff !important;
 }
 
@@ -713,23 +770,186 @@ html.light [class*="bg-gradient-to-r"][class*="from-emerald-600"][class*="to-tea
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Feedback button menu - force transparent background in light mode */
+/* Feedback button menu - white background in light mode */
 html.light .feedback-menu-bg {
-  background-color: transparent !important;
-  background: transparent !important;
+  background-color: rgb(255 255 255) !important; /* white */
+  background: rgb(255 255 255) !important;
 }
 
 html.light .feedback-menu-bg * {
+  background-color: inherit !important;
+  background: inherit !important;
+}
+
+/* Ensure floating feedback button wrapper remains transparent in light mode */
+html.light .feedback-floating {
   background-color: transparent !important;
   background: transparent !important;
 }
 
+/* Feedback menu items - white background with dark text in light mode */
 html.light .feedback-menu-item {
-  background-color: transparent !important;
-  background: transparent !important;
+  background-color: rgb(255 255 255) !important; /* white */
+  background: rgb(255 255 255) !important;
+  color: rgb(17 24 39) !important; /* gray-900 - dark text */
 }
 
 html.light .feedback-menu-item:hover {
-  background-color: #d7ffec !important; /* emerald-50 equivalent */
-  background: #d7ffec !important;
+  background-color: rgb(249 250 251) !important; /* gray-50 - light hover */
+  background: rgb(249 250 251) !important;
+}
+
+html.light .feedback-menu-item span {
+  color: rgb(17 24 39) !important; /* gray-900 - dark text */
+}
+
+/* Submit Feedback icon - unique selector to avoid global overrides */
+html.light .feedback-submit-btn .feedback-submit-icon,
+html.light .feedback-menu-item.feedback-submit-btn svg,
+html.light .feedback-menu-item.feedback-submit-btn svg[class*="text-emerald"],
+html.light .feedback-submit-icon {
+  color: rgb(16 185 129) !important; /* emerald-500 for icons */
+}
+
+/* Fallback for emerald-600 class on submit icon */
+html.light .feedback-menu-item svg.text-emerald-600:not(.feedback-submit-icon),
+html.light .feedback-menu-item svg[class*="text-emerald-600"]:not(.feedback-submit-icon) {
+  color: rgb(16 185 129) !important; /* emerald-500 for other icons */
+}
+
+/* View History icon - unique selector to avoid global overrides */
+html.light .feedback-history-btn .feedback-history-icon,
+html.light .feedback-menu-item.feedback-history-btn svg,
+html.light .feedback-menu-item.feedback-history-btn svg[class*="text-blue"],
+html.light .feedback-history-icon {
+  color: rgb(96 165 250) !important; /* blue-400 - rgb(96 165 250) */
+}
+
+/* Fallback for blue-600 class on history icon */
+html.light .feedback-menu-item svg.text-blue-600:not(.feedback-history-icon),
+html.light .feedback-menu-item svg[class*="text-blue-600"]:not(.feedback-history-icon) {
+  color: rgb(59 130 246) !important; /* blue-500 for other icons */
+}
+
+/* Hover state handled above */
+
+/* Feedback modal star ratings - ensure stars are yellow in light mode only */
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected .feedback-star-icon,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected svg,
+html.light .feedback-star-unselected .feedback-star-icon,
+html.light .feedback-star-unselected svg {
+  color: rgb(209 213 219) !important; /* gray-300 */
+}
+
+/* Selected stars - same as hover state in light mode */
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-selected,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-selected .feedback-star-icon,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-selected svg,
+html.light .feedback-star-selected .feedback-star-icon,
+html.light .feedback-star-selected svg {
+  color: rgb(250 204 21) !important; /* yellow-400 - same as hover */
+  background-color: rgb(254 249 195) !important; /* yellow-50 - same as hover */
+  background: rgb(254 249 195) !important;
+}
+
+/* Hover state - matches selected state */
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected:hover,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected:hover .feedback-star-icon,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected:hover svg {
+  color: rgb(250 204 21) !important; /* yellow-400 */
+  background-color: rgb(254 249 195) !important; /* yellow-50 - same as selected */
+  background: rgb(254 249 195) !important;
+}
+
+/* All star icons in feedback modal - light mode only */
+html.light .feedback-star-rating-container .feedback-star-icon,
+html.light .feedback-star-rating-container svg.feedback-star-icon {
+  color: inherit !important;
+}
+
+@layer base {
+  :root {
+    --background: 156 33% 97%; /* minty soft background #F5FAF8 */
+    --foreground: 0 0% 4%;
+    --card: 156 45% 94%; /* surface light #E9F7F1 */
+    --card-foreground: 0 0% 10%;
+    --popover: 156 45% 94%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 158 64% 46%; /* emerald 500 #10B981 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 156 33% 92%;
+    --secondary-foreground: 158 64% 30%;
+    --muted: 156 20% 90%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 156 40% 88%;
+    --accent-foreground: 158 64% 35%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 156 20% 85%;
+    --input: 156 20% 85%;
+    --ring: 164 94% 31%; /* emerald 600 #059669 */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 162 20% 7%; /* dark slate/emerald #0E1412 */
+    --foreground: 0 0% 96%;
+    --card: 162 14% 13%; /* surface dark #1C2623 */
+    --card-foreground: 0 0% 96%;
+    --popover: 162 14% 13%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 158 64% 46%; /* emerald 500 */
+    --primary-foreground: 162 20% 7%;
+    --secondary: 162 10% 18%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 162 10% 18%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 162 12% 20%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 162 10% 22%;
+    --input: 162 10% 22%;
+    --ring: 158 64% 46%;
+    --chart-1: 158 64% 46%;
+    --chart-2: 156 33% 60%;
+    --chart-3: 162 12% 32%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  button,
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  input,
+  textarea,
+  select,
+  [role="switch"],
+  [role="checkbox"] {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    border-radius: 1rem; /* rounded-xl */
+  }
+
+  a {
+    @apply text-emerald-600 no-underline hover:no-underline;
+  }
 }
