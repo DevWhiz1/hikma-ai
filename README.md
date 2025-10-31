@@ -56,6 +56,7 @@ An authenticated Islamic guidance platform providing:
 ### Frontend
 - React 18 + TypeScript + Vite
 - React Router
+- Shadcn Library
 - Tailwind CSS
 - Heroicons / Lucide Icons
 - React Markdown (render AI answers with formatting)
