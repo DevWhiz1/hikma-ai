@@ -125,10 +125,7 @@ html.light .bg-orange-100 .text-black,
 html.light .bg-green-100 .text-black,
 html.light .bg-gray-100 .text-black { color: #000000 !important; }
 
-/* Force button text to be white in light mode */
-html.light button[class*="bg-"]:not([class*="bg-white"]):not([class*="bg-gray-100"]):not([class*="bg-transparent"]) {
-  color: #ffffff !important;
-}
+/* removed: global white text for colored buttons in light mode to allow per-component control */
 /* Ensure icons inside colored buttons stay white in light mode */
 html.light button[class*="bg-"]:not([class*="bg-white"]):not([class*="bg-gray-100"]):not([class*="bg-transparent"]) svg {
   color: #ffffff !important;
@@ -203,9 +200,16 @@ html.light .header * {
 /* Force navbar text to be black in light mode - more specific targeting */
 html.light .sticky.top-0 *,
 html.light [class*="sticky"] *,
-html.light [class*="top-0"] *,
-html.light .flex.items-center.justify-between * {
+/* Limit broad overrides to elements without background utility classes (preserve button/link text colors) */
+html.light [class*="top-0"] *:not([class*="bg-"]),
+html.light .flex.items-center.justify-between *:not([class*="bg-"]) {
   color: #1F2937 !important;
+}
+
+/* Restore brand color: make the navbar 'Hikmah AI' title emerald in light mode */
+html.light .sticky.top-0 .flex.items-center h1.text-emerald-600,
+html.light .flex.items-center.justify-between h1.text-emerald-600 {
+  color: #10B981 !important;
 }
 
 /* Exception: keep Payment Tracking refresh button/icon white in light mode */
@@ -232,16 +236,17 @@ html.dark [class*="Hikmah"] {
 }
 
 /* Force white text to be black in light mode for visibility */
-html.light .text-white,
-html.light .text-gray-100,
-html.light .text-gray-200,
-html.light .text-gray-300,
-html.light .text-gray-400,
-html.light .text-gray-500,
-html.light .text-gray-600,
-html.light .text-gray-700,
-html.light .text-gray-800,
-html.light .text-gray-900 {
+/* Do not flip text color to dark if the element has a background utility (buttons, badges) */
+html.light .text-white:not([class*="bg-"]),
+html.light .text-gray-100:not([class*="bg-"]),
+html.light .text-gray-200:not([class*="bg-"]),
+html.light .text-gray-300:not([class*="bg-"]),
+html.light .text-gray-400:not([class*="bg-"]),
+html.light .text-gray-500:not([class*="bg-"]),
+html.light .text-gray-600:not([class*="bg-"]),
+html.light .text-gray-700:not([class*="bg-"]),
+html.light .text-gray-800:not([class*="bg-"]),
+html.light .text-gray-900:not([class*="bg-"]) {
   color: #1F2937 !important;
 }
 
@@ -828,7 +833,40 @@ html.light .feedback-menu-item svg[class*="text-blue-600"]:not(.feedback-history
 
 /* Hover state handled above */
 
+/* Feedback modal star ratings - ensure stars are yellow in light mode only */
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected .feedback-star-icon,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected svg,
+html.light .feedback-star-unselected .feedback-star-icon,
+html.light .feedback-star-unselected svg {
+  color: rgb(209 213 219) !important; /* gray-300 */
+}
 
+/* Selected stars - same as hover state in light mode */
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-selected,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-selected .feedback-star-icon,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-selected svg,
+html.light .feedback-star-selected .feedback-star-icon,
+html.light .feedback-star-selected svg {
+  color: rgb(250 204 21) !important; /* yellow-400 - same as hover */
+  background-color: rgb(254 249 195) !important; /* yellow-50 - same as hover */
+  background: rgb(254 249 195) !important;
+}
+
+/* Hover state - matches selected state */
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected:hover,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected:hover .feedback-star-icon,
+html.light .feedback-star-rating-container .feedback-star-btn.feedback-star-unselected:hover svg {
+  color: rgb(250 204 21) !important; /* yellow-400 */
+  background-color: rgb(254 249 195) !important; /* yellow-50 - same as selected */
+  background: rgb(254 249 195) !important;
+}
+
+/* All star icons in feedback modal - light mode only */
+html.light .feedback-star-rating-container .feedback-star-icon,
+html.light .feedback-star-rating-container svg.feedback-star-icon {
+  color: inherit !important;
+}
 
 @layer base {
   :root {

@@ -121,19 +121,19 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose }) => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               How would you rate your experience?
             </label>
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 feedback-star-rating-container">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
                   onClick={() => handleRatingClick(star)}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`feedback-star-btn p-2 rounded-lg transition-all ${
                     feedback.rating >= star
-                      ? 'text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
-                      : 'text-gray-300 hover:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
+                      ? 'text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 feedback-star-selected'
+                      : 'text-gray-300 hover:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 feedback-star-unselected'
                   }`}
                 >
-                  <Star className="w-6 h-6 fill-current" />
+                  <Star className="feedback-star-icon w-6 h-6 fill-current" />
                 </button>
               ))}
             </div>
