@@ -14,13 +14,15 @@ import {
   UserMinusIcon,
   UserPlusIcon,
   StarIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  Bars3Icon
 } from '@heroicons/react/24/outline';
 import { getUsers, blockUser, unblockUser, getReviews, getSensitiveLogs, getScholarApplications, approveScholarApplication, rejectScholarApplication, removeScholarByUser, adminMessageUser } from '../../services/adminService';
 import { authService } from '../../services/authService';
 import AdminFeedbackManagement from './AdminFeedbackManagement';
 import ScholarManagement from './ScholarManagement';
 import PaymentManagement from './PaymentManagement';
+import hikmahLogo from '../../../assets/logo.png';
 
 type TabKey = 'users' | 'reviews' | 'logs' | 'applications' | 'feedback' | 'scholars' | 'payments';
 
@@ -56,6 +58,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('users');
   const [processing, setProcessing] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -150,32 +153,41 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-emerald-900/20">
       {/* Admin Top Bar */}
-      <div className="bg-emerald-600 dark:bg-emerald-700 shadow-lg">
-        <div className="px-6 py-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="px-6 py-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mr-3">
-                <ShieldCheckIcon className="h-6 w-6 text-white" />
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="mr-2 p-2 rounded-md text-gray-700 hover:text-emerald-600 dark:text-gray-300 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-50 md:hidden"
+                aria-label="Open sidebar"
+                type="button"
+              >
+                <Bars3Icon className="h-6 w-6" />
+              </button>
+              <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/40 rounded-lg flex items-center justify-center mr-3">
+                <ShieldCheckIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Hikmah AI</h1>
-                <p className="text-emerald-100 text-sm">Admin Panel</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Hikmah AI</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Admin Panel</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Link 
-                to="/" 
-                className="flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg transition-colors"
+            <div className="flex items-center space-x-2">
+              <Link
+                to="/"
+                className="flex items-center px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                title="Return to Main"
               >
-                <ArrowLeftIcon className="h-4 w-4 mr-2" />
-                Return to Main
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                <span className="text-sm font-medium">Return to Main</span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-gray-700 transition-colors"
+                title="Logout"
               >
-                <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
-                Logout
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -183,38 +195,50 @@ export default function AdminDashboard() {
       </div>
       
       <div className="flex">
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/30 z-20 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
         {/* Sidebar */}
-        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg">
-          <div className="p-6">
-            <div className="flex items-center mb-8">
-              <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center mr-3">
-                <ShieldCheckIcon className="h-6 w-6 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Admin Panel</h2>
+        <div
+          className={`fixed md:static top-14 left-0 bottom-0 z-30 w-64 transform bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-sm transition-transform duration-300 ease-in-out ${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          }`}
+          aria-label="Admin sidebar"
+        >
+          <div className="p-4 h-full overflow-y-auto">
+            <div className="flex items-center p-2 mb-4 select-none">
+              <img src={`${hikmahLogo}`} alt="Hikmah Logo" className="h-12 w-12" />
+              <h2 className="text-xl font-bold text-emerald-600 ml-2">Hikmah</h2>
             </div>
-            
-            <nav className="space-y-2">
+            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 px-3 mb-2">Admin</div>
+
+            <nav className="space-y-1">
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
+                const isActive = activeTab === tab.key;
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition-all duration-200 ${
-                      activeTab === tab.key
-                        ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors ${
+                      isActive
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'
                     }`}
                   >
                     <div className="flex items-center">
                       <IconComponent className="h-5 w-5 mr-3" />
-                      <span className="font-medium">{tab.label}</span>
+                      <span className="text-sm font-medium">{tab.label}</span>
                     </div>
                     {tab.count > 0 && (
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        activeTab === tab.key
-                          ? 'bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200'
-                          : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${
+                        isActive
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-200'
+                          : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                       }`}>
                         {tab.count}
                       </span>
