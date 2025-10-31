@@ -648,17 +648,13 @@ const EnhancedScholarChat = () => {
               disabled={!selectedScholar}
               className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <Button type="submit" size="icon" disabled={!message.trim() || isLoading || !selectedScholar}>
-              disabled={!sessionId}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            />
             <button
               type="submit"
               disabled={!message.trim() || isLoading || !sessionId}
               className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <PaperAirplaneIcon className="h-5 w-5" />
-            </Button>
+            </button>
           </form>
         </div>
       </div>
