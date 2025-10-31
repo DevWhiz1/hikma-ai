@@ -227,7 +227,7 @@ const UserDashboard = () => {
                     View Available Slots
                   </Button>
                   <Button
-                    onClick={() => navigate('/chat')}
+                    onClick={() => navigate('/chat/scholar')}
                     className="px-8 py-4 font-bold rounded-xl transition-colors shadow-lg inline-flex items-center justify-center gap-2 leading-none text-center h-12 bg-emerald-700 hover:bg-emerald-800 text-white border border-emerald-800"
                   >
                     <ChatBubbleLeftRightIcon className="h-6 w-6" />
@@ -282,7 +282,7 @@ const UserDashboard = () => {
                     )}
                     <div className="flex space-x-2">
                       <Button
-                        onClick={() => navigate('/chat')}
+                        onClick={() => navigate('/chat/scholar')}
                         className="flex-1 text-sm font-medium"
                       >
                         Chat

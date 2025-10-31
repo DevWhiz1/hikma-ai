@@ -450,7 +450,7 @@ cron.schedule('* * * * *', async () => {
         roomId
       });
 
-                  // Mirror into Hikma chat (legacy direct chat sessions)
+                  // Mirror into Hikma chat (legacy direct chat sessions) with metadata
                   try {
                     const ChatSession = require('./models/ChatSession');
                     const Enrollment = require('./models/Enrollment');
@@ -459,11 +459,20 @@ cron.schedule('* * * * *', async () => {
                     if (scholarProfile) {
                       const enrollment = await Enrollment.findOne({ student: meeting.studentId, scholar: scholarProfile._id }).lean();
                       const text = `HikmaBot: Your meeting has started!`;
+                      const messageObj = {
+                        role: 'assistant',
+                        content: text,
+                        type: 'meeting_link',
+                        metadata: {
+                          meetingLink: link,
+                          roomId: roomId
+                        }
+                      };
                       if (enrollment?.studentSession) {
-                        await ChatSession.findByIdAndUpdate(enrollment.studentSession, { $push: { messages: { role: 'assistant', content: text } }, $set: { lastActivity: new Date() } });
+                        await ChatSession.findByIdAndUpdate(enrollment.studentSession, { $push: { messages: messageObj }, $set: { lastActivity: new Date() } });
                       }
                       if (enrollment?.scholarSession) {
-                        await ChatSession.findByIdAndUpdate(enrollment.scholarSession, { $push: { messages: { role: 'assistant', content: text } }, $set: { lastActivity: new Date() } });
+                        await ChatSession.findByIdAndUpdate(enrollment.scholarSession, { $push: { messages: messageObj }, $set: { lastActivity: new Date() } });
                       }
                     }
                   } catch (e) {

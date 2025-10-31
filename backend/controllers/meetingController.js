@@ -22,7 +22,7 @@ const generateJitsiLink = () => {
 };
 
 // Mirror a Hikma-styled message into legacy direct ChatSessions
-async function mirrorToHikmaChat(studentUserId, scholarUserId, text) {
+async function mirrorToHikmaChat(studentUserId, scholarUserId, text, messageType = 'text', metadata = {}) {
   try {
     // Find scholar profile by user id
     const scholarProfile = await Scholar.findOne({ user: scholarUserId }).select('_id user');
@@ -31,15 +31,23 @@ async function mirrorToHikmaChat(studentUserId, scholarUserId, text) {
     const enrollment = await Enrollment.findOne({ student: studentUserId, scholar: scholarProfile._id }).lean();
     if (!enrollment || (!enrollment.studentSession && !enrollment.scholarSession)) return;
     const updates = [];
+    
+    // Prepare message object with metadata if it's a meeting message
+    const messageObj = { role: 'assistant', content: text };
+    if (messageType === 'meeting_link' || messageType === 'meeting_scheduled') {
+      messageObj.type = messageType;
+      messageObj.metadata = metadata;
+    }
+    
     if (enrollment.studentSession) {
       updates.push(ChatSession.findByIdAndUpdate(enrollment.studentSession, {
-        $push: { messages: { role: 'assistant', content: text } },
+        $push: { messages: messageObj },
         $set: { lastActivity: new Date() }
       }));
     }
     if (enrollment.scholarSession) {
       updates.push(ChatSession.findByIdAndUpdate(enrollment.scholarSession, {
-        $push: { messages: { role: 'assistant', content: text } },
+        $push: { messages: messageObj },
         $set: { lastActivity: new Date() }
       }));
     }
@@ -234,6 +242,13 @@ const scheduleMeeting = async (req, res) => {
       chat.messages.push(linkMessage._id);
       chat.lastActivity = new Date();
       await chat.save();
+
+      // Mirror meeting link to ChatSession (enhanced chat)
+      await mirrorToHikmaChat(chat.studentId, scholarId, `HikmaBot: Your meeting is scheduled!`, 'meeting_link', {
+        meetingLink: link,
+        roomId: roomId,
+        scheduledTime: new Date(scheduledTime)
+      });
 
       // Emit socket event for the link
       const { emitMeetingLinkSent } = require('../utils/socketEmitter');

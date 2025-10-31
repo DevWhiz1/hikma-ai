@@ -109,10 +109,33 @@ const EnhancedScholarChat = () => {
       }
     };
 
-    const handleMeetingLinkSent = (data: any) => {
-      if (data.chatId === sessionId) {
+    const handleMeetingLinkSent = async (data: any) => {
+      if (data.sessionId === currentSession?._id || data.chatId === currentSession?._id) {
         // Handle meeting link sent notification
         console.log('Meeting link sent:', data);
+        
+        // Add meeting link message to the current session
+        if (data.link && currentSession) {
+          const meetingMessage: ChatMessage = {
+            role: 'assistant',
+            content: data.text || 'HikmaBot: Your meeting has started!',
+            timestamp: new Date().toISOString(),
+            type: 'meeting_link',
+            metadata: {
+              meetingLink: data.link,
+              roomId: data.roomId,
+              scheduledTime: data.scheduledTime
+            }
+          };
+          
+          // Add to messages state
+          setMessages(prev => [...prev, meetingMessage]);
+          
+          // Reload session to get updated messages from server
+          if (currentSession._id) {
+            await loadSession(currentSession._id);
+          }
+        }
       }
     };
 
@@ -214,6 +237,12 @@ const EnhancedScholarChat = () => {
   };
 
   const loadSession = async (id: string) => {
+    // Validate sessionId format before attempting to load
+    if (!id || id.trim() === '') {
+      navigate('/chat/scholar');
+      return;
+    }
+
     try {
       const response = await enhancedChatService.getSession(id);
       if (response.session) {
@@ -237,11 +266,19 @@ const EnhancedScholarChat = () => {
           }
         }
       } else {
-        navigate('/chat/scholar');
+        // Session not found, redirect to base chat page
+        navigate('/chat/scholar', { replace: true });
       }
-    } catch (error) {
-      console.error('Failed to load session:', error);
-      navigate('/chat/scholar');
+    } catch (error: any) {
+      // Only log non-404 errors (session not found is expected in some cases)
+      const isNotFound = error?.status === 404 || 
+                        (error?.message && error.message.toLowerCase().includes('not found'));
+      
+      if (!isNotFound) {
+        console.error('Failed to load session:', error);
+      }
+      // Redirect to base chat page, using replace to avoid adding to history
+      navigate('/chat/scholar', { replace: true });
     }
   };
 
@@ -542,10 +579,19 @@ const EnhancedScholarChat = () => {
             </div>
           ) : (
             messages.map((msg, index) => {
-              // Extract meeting link from message content
-              const extractMeetingLink = (content: string): string | null => {
+              // Get meeting link from metadata (priority) or extract from content
+              const getMeetingLink = (): string | null => {
+                // First check metadata (from backend meeting messages)
+                if (msg.metadata?.meetingLink) {
+                  return msg.metadata.meetingLink;
+                }
+                if (msg.metadata?.meetLink) {
+                  return msg.metadata.meetLink;
+                }
+                
+                // Fallback: Extract meeting link from message content
                 const urlRegex = /https?:\/\/[^\s<>"']+/g;
-                const matches = content.match(urlRegex);
+                const matches = msg.content.match(urlRegex);
                 if (matches) {
                   const meetingLink = matches.find(url => 
                     url.includes('hikmameet.live') || 
@@ -560,7 +606,8 @@ const EnhancedScholarChat = () => {
                 return null;
               };
 
-              const meetingLink = extractMeetingLink(msg.content);
+              const meetingLink = getMeetingLink();
+              const isMeetingLinkMessage = msg.type === 'meeting_link' || msg.type === 'meeting_scheduled';
               
               // Remove meeting link from displayed text
               let displayText = msg.content;
@@ -576,6 +623,9 @@ const EnhancedScholarChat = () => {
                   .replace(/\s{2,}/g, ' ')
                   .trim();
               }
+              
+              // For meeting_link messages, always show button even if displayText is empty
+              const shouldShowButton = isMeetingLinkMessage || !!meetingLink;
 
               return (
                 <div
@@ -592,7 +642,7 @@ const EnhancedScholarChat = () => {
                     {displayText && displayText.trim() && (
                       <p className="text-sm mb-2">{displayText}</p>
                     )}
-                    {meetingLink && (
+                    {shouldShowButton && meetingLink && (
                       <div className="mt-2">
                         <a
                           href={meetingLink}
@@ -603,8 +653,13 @@ const EnhancedScholarChat = () => {
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                           </svg>
-                          Join Meeting
+                          {msg.type === 'meeting_scheduled' ? 'Meeting Scheduled - Join Now' : 'Join Meeting'}
                         </a>
+                        {msg.metadata?.scheduledTime && (
+                          <p className="text-xs opacity-75 mt-1">
+                            Scheduled: {new Date(msg.metadata.scheduledTime).toLocaleString()}
+                          </p>
+                        )}
                       </div>
                     )}
                     {msg.timestamp && (
