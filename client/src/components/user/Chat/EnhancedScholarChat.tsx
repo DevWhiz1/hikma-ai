@@ -368,10 +368,16 @@ const EnhancedScholarChat = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
+    if (!currentSession && !selectedScholar) {
+      alert('Please select a scholar to start chatting');
+      return;
+    }
+    
     const userMessage = message.trim();
     setMessage('');
     setIsLoading(true);
-    let activeSessionId = sessionId as string | undefined;
+    // Use sessionId from URL or currentSession ID
+    let activeSessionId = (sessionId as string | undefined) || currentSession?._id;
     
     try {
       if (!activeSessionId) {
@@ -384,7 +390,7 @@ const EnhancedScholarChat = () => {
       const nextMessages = [...messages, nextUserMessage];
       setMessages(nextMessages);
       
-      await enhancedChatService.sendDirectMessage(activeSessionId!, userMessage);
+      await enhancedChatService.sendDirectMessage(activeSessionId, userMessage);
       setSessions(prev => prev.map(s => s._id === activeSessionId ? { ...s, lastActivity: new Date().toISOString() } : s));
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -699,13 +705,13 @@ const EnhancedScholarChat = () => {
                   socketService.sendTyping(sessionId, user.id, val.trim().length > 0);
                 }
               }}
-              placeholder={selectedScholar ? `Message ${selectedScholar.user.name}...` : 'Select a scholar to start chatting...'}
-              disabled={!selectedScholar}
+              placeholder={currentSession ? (counterpartName ? `Message ${counterpartName}...` : 'Type a message...') : (selectedScholar ? `Message ${selectedScholar.user.name}...` : 'Select a scholar to start chatting...')}
+              disabled={!currentSession && !selectedScholar}
               className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <button
               type="submit"
-              disabled={!message.trim() || isLoading || !sessionId}
+              disabled={!message.trim() || isLoading || (!currentSession && !selectedScholar)}
               className="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <PaperAirplaneIcon className="h-5 w-5" />
